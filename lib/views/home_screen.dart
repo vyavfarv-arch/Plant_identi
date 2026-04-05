@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'camera_screen.dart';
-import 'description_grid_screen.dart'; // Import nowego ekranu
+import 'description_grid_screen.dart';
+import 'browse_plants_screen.dart';
+import 'map_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -40,7 +42,7 @@ class HomeScreen extends StatelessWidget {
                   title: '3. Przeglądaj rośliny',
                   icon: Icons.library_books,
                   color: Colors.blue,
-                  onPressed: () {} // Tutaj trafią w pełni opisane rośliny
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BrowsePlantsScreen()))
               ),
               const SizedBox(height: 20),
 
@@ -48,7 +50,7 @@ class HomeScreen extends StatelessWidget {
                   title: '4. Pokaż mapę roślin',
                   icon: Icons.map,
                   color: Colors.orange,
-                  onPressed: () {}
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MapScreen()))
               ),
             ],
           ),

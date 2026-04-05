@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'viewmodels/observation_vm.dart';
 import 'views/home_screen.dart'; // Importujemy nowe menu
+import 'viewmodels/plants_view_model.dart';
 
 
 void main() async {
@@ -13,6 +14,7 @@ void main() async {
 
         ChangeNotifierProvider(create: (_) => ObservationViewModel()..init(),),
         ChangeNotifierProvider(create: (_) => PlantsViewModel()),
+        ChangeNotifierProvider(create: (_) => PlantsViewModel()..loadFromDisk()),
       ],
       child: const MyApp(),
     ),
