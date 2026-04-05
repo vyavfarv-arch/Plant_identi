@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'viewmodels/observation_vm.dart';
-import 'views/home_screen.dart'; // Importujemy nowe menu
 import 'viewmodels/plants_view_model.dart';
-
+import 'views/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,9 +10,8 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-
-        ChangeNotifierProvider(create: (_) => ObservationViewModel()..init(),),
-        ChangeNotifierProvider(create: (_) => PlantsViewModel()),
+        ChangeNotifierProvider(create: (_) => ObservationViewModel()..init()),
+        // Naprawione: Tylko jeden dostawca PlantsViewModel z ładowaniem z dysku
         ChangeNotifierProvider(create: (_) => PlantsViewModel()..loadFromDisk()),
       ],
       child: const MyApp(),

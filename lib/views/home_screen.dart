@@ -52,6 +52,17 @@ class HomeScreen extends StatelessWidget {
                   color: Colors.orange,
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MapScreen()))
               ),
+              const SizedBox(height: 20),
+              _buildMenuButton(context,
+                  title: '5. Zdjęcie fitosocjologiczne',
+                  icon: Icons.grass, // Ikona trawy dla odróżnienia
+                  color: Colors.deepPurple,
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Funkcja "Zdjęcie fitosocjologiczne" będzie dostępna wkrótce!')),
+                    );
+                  }
+              ),
             ],
           ),
         ),
