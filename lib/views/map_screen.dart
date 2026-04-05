@@ -70,7 +70,7 @@ class _MapScreenState extends State<MapScreen> {
           position: LatLng(obs.latitude, obs.longitude),
           icon: grassIcon ?? BitmapDescriptor.defaultMarker,
           infoWindow: InfoWindow(
-              title: obs.plantName,
+              title: obs.displayName, // Zmieniono z plantName
               snippet: "Ilość: ${obs.abundance}"
           ),
         )).toSet(),

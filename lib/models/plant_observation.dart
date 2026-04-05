@@ -1,3 +1,4 @@
+// lib/models/plant_observation.dart
 import 'dart:convert';
 
 class PlantObservation {
@@ -6,35 +7,32 @@ class PlantObservation {
   final double latitude;
   final double longitude;
   final DateTime timestamp;
-  final Map<String, String> characteristics; // Fizjonomia (to co robiliśmy wcześniej)
+  final Map<String, String> characteristics;
 
-  // NOWE POLA SZCZEGÓŁOWEGO OPISU:
+  // Dane fitosocjologiczne (ustawiane w ClassificationScreen)
+  String? biologicalType;
+  String? phytosociologicalLayer;
   String? abundance;
-  DateTime? observationDate;
+  String? coverage;
+  String? vitality;
+  String? sociability;
 
-  // A. Taksonomia
+  // Szczegółowy opis
+  DateTime? observationDate;
   String? family;
   String? genus;
   String? species;
   String? subspecies;
-
-  // B. Nazewnictwo
   String? latinName;
   String? polishName;
-  String? localName; // To pole będzie główną nazwą wyświetlaną
-
-  // C. Pewność
-  String? certainty; // wysoki / średni / niski
+  String? localName; // "Nazwa" w formularzu
+  String? certainty;
   String? idDoubts;
-
-  // D. Cechy diagnostyczne
   String? keyMorphologicalTraits;
-  String? microscopicTraits;
-  String? differences;
   String? confusingSpecies;
-
-  // E. Wykorzystanie
+  String? characteristicFeature; // NOWE
   String? plantUsage;
+  String? cultivation; // NOWE
 
   PlantObservation({
     required this.id,
@@ -43,7 +41,12 @@ class PlantObservation {
     required this.longitude,
     required this.timestamp,
     required this.characteristics,
+    this.biologicalType,
+    this.phytosociologicalLayer,
     this.abundance,
+    this.coverage,
+    this.vitality,
+    this.sociability,
     this.observationDate,
     this.family,
     this.genus,
@@ -55,20 +58,18 @@ class PlantObservation {
     this.certainty,
     this.idDoubts,
     this.keyMorphologicalTraits,
-    this.microscopicTraits,
-    this.differences,
     this.confusingSpecies,
+    this.characteristicFeature,
     this.plantUsage,
+    this.cultivation,
   });
 
-  // Pomocniczy getter do wyświetlania nazwy w menu i na mapie
   String get displayName => (localName != null && localName!.isNotEmpty)
       ? localName!
       : (polishName != null && polishName!.isNotEmpty) ? polishName! : "Nieznana roślina";
 
   bool get isComplete =>
-      abundance != null &&
-          displayName != "Nieznana roślina" &&
+      localName != null && localName!.isNotEmpty &&
           observationDate != null;
 
   Map<String, dynamic> toMap() {
@@ -79,7 +80,12 @@ class PlantObservation {
       'longitude': longitude,
       'timestamp': timestamp.toIso8601String(),
       'characteristics': jsonEncode(characteristics),
+      'biologicalType': biologicalType,
+      'phytosociologicalLayer': phytosociologicalLayer,
       'abundance': abundance,
+      'coverage': coverage,
+      'vitality': vitality,
+      'sociability': sociability,
       'observationDate': observationDate?.toIso8601String(),
       'family': family,
       'genus': genus,
@@ -91,10 +97,10 @@ class PlantObservation {
       'certainty': certainty,
       'idDoubts': idDoubts,
       'keyMorphologicalTraits': keyMorphologicalTraits,
-      'microscopicTraits': microscopicTraits,
-      'differences': differences,
       'confusingSpecies': confusingSpecies,
+      'characteristicFeature': characteristicFeature,
       'plantUsage': plantUsage,
+      'cultivation': cultivation,
     };
   }
 
@@ -106,7 +112,12 @@ class PlantObservation {
       longitude: map['longitude']?.toDouble() ?? 0.0,
       timestamp: DateTime.parse(map['timestamp']),
       characteristics: Map<String, String>.from(jsonDecode(map['characteristics'])),
+      biologicalType: map['biologicalType'],
+      phytosociologicalLayer: map['phytosociologicalLayer'],
       abundance: map['abundance'],
+      coverage: map['coverage'],
+      vitality: map['vitality'],
+      sociability: map['sociability'],
       observationDate: map['observationDate'] != null ? DateTime.parse(map['observationDate']) : null,
       family: map['family'],
       genus: map['genus'],
@@ -118,10 +129,10 @@ class PlantObservation {
       certainty: map['certainty'],
       idDoubts: map['idDoubts'],
       keyMorphologicalTraits: map['keyMorphologicalTraits'],
-      microscopicTraits: map['microscopicTraits'],
-      differences: map['differences'],
       confusingSpecies: map['confusingSpecies'],
+      characteristicFeature: map['characteristicFeature'],
       plantUsage: map['plantUsage'],
+      cultivation: map['cultivation'],
     );
   }
 }

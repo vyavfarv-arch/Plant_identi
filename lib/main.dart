@@ -11,7 +11,6 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ObservationViewModel()..init()),
-        // Naprawione: Tylko jeden dostawca PlantsViewModel z ładowaniem z dysku
         ChangeNotifierProvider(create: (_) => PlantsViewModel()..loadFromDisk()),
       ],
       child: const MyApp(),

@@ -7,17 +7,14 @@ class PlantsViewModel extends ChangeNotifier {
   List<PlantObservation> _observations = [];
   DateTime? _filterDate;
 
-  // Filtry nazw dla mapy
   final List<String> _selectedPlantNames = [];
 
   List<PlantObservation> get allObservations => _observations;
   List<String> get selectedPlantNames => _selectedPlantNames;
 
-  // Lista dla "Opisz Spotkane Rośliny" (tylko niekompletne)
   List<PlantObservation> get incompleteObservations =>
       _observations.where((obs) => !obs.isComplete).toList();
 
-  // Lista dla "Magazynu Roślin" (filtrowanie po dacie)
   List<PlantObservation> get filteredCompleteObservations {
     var list = _observations.where((obs) => obs.isComplete).toList();
     if (_filterDate != null) {
@@ -30,76 +27,21 @@ class PlantsViewModel extends ChangeNotifier {
     return list;
   }
 
-  // Logika dla Mapy: Pusta mapa na start, pokazuje tylko zaznaczone
+  // Logika dla Mapy: Pokaż tylko te, których nazwa (displayName) jest zaznaczona
   List<PlantObservation> get mapFilteredObservations {
     var allComplete = _observations.where((obs) => obs.isComplete).toList();
-
-    if (_selectedPlantNames.isEmpty) {
-      return []; // Nic nie wybrano -> nic nie wyświetlamy
-    }
-
-    return allComplete.where((obs) =>
-        _selectedPlantNames.contains(obs.plantName)).toList();
+    if (_selectedPlantNames.isEmpty) return [];
+    return allComplete.where((obs) => _selectedPlantNames.contains(obs.displayName)).toList();
   }
 
-  // Pobieranie unikalnych nazw do listy filtrów
   List<String> get uniquePlantNames {
     return _observations
-        .where((obs) => obs.isComplete && obs.plantName != null)
-        .map((obs) => obs.plantName!)
+        .where((obs) => obs.isComplete && obs.displayName != "Nieznana roślina")
+        .map<String>((obs) => obs.displayName) // Jawne rzutowanie na String
         .toSet()
         .toList();
   }
-  void updateObservationDetailed({
-    required String id,
-    String? abundance,
-    DateTime? date,
-    String? family,
-    String? genus,
-    String? species,
-    String? subspecies,
-    String? latinName,
-    String? polishName,
-    String? localName,
-    String? certainty,
-    String? doubts,
-    String? keyTraits,
-    String? microTraits,
-    String? diffs,
-    String? confusing,
-    String? usage,
-  }) {
-    final index = _observations.indexWhere((o) => o.id == id);
-    if (index != -1) {
-      final old = _observations[index];
-      _observations[index] = PlantObservation(
-        id: old.id,
-        photoPaths: old.photoPaths,
-        latitude: old.latitude,
-        longitude: old.longitude,
-        timestamp: old.timestamp,
-        characteristics: old.characteristics,
-        abundance: abundance,
-        observationDate: date,
-        family: family,
-        genus: genus,
-        species: species,
-        subspecies: subspecies,
-        latinName: latinName,
-        polishName: polishName,
-        localName: localName,
-        certainty: certainty,
-        idDoubts: doubts,
-        keyMorphologicalTraits: keyTraits,
-        microscopicTraits: microTraits,
-        differences: diffs,
-        confusingSpecies: confusing,
-        plantUsage: usage,
-      );
-      _storage.saveObservations(_observations);
-      notifyListeners();
-    }
-  }
+
   void toggleNameFilter(String name) {
     if (_selectedPlantNames.contains(name)) {
       _selectedPlantNames.remove(name);
@@ -125,17 +67,55 @@ class PlantsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateObservation(String id, String name, String abundance, DateTime date) {
+  void updateObservationDetailed({
+    required String id,
+    String? family,
+    String? genus,
+    String? species,
+    String? subspecies,
+    String? localName,
+    String? certainty,
+    String? doubts,
+    String? keyTraits,
+    String? confusing,
+    String? characteristic,
+    String? usage,
+    String? cultivation,
+  }) {
     final index = _observations.indexWhere((o) => o.id == id);
     if (index != -1) {
-      _observations[index].plantName = name;
-      _observations[index].abundance = abundance;
-      _observations[index].observationDate = date;
+      final old = _observations[index];
+      _observations[index] = PlantObservation(
+        id: old.id,
+        photoPaths: old.photoPaths,
+        latitude: old.latitude,
+        longitude: old.longitude,
+        timestamp: old.timestamp,
+        characteristics: old.characteristics,
+        biologicalType: old.biologicalType,
+        phytosociologicalLayer: old.phytosociologicalLayer,
+        abundance: old.abundance,
+        coverage: old.coverage,
+        vitality: old.vitality,
+        sociability: old.sociability,
+        observationDate: old.observationDate, // Zachowujemy datę z terenu
+        family: family,
+        genus: genus,
+        species: species,
+        subspecies: subspecies,
+        localName: localName,
+        certainty: certainty,
+        idDoubts: doubts,
+        keyMorphologicalTraits: keyTraits,
+        confusingSpecies: confusing,
+        characteristicFeature: characteristic,
+        plantUsage: usage,
+        cultivation: cultivation,
+      );
       _storage.saveObservations(_observations);
       notifyListeners();
     }
   }
-
   void deleteObservation(String id) {
     _observations.removeWhere((o) => o.id == id);
     _storage.saveObservations(_observations);

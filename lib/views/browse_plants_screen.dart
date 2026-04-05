@@ -38,10 +38,9 @@ class BrowsePlantsScreen extends StatelessWidget {
         builder: (context, vm, child) {
           final plants = vm.filteredCompleteObservations;
 
-          // GRUPOWANIE PO NAZWIE
           final Map<String, List<PlantObservation>> grouped = {};
           for (var p in plants) {
-            final name = p.plantName ?? "Nieznana";
+            final name = p.displayName; // Poprawione
             grouped.putIfAbsent(name, () => []).add(p);
           }
 
@@ -84,6 +83,7 @@ class BrowsePlantsScreen extends StatelessWidget {
       ),
     );
   }
+
   void _showPlantCard(BuildContext context, PlantObservation obs) {
     showModalBottomSheet(
       context: context,
@@ -91,8 +91,6 @@ class BrowsePlantsScreen extends StatelessWidget {
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => DraggableScrollableSheet(
         initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
         expand: false,
         builder: (_, controller) => Container(
           padding: const EdgeInsets.all(20),
@@ -101,10 +99,8 @@ class BrowsePlantsScreen extends StatelessWidget {
             children: [
               Center(child: Container(width: 40, height: 5, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10)))),
               const SizedBox(height: 20),
-              Text(obs.plantName ?? "Bez nazwy", style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.green)),
+              Text(obs.displayName, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.green)), // Poprawione
               const Divider(),
-
-              // Sekcja zdjęć
               SizedBox(
                 height: 180,
                 child: ListView.builder(
@@ -120,43 +116,12 @@ class BrowsePlantsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Podstawowe informacje
               _infoItem(Icons.analytics, "Ilościowość", obs.abundance ?? "-"),
               _infoItem(Icons.calendar_today, "Data obserwacji", DateFormat('yyyy-MM-dd').format(obs.observationDate!)),
               _infoItem(Icons.location_on, "GPS", "${obs.latitude.toStringAsFixed(6)}, ${obs.longitude.toStringAsFixed(6)}"),
-
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 15),
-                child: Text("Szczegóły morfologiczne:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              ),
-
-              // DYNAMICZNE WYŚWIETLANIE KATEGORII Z FORMULARZA
-              if (obs.characteristics.isEmpty)
-                const Text("Brak dodatkowych cech opisowych.")
-              else
-                ...obs.characteristics.entries.map((entry) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.label_important_outline, size: 20, color: Colors.teal),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: RichText(
-                          text: TextSpan(
-                            style: const TextStyle(color: Colors.black, fontSize: 15),
-                            children: [
-                              TextSpan(text: "${entry.key}: ", style: const TextStyle(fontWeight: FontWeight.bold)),
-                              TextSpan(text: entry.value),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                )).toList(),
-              const SizedBox(height: 30),
+              const Divider(),
+              if (obs.characteristics.isNotEmpty)
+                ...obs.characteristics.entries.map((e) => _infoItem(Icons.eco_outlined, e.key, e.value)).toList(),
             ],
           ),
         ),
@@ -164,14 +129,17 @@ class BrowsePlantsScreen extends StatelessWidget {
     );
   }
 
-  Widget _infoRow(String label, String value) {
+  Widget _infoItem(IconData icon, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(width: 8),
-        Expanded(child: Text(value)),
-      ]),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: Colors.teal, size: 20),
+          const SizedBox(width: 15),
+          Expanded(child: Text("$label: $value", style: const TextStyle(fontSize: 16))),
+        ],
+      ),
     );
   }
 }

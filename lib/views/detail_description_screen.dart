@@ -1,8 +1,9 @@
+// lib/views/detail_description_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../models/plant_observation.dart';
 import '../viewmodels/plants_view_model.dart';
+import '../models/description_schema.dart';
 
 class DetailDescriptionScreen extends StatefulWidget {
   final PlantObservation observation;
@@ -13,12 +14,8 @@ class DetailDescriptionScreen extends StatefulWidget {
 }
 
 class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
-  // Kontrolery dla pól tekstowych
   final Map<String, TextEditingController> _controllers = {};
-
-  String? _selectedAbundance;
   String? _selectedCertainty;
-  DateTime? _selectedDate;
 
   @override
   void initState() {
@@ -28,24 +25,19 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
 
   void _initData() {
     final obs = widget.observation;
-    // Inicjalizacja kontrolerów danymi z modelu
     _controllers['family'] = TextEditingController(text: obs.family);
     _controllers['genus'] = TextEditingController(text: obs.genus);
     _controllers['species'] = TextEditingController(text: obs.species);
     _controllers['subspecies'] = TextEditingController(text: obs.subspecies);
-    _controllers['latinName'] = TextEditingController(text: obs.latinName);
-    _controllers['polishName'] = TextEditingController(text: obs.polishName);
     _controllers['localName'] = TextEditingController(text: obs.localName);
     _controllers['idDoubts'] = TextEditingController(text: obs.idDoubts);
     _controllers['keyTraits'] = TextEditingController(text: obs.keyMorphologicalTraits);
-    _controllers['microTraits'] = TextEditingController(text: obs.microscopicTraits);
-    _controllers['diffs'] = TextEditingController(text: obs.differences);
     _controllers['confusing'] = TextEditingController(text: obs.confusingSpecies);
+    _controllers['characteristic'] = TextEditingController(text: obs.characteristicFeature);
     _controllers['usage'] = TextEditingController(text: obs.plantUsage);
+    _controllers['cultivation'] = TextEditingController(text: obs.cultivation);
 
-    _selectedAbundance = obs.abundance;
     _selectedCertainty = obs.certainty;
-    _selectedDate = obs.observationDate;
   }
 
   @override
@@ -55,16 +47,18 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
-          _buildCoreInfoSection(),
-          const Divider(),
-          _buildTaxonomySection(),
-          _buildNamingSection(),
-          _buildCertaintySection(),
-          _buildDiagnosticSection(),
-          _buildUsageSection(),
+          _buildFieldObservationSummary(), // Podgląd cech z terenu
+          const Divider(height: 40, thickness: 2),
+          _buildNamingSection(), // 1. Nazewnictwo
+          _buildCertaintySection(), // 2. Pewność
+          _buildUsageSection(), // 3. Wykorzystanie
           const SizedBox(height: 30),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, padding: const EdgeInsets.all(15)),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.all(15)
+            ),
             onPressed: _saveAndGoBack,
             child: const Text("ZAPISZ I WRÓĆ", style: TextStyle(fontWeight: FontWeight.bold)),
           ),
@@ -74,53 +68,62 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
     );
   }
 
-  // --- SEKCJE FORMULARZA ---
+  // --- PODGLĄD CECH TERENOWYCH ---
+  Widget _buildFieldObservationSummary() {
+    final obs = widget.observation;
+    if (obs.characteristics.isEmpty) return const SizedBox.shrink();
 
-  Widget _buildCoreInfoSection() {
-    return Column(children: [
-      DropdownButtonFormField<String>(
-        decoration: const InputDecoration(labelText: "Ilościowość (Braun-Blanquet)"),
-        value: _selectedAbundance,
-        items: ['5', '4', '3', '2', '1', 'r', '+'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-        onChanged: (v) => setState(() => _selectedAbundance = v),
-      ),
-      ListTile(
-        title: Text(_selectedDate == null ? "Data obserwacji" : "Data: ${DateFormat('yyyy-MM-dd').format(_selectedDate!)}"),
-        trailing: const Icon(Icons.calendar_today),
-        onTap: () async {
-          DateTime? p = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100));
-          if (p != null) setState(() => _selectedDate = p);
-        },
-      ),
-    ]);
-  }
+    // Mapujemy surowe cechy na nagłówki ze schematu
+    final schema = SchemaGenerator.getForType(obs.biologicalType ?? "Zielona");
 
-  Widget _buildTaxonomySection() {
     return ExpansionTile(
-      title: const Text("A. Pozycja systematyczna"),
-      children: [
-        _inputField(_controllers['family']!, "Rodzina (Familia)"),
-        _inputField(_controllers['genus']!, "Rodzaj (Genus)"),
-        _inputField(_controllers['species']!, "Gatunek (Species)"),
-        _inputField(_controllers['subspecies']!, "Podgatunek / odmiana"),
-      ],
+      initiallyExpanded: true,
+      title: const Text("Cechy zaobserwowane w terenie", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
+      children: schema.map((category) {
+        // Sprawdzamy czy w tej kategorii są jakieś wybrane cechy
+        final entries = category.subCategories.keys
+            .where((subKey) => obs.characteristics.containsKey(subKey))
+            .map((subKey) => "${subKey}: ${obs.characteristics[subKey]}")
+            .toList();
+
+        if (entries.isEmpty) return const SizedBox.shrink();
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("${category.number}. ${category.title}", style: const TextStyle(fontWeight: FontWeight.bold)),
+              ...entries.map((e) => Padding(
+                padding: const EdgeInsets.only(left: 12.0),
+                child: Text("- $e", style: const TextStyle(fontSize: 14)),
+              )),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 
+  // --- NOWE SEKCJE FORMULARZA ---
+
   Widget _buildNamingSection() {
     return ExpansionTile(
-      title: const Text("B. Nazewnictwo"),
+      title: const Text("1. Nazewnictwo (wymagane)"),
       children: [
-        _inputField(_controllers['latinName']!, "Nazwa łacińska"),
-        _inputField(_controllers['polishName']!, "Nazwa polska"),
-        _inputField(_controllers['localName']!, "Nazwa zwyczajowa / lokalna", hint: "Ta nazwa będzie głównym identyfikatorem"),
+        _inputField(_controllers['localName']!, "Nazwa (Główna)", hint: "Np. Babka lancetowata"),
+        _inputField(_controllers['family']!, "Rodzina (Familia)"),
+        _inputField(_controllers['genus']!, "Rodzaj (Genus)"),
+        _inputField(_controllers['species']!, "Gatunek (Species)"),
+        _inputField(_controllers['subspecies']!, "Odmiana (opcjonalnie)"),
       ],
     );
   }
 
   Widget _buildCertaintySection() {
     return ExpansionTile(
-      title: const Text("C. Stopień pewności"),
+      title: const Text("2. Pewność"),
       children: [
         DropdownButtonFormField<String>(
           value: _selectedCertainty,
@@ -128,68 +131,63 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
           onChanged: (v) => setState(() => _selectedCertainty = v),
           decoration: const InputDecoration(labelText: "Stopień pewności"),
         ),
-        _inputField(_controllers['idDoubts']!, "Ewentualne wątpliwości", isLong: true),
-      ],
-    );
-  }
-
-  Widget _buildDiagnosticSection() {
-    return ExpansionTile(
-      title: const Text("D. Cechy diagnostyczne"),
-      children: [
-        _inputField(_controllers['keyTraits']!, "Cechy morfologiczne kluczowe", isLong: true),
-        _inputField(_controllers['microTraits']!, "Cechy mikroskopowe", isLong: true),
-        _inputField(_controllers['diffs']!, "Różnice względem gatunków podobnych", isLong: true),
-        _inputField(_controllers['confusing']!, "Gatunki mylone z...", isLong: true),
+        _inputField(_controllers['idDoubts']!, "Wątpliwość", isLong: true),
+        _inputField(_controllers['keyTraits']!, "Cechy morfologiczne", isLong: true),
+        _inputField(_controllers['confusing']!, "Gatunki mylone z..."),
+        _inputField(_controllers['characteristic']!, "Cecha charakterystyczna"),
       ],
     );
   }
 
   Widget _buildUsageSection() {
     return ExpansionTile(
-      title: const Text("E. Wykorzystanie rośliny"),
+      title: const Text("3. Wykorzystanie"),
       children: [
-        _inputField(_controllers['usage']!, "Opisz zastosowanie", isLong: true),
+        _inputField(_controllers['usage']!, "Zastosowanie", isLong: true),
+        _inputField(_controllers['cultivation']!, "Hodowla", isLong: true),
       ],
     );
   }
-
-  // --- POMOCNICZE ---
 
   Widget _inputField(TextEditingController controller, String label, {bool isLong = false, String? hint}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 10),
       child: TextField(
         controller: controller,
-        maxLines: isLong ? 3 : 1,
-        decoration: InputDecoration(labelText: label, hintText: hint, border: const OutlineInputBorder()),
+        maxLines: isLong ? null : 1,
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          border: const OutlineInputBorder(),
+          alignLabelWithHint: true,
+        ),
       ),
     );
   }
 
   void _saveAndGoBack() {
-    final vm = context.read<PlantsViewModel>();
-    final obs = widget.observation;
+    if (_controllers['localName']!.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Pole 'Nazwa' w sekcji Nazewnictwo jest wymagane!")),
+      );
+      return;
+    }
 
-    // Przekazujemy wszystkie nowe dane do ViewModelu (musimy tam zaktualizować metodę update)
+    final vm = context.read<PlantsViewModel>();
     vm.updateObservationDetailed(
-      id: obs.id,
-      abundance: _selectedAbundance,
-      date: _selectedDate,
+      id: widget.observation.id,
       family: _controllers['family']!.text,
       genus: _controllers['genus']!.text,
       species: _controllers['species']!.text,
       subspecies: _controllers['subspecies']!.text,
-      latinName: _controllers['latinName']!.text,
-      polishName: _controllers['polishName']!.text,
       localName: _controllers['localName']!.text,
       certainty: _selectedCertainty,
       doubts: _controllers['idDoubts']!.text,
       keyTraits: _controllers['keyTraits']!.text,
-      microTraits: _controllers['microTraits']!.text,
-      diffs: _controllers['diffs']!.text,
       confusing: _controllers['confusing']!.text,
+      characteristic: _controllers['characteristic']!.text,
       usage: _controllers['usage']!.text,
+      cultivation: _controllers['cultivation']!.text,
     );
 
     Navigator.pop(context);

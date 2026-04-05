@@ -1,88 +1,75 @@
+// lib/models/description_schema.dart
+
 class DescriptionCategory {
-  final String letter;
+  final String number;
   final String title;
   final Map<String, List<String>> subCategories;
 
-  DescriptionCategory({required this.letter, required this.title, required this.subCategories});
+  DescriptionCategory({required this.number, required this.title, required this.subCategories});
 }
 
-final List<DescriptionCategory> plantDescriptionSchema = [
-  DescriptionCategory(
-    letter: "A",
-    title: "Pokrój ogólny (habitus)",
-    subCategories: {
-      "Typ biologiczny": ["drzewo", "krzew", "krzewinka", "bylina", "jednoroczna", "dwuletnia"],
-      "Forma wzrostu": ["wyprostowana", "płożąca", "pnąca", "kępkowa", "rozetowa", "darniowa"],
-      "Gęstość": ["luźna", "zwarta", "bardzo zwarta"],
-      "Symetria": ["symetryczna", "asymetryczna"],
-      "Architektura pędów": ["monopodialna", "sympodialna", "dychotomiczne"],
-      "Stopień rozgałęzienia": ["słabe", "średnie", "silne"],
-    },
-  ),
-  DescriptionCategory(
-    letter: "B",
-    title: "System korzeniowy",
-    subCategories: {
-      "Typ": ["palowy", "wiązowy", "sercowaty", "kłączowy"],
-      "Głębokość": ["płytki", "średni", "głęboki"],
-      "Obecność organów": ["bulwy", "kłącza", "cebule", "brak"],
-    },
-  ),
-  DescriptionCategory(
-    letter: "C",
-    title: "Łodyga / pęd",
-    subCategories: {
-      "Typ pędu": ["zielny", "zdrewniały", "półzdrewniały"],
-      "Kształt": ["okrągły", "kanciasty", "bruzdowany", "spłaszczony"],
-      "Powierzchnia": ["gładka", "owłosiona", "szorstka", "lepka", "woskowa"],
-      "Owłosienie": ["brak", "rzadkie", "gęste"],
-      "Typ włosków": ["proste", "gruczołowe", "haczykowate", "kutnerowate"],
-      "Barwa": ["zielona", "brunatna", "czerwonawa", "sina"],
-    },
-  ),
-  DescriptionCategory(
-    letter: "D",
-    title: "Liście",
-    subCategories: {
-      "Ulistnienie": ["skrętoległe", "naprzeciwległe", "okółkowe"],
-      "Typ liścia": ["pojedynczy", "pierzasty", "dłoniasty"],
-      "Kształt blaszki": ["Igiełkowy", "lancetowaty", "eliptyczny", "jajowaty", "sercowaty", "nerkowy"],
-      "Brzeg liścia": ["całobrzegi", "piłkowany", "ząbkowany", "karbowany", "falisty", "kolczasty"],
-      "Unerwienie": ["pierzaste", "dłoniaste", "równoległe"],
-      "Wcięcie": ["Wrębne", "Dzielne", "klapowate", "sieczne"],
-    },
-  ),
-  DescriptionCategory(
-    letter: "E",
-    title: "Kwiaty / kwiatostany",
-    subCategories: {
-      "Obecność": ["brak", "obecne"],
-      "Typ kwiatostanu": ["grono", "wiecha", "baldach", "koszyczek", "kłos", "główka"],
-      "Symetria": ["promienista", "grzbiecista"],
-      "Zapach": ["brak", "słaby", "intensywny"],
-    },
-  ),
-  DescriptionCategory(
-    letter: "F",
-    title: "Owoce i nasiona",
-    subCategories: {
-      "Typ owocu": ["jagoda", "orzech", "torebka", "niełupka", "strąk"],
-      "Rozsiewanie": ["wiatr", "zwierzęta", "autochoria"],
-    },
-  ),
-  DescriptionCategory(
-    letter: "I",
-    title: "Pokrycie i ilościowość",
-    subCategories: {
-      "Ilościowość": ["5 (75-100%)", "4 (50-75%)", "3 (25-50%)", "2 (5-25%)", "1 (<5%)", "r (poj.)"],
-      "Rozmieszczenie": ["równomierne", "skupiskowe", "losowe"],
-    },
-  ),
-  DescriptionCategory(
-    letter: "J",
-    title: "Warstwa fitosocjologiczna",
-    subCategories: {
-      "Warstwa": ["drzew (A)", "krzewów (B)", "runa (C)", "mszystej (D)"],
-    },
-  ),
-];
+class SchemaGenerator {
+  static List<DescriptionCategory> getForType(String type) {
+    switch (type) {
+      case "Zielona":
+        return _herbaceousSchema();
+    // Tu w przyszłości dodasz _treeSchema(), _shrubSchema() itd.
+      default:
+        return _herbaceousSchema();
+    }
+  }
+
+  static List<DescriptionCategory> _herbaceousSchema() {
+    return [
+      DescriptionCategory(
+        number: "1",
+        title: "System korzeniowy",
+        subCategories: {
+          "Typ": ["palowy", "wiązowy", "sercowaty", "kłączowy"],
+          "Głębokość": ["płytki", "średni", "głęboki"],
+          "Organy ziemne": ["bulwy", "kłącza", "cebule", "brak"],
+        },
+      ),
+      DescriptionCategory(
+        number: "2",
+        title: "Łodyga",
+        subCategories: {
+          "Typ pędu": ["zielny", "zdrewniały", "półzdrewniały"],
+          "Kształt (przekrój)": ["okrągły", "kanciasty", "bruzdowany", "spłaszczony"],
+          "Powierzchnia": ["gładka", "owłosiona", "szorstka", "lepka", "woskowa"],
+          "Włoski": ["proste", "gruczołowe", "haczykowate", "kutnerowate"],
+          "Barwa": ["zielona", "brunatna", "czerwonawa", "sina"],
+        },
+      ),
+      DescriptionCategory(
+        number: "3",
+        title: "Liście",
+        subCategories: {
+          "Ulistnienie": ["skrętoległe", "naprzeciwległe", "okółkowe"],
+          "Typ liścia": ["pojedynczy", "pierzasty", "dłoniasty"],
+          "Kształt blaszki": ["Igiełkowy", "równowąski", "lancetowaty", "eliptyczny", "jajowaty", "sercowaty", "Łopatowaty", "iwalny", "Odwrotnie jajowaty", "strzałkowaty", "nerkowy"],
+          "Brzeg liścia": ["całobrzegi", "piłkowany", "ząbkowany", "karbowany", "falisty", "kolczasty"],
+          "Unerwienie": ["pierzaste", "dłoniaste", "równoległe"],
+          "Wcięcie liścia": ["Wrębne", "Dzielne", "klapowate", "sieczne"],
+        },
+      ),
+      DescriptionCategory(
+        number: "4",
+        title: "Kwiatostany",
+        subCategories: {
+          "Obecność": ["Brak", "Obecne", "Obecne nierozwinięte"],
+          "Typ kwiatostanu": ["grono", "wiecha", "baldach", "koszyczek", "kłos", "główka"],
+          "Zapach": ["brak", "słaby", "intensywny"],
+        },
+      ),
+      DescriptionCategory(
+        number: "5",
+        title: "Owoce",
+        subCategories: {
+          "Typ owocu": ["jagoda", "orzech", "torebka", "niełupka", "strąk"],
+          "Smak": ["gorzki", "słodki", "cierpki", "słony", "pikantny"],
+        },
+      ),
+    ];
+  }
+}
