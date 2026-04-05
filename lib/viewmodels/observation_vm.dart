@@ -19,6 +19,7 @@ class ObservationViewModel extends ChangeNotifier {
   bool get canTakePhoto => _currentPhotoPaths.length < 3;
   bool get isInitializing => _isInitializing;
   CameraController? get controller => _cameraService.controller;
+  Position? get currentPosition => _currentPosition;
   // Inicjalizacja serwisów
   Future<void> init() async {
     _isInitializing = true;

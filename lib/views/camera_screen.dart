@@ -3,6 +3,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/observation_vm.dart';
+import 'form_screen.dart';
 
 class CameraScreen extends StatelessWidget {
   const CameraScreen({super.key});
@@ -91,7 +92,10 @@ class CameraScreen extends StatelessWidget {
                   child: FloatingActionButton(
                     backgroundColor: Colors.green,
                     onPressed: () {
-                      // Tutaj przejdziemy do wyboru cech rośliny
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const FormScreen()),
+                      );
                     },
                     child: const Icon(Icons.arrow_forward),
                   ),
