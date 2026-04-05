@@ -6,15 +6,16 @@ class PlantsViewModel extends ChangeNotifier {
   final StorageService _storage = StorageService();
   List<PlantObservation> _observations = [];
   DateTime? _filterDate;
-
   final List<String> _selectedPlantNames = [];
 
   List<PlantObservation> get allObservations => _observations;
   List<String> get selectedPlantNames => _selectedPlantNames;
 
+  // Lista do "Opisz Spotkane Rośliny" (rośliny bez nazwy/daty)
   List<PlantObservation> get incompleteObservations =>
       _observations.where((obs) => !obs.isComplete).toList();
 
+  // Lista do "Magazynu Roślin" (filtrowanie datą)
   List<PlantObservation> get filteredCompleteObservations {
     var list = _observations.where((obs) => obs.isComplete).toList();
     if (_filterDate != null) {
@@ -27,17 +28,18 @@ class PlantsViewModel extends ChangeNotifier {
     return list;
   }
 
-  // Logika dla Mapy: Pokaż tylko te, których nazwa (displayName) jest zaznaczona
+  // Logika dla Mapy: Pusta mapa na start, pokazuje tylko zaznaczone gatunki
   List<PlantObservation> get mapFilteredObservations {
     var allComplete = _observations.where((obs) => obs.isComplete).toList();
     if (_selectedPlantNames.isEmpty) return [];
     return allComplete.where((obs) => _selectedPlantNames.contains(obs.displayName)).toList();
   }
 
+  // Pobieranie unikalnych nazw do listy filtrów na mapie
   List<String> get uniquePlantNames {
     return _observations
         .where((obs) => obs.isComplete && obs.displayName != "Nieznana roślina")
-        .map<String>((obs) => obs.displayName) // Jawne rzutowanie na String
+        .map<String>((obs) => obs.displayName)
         .toSet()
         .toList();
   }
@@ -67,6 +69,7 @@ class PlantsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ROZBUDOWANA METODA AKTUALIZACJI (Szczegółowa Identyfikacja)
   void updateObservationDetailed({
     required String id,
     String? family,
@@ -98,7 +101,7 @@ class PlantsViewModel extends ChangeNotifier {
         coverage: old.coverage,
         vitality: old.vitality,
         sociability: old.sociability,
-        observationDate: old.observationDate, // Zachowujemy datę z terenu
+        observationDate: old.observationDate,
         family: family,
         genus: genus,
         species: species,
@@ -116,6 +119,7 @@ class PlantsViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   void deleteObservation(String id) {
     _observations.removeWhere((o) => o.id == id);
     _storage.saveObservations(_observations);

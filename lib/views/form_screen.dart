@@ -6,31 +6,33 @@ import '../viewmodels/plants_view_model.dart';
 import '../models/description_schema.dart';
 
 class FormScreen extends StatefulWidget {
-  const FormScreen({super.key});
+  final PlantObservation observation;
+  const FormScreen({super.key, required this.observation});
 
   @override
   State<FormScreen> createState() => _FormScreenState();
 }
 
 class _FormScreenState extends State<FormScreen> {
-  // Przechowujemy wybory w mapie: "Kategoria_Podkategoria" -> "Wybrana Wartość"
   final Map<String, String> _selectedValues = {};
 
   @override
   Widget build(BuildContext context) {
+    final schema = SchemaGenerator.getForType(widget.observation.biologicalType ?? "Zielona");
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Szczegółowy opis terenu')),
+      appBar: AppBar(title: Text('Opis: ${widget.observation.biologicalType}')),
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
-              itemCount: plantDescriptionSchema.length,
+              itemCount: schema.length,
               itemBuilder: (context, index) {
-                final category = plantDescriptionSchema[index];
+                final category = schema[index];
                 return ExpansionTile(
                   leading: CircleAvatar(
                     backgroundColor: Colors.green,
-                    child: Text(category.letter, style: const TextStyle(color: Colors.white)),
+                    child: Text(category.number, style: const TextStyle(color: Colors.white)),
                   ),
                   title: Text(category.title, style: const TextStyle(fontWeight: FontWeight.bold)),
                   children: category.subCategories.entries.map((sub) {
@@ -63,7 +65,7 @@ class _FormScreenState extends State<FormScreen> {
                 onTap: () {
                   setState(() {
                     if (isSelected) {
-                      _selectedValues.remove(title); // Możliwość odznaczenia
+                      _selectedValues.remove(title);
                     } else {
                       _selectedValues[title] = opt;
                     }
@@ -76,13 +78,7 @@ class _FormScreenState extends State<FormScreen> {
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: isSelected ? Colors.green : Colors.grey.shade400),
                   ),
-                  child: Text(
-                    opt,
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.black87,
-                      fontSize: 13,
-                    ),
-                  ),
+                  child: Text(opt, style: TextStyle(color: isSelected ? Colors.white : Colors.black87)),
                 ),
               );
             }).toList(),
@@ -97,42 +93,46 @@ class _FormScreenState extends State<FormScreen> {
       padding: const EdgeInsets.all(16),
       width: double.infinity,
       child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.green,
-          padding: const EdgeInsets.symmetric(vertical: 15),
-        ),
-        onPressed: _pokazPodsumowanie,
-        child: const Text("ZAPISZ DANE TERENOWE", style: TextStyle(color: Colors.white)),
+        style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+        onPressed: _zapiszFinalnie,
+        child: const Text("ZAPISZ OBSERWACJĘ TERENOWĄ", style: TextStyle(color: Colors.white)),
       ),
     );
   }
 
-  void _pokazPodsumowanie() {
-    final obsVm = context.read<ObservationViewModel>();
+  void _zapiszFinalnie() {
+    final now = DateTime.now();
 
-    final newObs = PlantObservation(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      photoPaths: List.from(obsVm.currentPhotoPaths),
-      latitude: obsVm.currentPosition?.latitude ?? 0.0,
-      longitude: obsVm.currentPosition?.longitude ?? 0.0,
-      timestamp: DateTime.now(),
-      characteristics: Map.from(_selectedValues), // Zapis strukturalny
+    // Tworzymy finalny obiekt z cechami z terenu oraz ustawioną datą obserwacji
+    final finalObs = PlantObservation(
+      id: widget.observation.id,
+      photoPaths: widget.observation.photoPaths,
+      latitude: widget.observation.latitude,
+      longitude: widget.observation.longitude,
+      timestamp: widget.observation.timestamp,
+      characteristics: Map.from(_selectedValues),
+      biologicalType: widget.observation.biologicalType,
+      phytosociologicalLayer: widget.observation.phytosociologicalLayer,
+      abundance: widget.observation.abundance,
+      coverage: widget.observation.coverage,
+      vitality: widget.observation.vitality,
+      sociability: widget.observation.sociability,
+      observationDate: now, // Kluczowe dla isComplete
     );
 
-    context.read<PlantsViewModel>().addObservation(newObs);
+    context.read<PlantsViewModel>().addObservation(finalObs);
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         title: const Text("Zapisano!"),
-        content: Text("Zebrano opis dla ${newObs.characteristics.length} cech. Roślina czeka w kolejce na pełną identyfikację."),
+        content: const Text("Dane terenowe zostały zapisane. Roślina czeka na identyfikację w menu 'Opisz spotkane rośliny'."),
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.of(ctx).pop();
-              Navigator.of(context).pop();
-              obsVm.reset();
+              context.read<ObservationViewModel>().reset();
+              Navigator.of(context).popUntil((route) => route.isFirst);
             },
             child: const Text("OK"),
           )

@@ -1,5 +1,3 @@
-// lib/models/description_schema.dart
-
 class DescriptionCategory {
   final String number;
   final String title;
@@ -10,13 +8,9 @@ class DescriptionCategory {
 
 class SchemaGenerator {
   static List<DescriptionCategory> getForType(String type) {
-    switch (type) {
-      case "Zielona":
-        return _herbaceousSchema();
-    // Tu w przyszłości dodasz _treeSchema(), _shrubSchema() itd.
-      default:
-        return _herbaceousSchema();
-    }
+    if (type == "Zielona") return _herbaceousSchema();
+    // Domyślnie zwraca zielne, dopóki nie dodasz drzew/krzewów
+    return _herbaceousSchema();
   }
 
   static List<DescriptionCategory> _herbaceousSchema() {
@@ -34,7 +28,7 @@ class SchemaGenerator {
         number: "2",
         title: "Łodyga",
         subCategories: {
-          "Typ pędu": ["zielny", "zdrewniały", "półzdrewniały"],
+          "Typ łodygi": ["zielna", "zdrewniała", "półzdrewniała"],
           "Kształt (przekrój)": ["okrągły", "kanciasty", "bruzdowany", "spłaszczony"],
           "Powierzchnia": ["gładka", "owłosiona", "szorstka", "lepka", "woskowa"],
           "Włoski": ["proste", "gruczołowe", "haczykowate", "kutnerowate"],
@@ -47,10 +41,10 @@ class SchemaGenerator {
         subCategories: {
           "Ulistnienie": ["skrętoległe", "naprzeciwległe", "okółkowe"],
           "Typ liścia": ["pojedynczy", "pierzasty", "dłoniasty"],
-          "Kształt blaszki": ["Igiełkowy", "równowąski", "lancetowaty", "eliptyczny", "jajowaty", "sercowaty", "Łopatowaty", "iwalny", "Odwrotnie jajowaty", "strzałkowaty", "nerkowy"],
-          "Brzeg liścia": ["całobrzegi", "piłkowany", "ząbkowany", "karbowany", "falisty", "kolczasty"],
+          "Kształt blaszki": ["Igiełkowy", "równowąski", "lancetowaty", "eliptyczny", "jajowaty", "sercowaty", "Łopatowaty", "owalny", "Odwrotnie jajowaty", "strzałkowaty", "nerkowy"],
+          "Brzeg Liścia": ["całobrzegi", "piłkowany", "ząbkowany", "karbowany", "falisty", "kolczasty"],
           "Unerwienie": ["pierzaste", "dłoniaste", "równoległe"],
-          "Wcięcie liścia": ["Wrębne", "Dzielne", "klapowate", "sieczne"],
+          "Wcięcie": ["Wrębne", "Dzielne", "klapowate", "sieczne"],
         },
       ),
       DescriptionCategory(
@@ -58,7 +52,7 @@ class SchemaGenerator {
         title: "Kwiatostany",
         subCategories: {
           "Obecność": ["Brak", "Obecne", "Obecne nierozwinięte"],
-          "Typ kwiatostanu": ["grono", "wiecha", "baldach", "koszyczek", "kłos", "główka"],
+          "Typ Kwiatostanu": ["grono", "wiecha", "baldach", "koszyczek", "kłos", "główka"],
           "Zapach": ["brak", "słaby", "intensywny"],
         },
       ),

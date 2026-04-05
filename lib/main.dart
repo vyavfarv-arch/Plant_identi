@@ -10,7 +10,7 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ObservationViewModel()..init()),
+        ChangeNotifierProvider(create: (_) => ObservationViewModel()),
         ChangeNotifierProvider(create: (_) => PlantsViewModel()..loadFromDisk()),
       ],
       child: const MyApp(),
@@ -25,17 +25,17 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Plant ID',
+      title: 'Plantifikator',
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         appBarTheme: const AppBarTheme(
           centerTitle: true,
           backgroundColor: Colors.green,
-          foregroundColor: Colors.white,
+          foregroundColor: Colors.black,
         ),
       ),
-      // ZMIANA: Startujemy od menu głównego
+
       home: const HomeScreen(),
     );
   }

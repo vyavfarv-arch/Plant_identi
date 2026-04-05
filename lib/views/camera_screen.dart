@@ -3,10 +3,29 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/observation_vm.dart';
-import 'form_screen.dart';
+import 'classification_screen.dart';
 
-class CameraScreen extends StatelessWidget {
+class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
+
+  @override
+  State<CameraScreen> createState() => _CameraScreenState();
+}
+
+class _CameraScreenState extends State<CameraScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Inicjalizuj aparat po zbudowaniu pierwszej klatki
+    Future.microtask(() => context.read<ObservationViewModel>().init());
+  }
+
+  @override
+  void dispose() {
+    // VM zajmuje się dispose kontrolera wewnątrz swojej metody dispose,
+    // ale możemy tu dodać logikę zatrzymania streamu klatek jeśli to konieczne.
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,19 +33,15 @@ class CameraScreen extends StatelessWidget {
       backgroundColor: Colors.black,
       body: Consumer<ObservationViewModel>(
         builder: (context, vm, child) {
-          // 1. Sprawdzamy czy aparat się jeszcze ładuje
-          if (vm.isInitializing) {
+          if (vm.isInitializing || vm.controller == null || !vm.controller!.value.isInitialized) {
             return const Center(child: CircularProgressIndicator(color: Colors.white));
           }
 
           return Stack(
             children: [
-              // 2. Podgląd z aparatu (na cały ekran)
               Center(
                 child: CameraPreview(vm.controller!),
               ),
-
-              // 3. Miniaturki zrobionych zdjęć (na górze)
               Positioned(
                 top: 50,
                 left: 10,
@@ -50,8 +65,6 @@ class CameraScreen extends StatelessWidget {
                   }).toList(),
                 ),
               ),
-
-              // 4. Dolny panel sterowania
               Positioned(
                 bottom: 40,
                 left: 0,
@@ -83,8 +96,6 @@ class CameraScreen extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // 5. Przycisk Dalej (pojawia się gdy mamy min. 1 zdjęcie)
               if (vm.currentPhotoPaths.isNotEmpty)
                 Positioned(
                   bottom: 55,
@@ -94,7 +105,7 @@ class CameraScreen extends StatelessWidget {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const FormScreen()),
+                        MaterialPageRoute(builder: (context) => const ClassificationScreen()),
                       );
                     },
                     child: const Icon(Icons.arrow_forward),

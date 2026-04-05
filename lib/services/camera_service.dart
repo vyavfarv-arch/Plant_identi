@@ -1,5 +1,5 @@
 import 'package:camera/camera.dart';
-// USUNIĘTO: import 'views/form_screen.dart'; – serwis nie musi znać widoków
+
 
 class CameraService {
   CameraController? _controller;
@@ -7,12 +7,18 @@ class CameraService {
 
   // Inicjalizacja aparatu
   Future<void> initCamera() async {
+    // Jeśli kontroler już istnieje, najpierw go zamknij
+    if (_controller != null) {
+      await _controller!.dispose();
+      _controller = null;
+    }
+
     _cameras = await availableCameras();
     if (_cameras != null && _cameras!.isNotEmpty) {
       _controller = CameraController(
         _cameras![0],
         ResolutionPreset.medium,
-        enableAudio: false, // Opcjonalnie: wyłączenie audio oszczędza zasoby przy samych zdjęciach
+        enableAudio: false,
       );
       await _controller!.initialize();
     }

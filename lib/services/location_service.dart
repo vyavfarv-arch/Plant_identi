@@ -1,33 +1,27 @@
 import 'package:geolocator/geolocator.dart';
 
 class LocationService {
-  // Pobieranie aktualnej pozycji użytkownika
   Future<Position?> getCurrentLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    // 1. Sprawdź czy usługi lokalizacji są włączone
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      return null; // GPS jest wyłączony
+      return Future.error('GPS jest wyłączony w urządzeniu.');
     }
 
-    // 2. Sprawdź uprawnienia
-    permission = await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        return null; // Użytkownik odrzucił prośbę
+        return Future.error('Brak uprawnień do lokalizacji.');
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      return null; // Użytkownik zablokował uprawnienia na stałe
+      return Future.error('Lokalizacja została trwale zablokowana.');
     }
 
-    // 3. Pobierz pozycję
     return await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high
+      desiredAccuracy: LocationAccuracy.best,
+      timeLimit: const Duration(seconds: 10),
     );
   }
 }
