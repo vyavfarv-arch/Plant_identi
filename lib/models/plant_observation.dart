@@ -6,12 +6,35 @@ class PlantObservation {
   final double latitude;
   final double longitude;
   final DateTime timestamp;
-  final List<String> characteristics;
+  final Map<String, String> characteristics; // Fizjonomia (to co robiliśmy wcześniej)
 
-  // NOWE POLA:
+  // NOWE POLA SZCZEGÓŁOWEGO OPISU:
   String? abundance;
-  String? plantName;
   DateTime? observationDate;
+
+  // A. Taksonomia
+  String? family;
+  String? genus;
+  String? species;
+  String? subspecies;
+
+  // B. Nazewnictwo
+  String? latinName;
+  String? polishName;
+  String? localName; // To pole będzie główną nazwą wyświetlaną
+
+  // C. Pewność
+  String? certainty; // wysoki / średni / niski
+  String? idDoubts;
+
+  // D. Cechy diagnostyczne
+  String? keyMorphologicalTraits;
+  String? microscopicTraits;
+  String? differences;
+  String? confusingSpecies;
+
+  // E. Wykorzystanie
+  String? plantUsage;
 
   PlantObservation({
     required this.id,
@@ -21,14 +44,31 @@ class PlantObservation {
     required this.timestamp,
     required this.characteristics,
     this.abundance,
-    this.plantName,
     this.observationDate,
+    this.family,
+    this.genus,
+    this.species,
+    this.subspecies,
+    this.latinName,
+    this.polishName,
+    this.localName,
+    this.certainty,
+    this.idDoubts,
+    this.keyMorphologicalTraits,
+    this.microscopicTraits,
+    this.differences,
+    this.confusingSpecies,
+    this.plantUsage,
   });
 
-  // Czy roślina jest już w pełni opisana?
+  // Pomocniczy getter do wyświetlania nazwy w menu i na mapie
+  String get displayName => (localName != null && localName!.isNotEmpty)
+      ? localName!
+      : (polishName != null && polishName!.isNotEmpty) ? polishName! : "Nieznana roślina";
+
   bool get isComplete =>
       abundance != null &&
-          plantName != null && plantName!.isNotEmpty &&
+          displayName != "Nieznana roślina" &&
           observationDate != null;
 
   Map<String, dynamic> toMap() {
@@ -40,8 +80,21 @@ class PlantObservation {
       'timestamp': timestamp.toIso8601String(),
       'characteristics': jsonEncode(characteristics),
       'abundance': abundance,
-      'plantName': plantName,
       'observationDate': observationDate?.toIso8601String(),
+      'family': family,
+      'genus': genus,
+      'species': species,
+      'subspecies': subspecies,
+      'latinName': latinName,
+      'polishName': polishName,
+      'localName': localName,
+      'certainty': certainty,
+      'idDoubts': idDoubts,
+      'keyMorphologicalTraits': keyMorphologicalTraits,
+      'microscopicTraits': microscopicTraits,
+      'differences': differences,
+      'confusingSpecies': confusingSpecies,
+      'plantUsage': plantUsage,
     };
   }
 
@@ -52,12 +105,23 @@ class PlantObservation {
       latitude: map['latitude']?.toDouble() ?? 0.0,
       longitude: map['longitude']?.toDouble() ?? 0.0,
       timestamp: DateTime.parse(map['timestamp']),
-      characteristics: List<String>.from(jsonDecode(map['characteristics'])),
+      characteristics: Map<String, String>.from(jsonDecode(map['characteristics'])),
       abundance: map['abundance'],
-      plantName: map['plantName'],
-      observationDate: map['observationDate'] != null
-          ? DateTime.parse(map['observationDate'])
-          : null,
+      observationDate: map['observationDate'] != null ? DateTime.parse(map['observationDate']) : null,
+      family: map['family'],
+      genus: map['genus'],
+      species: map['species'],
+      subspecies: map['subspecies'],
+      latinName: map['latinName'],
+      polishName: map['polishName'],
+      localName: map['localName'],
+      certainty: map['certainty'],
+      idDoubts: map['idDoubts'],
+      keyMorphologicalTraits: map['keyMorphologicalTraits'],
+      microscopicTraits: map['microscopicTraits'],
+      differences: map['differences'],
+      confusingSpecies: map['confusingSpecies'],
+      plantUsage: map['plantUsage'],
     );
   }
 }

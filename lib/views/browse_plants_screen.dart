@@ -84,33 +84,81 @@ class BrowsePlantsScreen extends StatelessWidget {
       ),
     );
   }
-
   void _showPlantCard(BuildContext context, PlantObservation obs) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (_) => Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(obs.plantName ?? "", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            const Divider(),
-            _infoRow("Ilościowość:", obs.abundance ?? "-"),
-            _infoRow("Cechy:", obs.characteristics.join(", ")),
-            _infoRow("GPS:", "${obs.latitude}, ${obs.longitude}"),
-            const SizedBox(height: 10),
-            Expanded(
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: obs.photoPaths.map((p) => Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: Image.file(File(p)),
-                )).toList(),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (_, controller) => Container(
+          padding: const EdgeInsets.all(20),
+          child: ListView(
+            controller: controller,
+            children: [
+              Center(child: Container(width: 40, height: 5, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10)))),
+              const SizedBox(height: 20),
+              Text(obs.plantName ?? "Bez nazwy", style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.green)),
+              const Divider(),
+
+              // Sekcja zdjęć
+              SizedBox(
+                height: 180,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: obs.photoPaths.length,
+                  itemBuilder: (ctx, i) => Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.file(File(obs.photoPaths[i]), width: 240, fit: BoxFit.cover),
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+
+              // Podstawowe informacje
+              _infoItem(Icons.analytics, "Ilościowość", obs.abundance ?? "-"),
+              _infoItem(Icons.calendar_today, "Data obserwacji", DateFormat('yyyy-MM-dd').format(obs.observationDate!)),
+              _infoItem(Icons.location_on, "GPS", "${obs.latitude.toStringAsFixed(6)}, ${obs.longitude.toStringAsFixed(6)}"),
+
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 15),
+                child: Text("Szczegóły morfologiczne:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+
+              // DYNAMICZNE WYŚWIETLANIE KATEGORII Z FORMULARZA
+              if (obs.characteristics.isEmpty)
+                const Text("Brak dodatkowych cech opisowych.")
+              else
+                ...obs.characteristics.entries.map((entry) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.label_important_outline, size: 20, color: Colors.teal),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: RichText(
+                          text: TextSpan(
+                            style: const TextStyle(color: Colors.black, fontSize: 15),
+                            children: [
+                              TextSpan(text: "${entry.key}: ", style: const TextStyle(fontWeight: FontWeight.bold)),
+                              TextSpan(text: entry.value),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )).toList(),
+              const SizedBox(height: 30),
+            ],
+          ),
         ),
       ),
     );

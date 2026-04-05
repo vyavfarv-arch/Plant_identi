@@ -50,7 +50,56 @@ class PlantsViewModel extends ChangeNotifier {
         .toSet()
         .toList();
   }
-
+  void updateObservationDetailed({
+    required String id,
+    String? abundance,
+    DateTime? date,
+    String? family,
+    String? genus,
+    String? species,
+    String? subspecies,
+    String? latinName,
+    String? polishName,
+    String? localName,
+    String? certainty,
+    String? doubts,
+    String? keyTraits,
+    String? microTraits,
+    String? diffs,
+    String? confusing,
+    String? usage,
+  }) {
+    final index = _observations.indexWhere((o) => o.id == id);
+    if (index != -1) {
+      final old = _observations[index];
+      _observations[index] = PlantObservation(
+        id: old.id,
+        photoPaths: old.photoPaths,
+        latitude: old.latitude,
+        longitude: old.longitude,
+        timestamp: old.timestamp,
+        characteristics: old.characteristics,
+        abundance: abundance,
+        observationDate: date,
+        family: family,
+        genus: genus,
+        species: species,
+        subspecies: subspecies,
+        latinName: latinName,
+        polishName: polishName,
+        localName: localName,
+        certainty: certainty,
+        idDoubts: doubts,
+        keyMorphologicalTraits: keyTraits,
+        microscopicTraits: microTraits,
+        differences: diffs,
+        confusingSpecies: confusing,
+        plantUsage: usage,
+      );
+      _storage.saveObservations(_observations);
+      notifyListeners();
+    }
+  }
   void toggleNameFilter(String name) {
     if (_selectedPlantNames.contains(name)) {
       _selectedPlantNames.remove(name);
