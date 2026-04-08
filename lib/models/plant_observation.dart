@@ -63,6 +63,7 @@ class PlantObservation {
     this.characteristicFeature,
     this.plantUsage,
     this.cultivation,
+    this.phytosociologicalStatus,
   });
 
   String get displayName => (localName != null && localName!.isNotEmpty)

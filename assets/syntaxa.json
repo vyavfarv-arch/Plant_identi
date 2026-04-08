@@ -1,0 +1,74 @@
+[
+  {
+    "id": "k1",
+    "name": "Klasa A (Lasy liściaste)",
+    "rank": "klasa",
+    "color": "#2E7D32",
+    "char_species": ["spec_a1"],
+    "diff_species": [],
+    "parent_id": null
+  },
+  {
+    "id": "r1",
+    "name": "Rząd A1",
+    "rank": "rzad",
+    "color": "#388E3C",
+    "char_species": ["spec_a2"],
+    "diff_species": [],
+    "parent_id": "k1"
+  },
+  {
+    "id": "z1",
+    "name": "Związek A1.1",
+    "rank": "zwiazek",
+    "color": "#43A047",
+    "char_species": ["spec_a3"],
+    "diff_species": [],
+    "parent_id": "r1"
+  },
+  {
+    "id": "assoc1",
+    "name": "Zespół A-etum",
+    "rank": "zespol",
+    "color": "#4CAF50",
+    "char_species": ["spec_a4"],
+    "diff_species": [],
+    "parent_id": "z1"
+  },
+  {
+    "id": "k2",
+    "name": "Klasa B (Łąki)",
+    "rank": "klasa",
+    "color": "#F9A825",
+    "char_species": ["spec_b1"],
+    "diff_species": [],
+    "parent_id": null
+  },
+  {
+    "id": "r2",
+    "name": "Rząd B1",
+    "rank": "rzad",
+    "color": "#FBC02D",
+    "char_species": ["spec_b2"],
+    "diff_species": [],
+    "parent_id": "k2"
+  },
+  {
+    "id": "z2",
+    "name": "Związek B1.1",
+    "rank": "zwiazek",
+    "color": "#FDD835",
+    "char_species": ["spec_b3"],
+    "diff_species": [],
+    "parent_id": "r2"
+  },
+  {
+    "id": "assoc2",
+    "name": "Zespół B-etum",
+    "rank": "zespol",
+    "color": "#FFEB3B",
+    "char_species": ["spec_b4"],
+    "diff_species": [],
+    "parent_id": "z2"
+  }
+]

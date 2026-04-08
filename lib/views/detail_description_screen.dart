@@ -126,24 +126,24 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
   }
 
   Widget _buildCertaintySection() {
-    const Padding(
-      padding: EdgeInsets.all(10.0),
-      child: Text("Status fitosocjologiczny:", style: TextStyle(fontWeight: FontWeight.bold)),
-    ),
-    Column(
-    children: ["Charakterystyczny", "Wyróżniający", "Popularny"].map((status) =>
-    RadioListTile<String>(
-    title: Text(status),
-    value: status,
-    groupValue: _selectedStatus,
-    onChanged: (v) => setState(() => _selectedStatus = v),
-    )
-    ).toList(),
-    )
     return ExpansionTile(
       title: const Text("Pewność"),
-
       children: [
+        const Padding(
+          padding: EdgeInsets.all(10.0),
+          child: Text("Status fitosocjologiczny:", style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+        Column(
+          children: ["Charakterystyczny", "Wyróżniający", "Popularny"].map((status) =>
+              RadioListTile<String>(
+                title: Text(status),
+                value: status,
+                groupValue: _selectedStatus,
+                onChanged: (v) => setState(() => _selectedStatus = v),
+              )
+          ).toList(),
+        ),
+        const Divider(),
         DropdownButtonFormField<String>(
           value: _selectedCertainty,
           items: ['wysoki', 'średni', 'niski'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),

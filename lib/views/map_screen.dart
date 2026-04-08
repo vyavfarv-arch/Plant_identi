@@ -6,6 +6,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/plants_view_model.dart';
 
+enum MapViewMode { plants, syntaxa }
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
 
@@ -14,8 +15,8 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  BitmapDescriptor? grassIcon,
-  enum MapViewMode { plants, syntaxa }
+  BitmapDescriptor? grassIcon;
+  MapViewMode _mode = MapViewMode.plants;
   String _selectedRank = "Zespół";
   @override
   void initState() {
@@ -80,54 +81,55 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _showFilterDialog(BuildContext context, PlantsViewModel vm) {
-  const Text("Tryb widoku:", style: TextStyle(fontWeight: FontWeight.bold)),
-  Row(
-  children: [
-  ChoiceChip(label: const Text("Rośliny"), selected: _mode == MapViewMode.plants, onSelected: (s) => setState(() => _mode = MapViewMode.plants)),
-  const SizedBox(width: 10),
-  ChoiceChip(label: const Text("Syntaksony"), selected: _mode == MapViewMode.syntaxa, onSelected: (s) => setState(() => _mode = MapViewMode.syntaxa)),
-  ],
-  ),
-  if (_mode == MapViewMode.syntaxa) ...[
-  const Divider(),
-  const Text("Ranga:"),
-  DropdownButton<String>(
-  value: _selectedRank,
-  items: ["Zespół", "Związek", "Rząd", "Klasa"].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
-  onChanged: (v) => setState(() => _selectedRank = v!),
-  ),
-  ]
     showDialog(
       context: context,
       builder: (ctx) {
-        // Ponowne użycie Consumer wewnątrz dialogu, by checkboxy działały dynamicznie
-        return Consumer<PlantsViewModel>(
-          builder: (context, plantsVm, child) {
-            final allNames = plantsVm.uniquePlantNames;
-            return AlertDialog(
-              title: const Text("Wybierz rośliny"),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: allNames.isEmpty
-                    ? const Text("Brak opisanych roślin.")
-                    : ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: allNames.length,
-                  itemBuilder: (context, index) {
-                    final name = allNames[index];
-                    return CheckboxListTile(
-                      title: Text(name),
-                      value: plantsVm.selectedPlantNames.contains(name),
-                      onChanged: (val) => plantsVm.toggleNameFilter(name),
-                    );
-                  },
+        return StatefulBuilder( // Używamy StatefulBuilder wewnątrz dialogu
+            builder: (context, setDialogState) {
+              return AlertDialog(
+                title: const Text("Filtry mapy"),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text("Tryb widoku:", style: TextStyle(fontWeight: FontWeight.bold)),
+                      Row(
+                        children: [
+                          ChoiceChip(
+                              label: const Text("Rośliny"),
+                              selected: _mode == MapViewMode.plants,
+                              onSelected: (s) { if(s) setState(() => _mode = MapViewMode.plants); setDialogState(() {}); }
+                          ),
+                          const SizedBox(width: 10),
+                          ChoiceChip(
+                              label: const Text("Syntaksony"),
+                              selected: _mode == MapViewMode.syntaxa,
+                              onSelected: (s) { if(s) setState(() => _mode = MapViewMode.syntaxa); setDialogState(() {}); }
+                          ),
+                        ],
+                      ),
+                      const Divider(),
+                      if (_mode == MapViewMode.syntaxa) ...[
+                        const Text("Ranga:"),
+                        DropdownButton<String>(
+                          value: _selectedRank,
+                          items: ["Zespół", "Związek", "Rząd", "Klasa"].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+                          onChanged: (v) { setState(() => _selectedRank = v!); setDialogState(() {}); },
+                        ),
+                      ] else ...[
+                        // Lista roślin (vm.uniquePlantNames)
+                        ...vm.uniquePlantNames.map((name) => CheckboxListTile(
+                          title: Text(name),
+                          value: vm.selectedPlantNames.contains(name),
+                          onChanged: (val) { vm.toggleNameFilter(name); setDialogState(() {}); },
+                        )).toList(),
+                      ]
+                    ],
+                  ),
                 ),
-              ),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("ZAMKNIJ"))
-              ],
-            );
-          },
+                actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("ZAMKNIJ"))],
+              );
+            }
         );
       },
     );

@@ -6,7 +6,7 @@ import 'views/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  await PhytosociologyService().init();
   runApp(
     MultiProvider(
       providers: [

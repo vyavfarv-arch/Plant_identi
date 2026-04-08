@@ -3,6 +3,7 @@ import 'camera_screen.dart';
 import 'description_grid_screen.dart';
 import 'browse_plants_screen.dart';
 import 'map_screen.dart';
+import 'releve_map_screen.dart'; // DODANO: Nowy ekran dla zdjęcia fitosocjologicznego
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -10,7 +11,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Plant ID - Menu')),
+      appBar: AppBar(title: const Text('Plantifikator - Menu')),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 30.0),
@@ -22,16 +23,15 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 40),
 
               _buildMenuButton(context,
-                  title: '1. Dodaj roślinę',
+                  title: 'Dodaj roślinę',
                   icon: Icons.add_a_photo,
                   color: Colors.green,
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CameraScreen()))
               ),
               const SizedBox(height: 20),
 
-              // NOWY PRZYCISK (Punkt 4 z Twojej listy)
               _buildMenuButton(context,
-                  title: '2. Opisz Spotkane Rośliny',
+                  title: 'Opisz Spotkane Rośliny',
                   icon: Icons.edit_note,
                   color: Colors.teal,
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DescriptionGridScreen()))
@@ -39,7 +39,7 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 20),
 
               _buildMenuButton(context,
-                  title: '3. Przeglądaj rośliny',
+                  title: 'Magazyn roślin',
                   icon: Icons.library_books,
                   color: Colors.blue,
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BrowsePlantsScreen()))
@@ -47,21 +47,19 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 20),
 
               _buildMenuButton(context,
-                  title: '4. Pokaż mapę roślin',
+                  title: 'Pokaż mapę roślin',
                   icon: Icons.map,
                   color: Colors.orange,
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MapScreen()))
               ),
               const SizedBox(height: 20),
+
+              // AKTUALIZACJA: Przycisk nr 5 prowadzi do ReleveMapScreen
               _buildMenuButton(context,
-                  title: '5. Zdjęcie fitosocjologiczne',
-                  icon: Icons.grass, // Ikona trawy dla odróżnienia
+                  title: 'Zdjęcie fitosocjologiczne',
+                  icon: Icons.border_style,
                   color: Colors.deepPurple,
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Funkcja "Zdjęcie fitosocjologiczne" będzie dostępna wkrótce!')),
-                    );
-                  }
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReleveMapScreen()))
               ),
             ],
           ),

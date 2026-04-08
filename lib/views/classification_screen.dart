@@ -30,10 +30,10 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
 
   final Map<String, String> _abundanceDescriptions = {
     "5": "75-100% pokrycia",
-    "4": "50-75%",
-    "3": "25-50%",
-    "2": "5-25%",
-    "1": "<5%, licznie",
+    "4": "50-75% pokrycia",
+    "3": "25-50% pokrycia",
+    "2": "5-25% pokrycia",
+    "1": "<5%, licznie ",
     "+": "<5%, nielicznie",
     "r": "pojedynczo"
   };
@@ -43,7 +43,7 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
     "2": "Kępkowo / grupowo",
     "3": "W małych płatach",
     "4": "W dużych płatach / łanowo",
-    "5": "Tworzy czyste zbiorowisko"
+    "5": "Tworzy gęste zbiorowisko"
   };
 
   @override
@@ -90,15 +90,26 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
               },
             ),
             const SizedBox(height: 20),
-            _buildDropdown("Warstwa fitosocjologiczna", _layerDescriptions.keys.toList(),
-                    (v) => _selectedLayer = v,
-                itemBuilder: (key) => Text("$key - ${_layerDescriptions[key]}")),
-            _buildDropdown("Ilościowość", _abundanceDescriptions.keys.toList(),
-                    (v) => _selectedLayer = v,
-                itemBuilder: (key) => Text("$key - ${_abundanceDescriptions[key]}")),
-            _buildDropdown("Towarzyskość", _sociabilityDescriptions.keys.toList(),
-                    (v) => _selectedLayer = v,
-                itemBuilder: (key) => Text("$key - ${_sociabilityDescriptions[key]}")),
+
+            // POPRAWKA: Przekazujemy mapę do nowej wersji _buildDropdown
+            _buildDetailedDropdown(
+                "Warstwa fitosocjologiczna",
+                _layerDescriptions,
+                    (v) => setState(() => _selectedLayer = v)
+            ),
+            _buildDetailedDropdown(
+                "Ilościowość",
+                _abundanceDescriptions,
+                    (v) => setState(() => _selectedAbundance = v)
+            ),
+            _buildDetailedDropdown(
+                "Towarzyskość",
+                _sociabilityDescriptions,
+                    (v) => setState(() => _selectedSociability = v)
+            ),
+
+            // Opcjonalnie Żywotność (dropdown bez mapy opisów)
+            _buildDropdown("Żywotność", ["Bardzo dobra", "Dobra", "Słaba", "Zamierająca"], (v) => setState(() => _selectedVitality = v)),
 
             const SizedBox(height: 30),
             SizedBox(
@@ -115,16 +126,26 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
       ),
     );
   }
-
-  Widget _buildDropdown(String label, List<String> options, Function(String?) onChanged) {
+  Widget _buildDetailedDropdown(String label, Map<String, String> dataMap, Function(String?) onChanged) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: DropdownButtonFormField<String>(
         decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+        items: dataMap.entries.map((e) => DropdownMenuItem(
+            value: e.key,
+            child: Text("${e.key} - ${e.value}")
+        )).toList(),
+        onChanged: onChanged,
+      ),
+    );
+  }
+  Widget _buildDropdown(String label, List<String> options, Function(String?) onChanged, {String? hint}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: DropdownButtonFormField<String>(
+        decoration: InputDecoration(labelText: label, border: const OutlineInputBorder(), hintText: hint),
         items: options.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-        onChanged: (v) {
-          setState(() => onChanged(v));
-        },
+        onChanged: onChanged,
       ),
     );
   }

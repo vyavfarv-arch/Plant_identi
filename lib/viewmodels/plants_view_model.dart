@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart'; // Wymagane dla LatLng
 import '../models/plant_observation.dart';
+import '../models/releve.dart';
 import '../services/storage_service.dart';
+import '../services/phytosociology_service.dart';
 
 class PlantsViewModel extends ChangeNotifier {
   final StorageService _storage = StorageService();
   List<PlantObservation> _observations = [];
+  List<Releve> _releves = []; // Lista zdjęć fitosocjologicznych
+
   DateTime? _filterDate;
   final List<String> _selectedPlantNames = [];
 
   List<PlantObservation> get allObservations => _observations;
   List<String> get selectedPlantNames => _selectedPlantNames;
+  List<Releve> get allReleves => _releves;
 
-  // Lista do "Opisz Spotkane Rośliny" (rośliny niekompletne)
   List<PlantObservation> get incompleteObservations =>
       _observations.where((obs) => !obs.isComplete).toList();
 
-  // Lista do "Magazynu Roślin" (filtrowanie po dacie)
   List<PlantObservation> get filteredCompleteObservations {
     var list = _observations.where((obs) => obs.isComplete).toList();
     if (_filterDate != null) {
@@ -28,20 +32,44 @@ class PlantsViewModel extends ChangeNotifier {
     return list;
   }
 
-  // Logika dla Mapy: Pokaż tylko te, których displayName jest zaznaczony
   List<PlantObservation> get mapFilteredObservations {
     var allComplete = _observations.where((obs) => obs.isComplete).toList();
     if (_selectedPlantNames.isEmpty) return [];
     return allComplete.where((obs) => _selectedPlantNames.contains(obs.displayName)).toList();
   }
 
-  // Pobieranie unikalnych nazw do filtrów
   List<String> get uniquePlantNames {
     return _observations
         .where((obs) => obs.isComplete && obs.displayName != "Nieznana roślina")
         .map<String>((obs) => obs.displayName)
         .toSet()
         .toList();
+  }
+
+  // GŁÓWNA METODA DODAWANIA (Z AUTOMATYKĄ FITO)
+  void addObservation(PlantObservation obs) {
+    _observations.add(obs);
+
+    // Automatyczne przypisanie nowej rośliny do istniejących obszarów (kwadratów)
+    for (var releve in _releves) {
+      if (releve.area.contains(LatLng(obs.latitude, obs.longitude))) {
+        if (!releve.plantObservationIds.contains(obs.id)) {
+          releve.plantObservationIds.add(obs.id);
+          _updateReleveSyntaxon(releve);
+        }
+      }
+    }
+
+    _storage.saveObservations(_observations);
+    notifyListeners();
+  }
+
+  // Logika przeliczania syntaksonu dla zdjęcia
+  void _updateReleveSyntaxon(Releve releve) {
+    final areaPlants = _observations.where((o) => releve.plantObservationIds.contains(o.id)).toList();
+    final result = PhytosociologyService().calculateBestFit(areaPlants);
+    releve.assignedSyntaxonId = result['syntaxonId'];
+    releve.isHeterogeneous = result['warning'] != null;
   }
 
   void toggleNameFilter(String name) {
@@ -57,7 +85,38 @@ class PlantsViewModel extends ChangeNotifier {
     _observations = await _storage.loadObservations();
     notifyListeners();
   }
+  void createReleve(LatLng p1, LatLng p2) {
+    final bounds = LatLngBounds(
+      southwest: LatLng(
+        p1.latitude < p2.latitude ? p1.latitude : p2.latitude,
+        p1.longitude < p2.longitude ? p1.longitude : p2.longitude,
+      ),
+      northeast: LatLng(
+        p1.latitude > p2.latitude ? p1.latitude : p2.latitude,
+        p1.longitude > p2.longitude ? p1.longitude : p2.longitude,
+      ),
+    );
 
+    // Znajdź wszystkie rośliny w tym obszarze
+    final plantsInArea = _observations.where((obs) {
+      final pos = LatLng(obs.latitude, obs.longitude);
+      return bounds.contains(pos);
+    }).map((e) => e.id).toList();
+
+    final newReleve = Releve(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      area: bounds,
+      date: DateTime.now(),
+      plantObservationIds: plantsInArea,
+    );
+
+    _releves.add(newReleve);
+
+    // Oblicz najlepszy fit syntaksonu (używa Twojej logiki z PhytosociologyService)
+    _updateReleveSyntaxon(newReleve);
+
+    notifyListeners();
+  }
   void setFilterDate(DateTime? date) {
     _filterDate = date;
     notifyListeners();

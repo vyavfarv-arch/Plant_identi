@@ -84,17 +84,12 @@ class BrowsePlantsScreen extends StatelessWidget {
   }
 
   void _showPlantCard(BuildContext context, PlantObservation obs) {
-    Row(
-      children: [
-        Expanded(child: Text(obs.displayName, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.green))),
-        if (obs.phytosociologicalStatus != null)
-          Chip(label: Text(obs.phytosociologicalStatus!, style: const TextStyle(fontSize: 10))),
-      ],
-    ),
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (_) => DraggableScrollableSheet(
         initialChildSize: 0.8,
         minChildSize: 0.5,
@@ -105,10 +100,50 @@ class BrowsePlantsScreen extends StatelessWidget {
           child: ListView(
             controller: controller,
             children: [
-              Center(child: Container(width: 40, height: 5, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10)))),
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
               const SizedBox(height: 20),
-              Text(obs.displayName, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.green)),
-              Text(obs.latinName ?? "Brak nazwy łacińskiej", style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey)),
+
+              // Nazwa + status
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      obs.displayName,
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ),
+                  if (obs.phytosociologicalStatus != null)
+                    Chip(
+                      label: Text(
+                        obs.phytosociologicalStatus!,
+                        style: const TextStyle(fontSize: 10),
+                      ),
+                    ),
+                ],
+              ),
+
+              Text(
+                obs.latinName ?? "Brak nazwy łacińskiej",
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.grey,
+                ),
+              ),
+
               const Divider(),
 
               // Galeria zdjęć
@@ -121,11 +156,16 @@ class BrowsePlantsScreen extends StatelessWidget {
                     padding: const EdgeInsets.only(right: 12),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.file(File(obs.photoPaths[i]), width: 240, fit: BoxFit.cover),
+                      child: Image.file(
+                        File(obs.photoPaths[i]),
+                        width: 240,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                 ),
               ),
+
               const SizedBox(height: 20),
 
               _sectionHeader("1. Pozycja systematyczna"),
@@ -136,7 +176,7 @@ class BrowsePlantsScreen extends StatelessWidget {
               _sectionHeader("2. Dane fitosocjologiczne"),
               _infoItem(Icons.layers, "Warstwa", obs.phytosociologicalLayer ?? "-"),
               _infoItem(Icons.analytics, "Ilościowość", obs.abundance ?? "-"),
-              _infoItem(Icons.pie_chart, "Pokrycie", obs.coverage ?? "-"),
+              _infoItem(Icons.people_alt, "Towarzyskość", obs.sociability ?? "-"),
               _infoItem(Icons.favorite, "Żywotność", obs.vitality ?? "-"),
 
               _sectionHeader("3. Cechy charakterystyczne i pewność"),
@@ -150,10 +190,13 @@ class BrowsePlantsScreen extends StatelessWidget {
 
               const SizedBox(height: 15),
               _sectionHeader("Cechy z terenu"),
+
               if (obs.characteristics.isEmpty)
                 const Text("Brak dodatkowych cech.")
               else
-                ...obs.characteristics.entries.map((e) => _infoItem(Icons.check_circle_outline, e.key, e.value)).toList(),
+                ...obs.characteristics.entries.map(
+                      (e) => _infoItem(Icons.check_circle_outline, e.key, e.value),
+                ),
 
               const SizedBox(height: 30),
             ],
@@ -162,6 +205,7 @@ class BrowsePlantsScreen extends StatelessWidget {
       ),
     );
   }
+
 
   Widget _sectionHeader(String title) {
     return Padding(
