@@ -18,7 +18,8 @@ class _FormScreenState extends State<FormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final schema = SchemaGenerator.getForType(widget.observation.biologicalType ?? "Zielona");
+    final schema = SchemaGenerator.getForType(
+        widget.observation.biologicalType ?? "Zielona");
 
     return Scaffold(
       appBar: AppBar(title: Text('Opis: ${widget.observation.biologicalType}')),
@@ -32,9 +33,11 @@ class _FormScreenState extends State<FormScreen> {
                 return ExpansionTile(
                   leading: CircleAvatar(
                     backgroundColor: Colors.green,
-                    child: Text(category.number, style: const TextStyle(color: Colors.white)),
+                    child: Text(category.number,
+                        style: const TextStyle(color: Colors.white)),
                   ),
-                  title: Text(category.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  title: Text(category.title,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                   children: category.subCategories.entries.map((sub) {
                     return _buildSubCategorySection(sub.key, sub.value);
                   }).toList(),
@@ -54,7 +57,8 @@ class _FormScreenState extends State<FormScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: TextStyle(color: Colors.grey.shade700, fontSize: 14)),
+          Text(title,
+              style: TextStyle(color: Colors.grey.shade700, fontSize: 14)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -72,13 +76,16 @@ class _FormScreenState extends State<FormScreen> {
                   });
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected ? Colors.green : Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: isSelected ? Colors.green : Colors.grey.shade400),
+                    border: Border.all(color: isSelected ? Colors.green : Colors
+                        .grey.shade400),
                   ),
-                  child: Text(opt, style: TextStyle(color: isSelected ? Colors.white : Colors.black87)),
+                  child: Text(opt, style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.black87)),
                 ),
               );
             }).toList(),
@@ -95,7 +102,8 @@ class _FormScreenState extends State<FormScreen> {
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
         onPressed: _zapiszFinalnie,
-        child: const Text("ZAPISZ OBSERWACJĘ TERENOWĄ", style: TextStyle(color: Colors.white)),
+        child: const Text("ZAPISZ OBSERWACJĘ TERENOWĄ",
+            style: TextStyle(color: Colors.white)),
       ),
     );
   }
@@ -103,7 +111,6 @@ class _FormScreenState extends State<FormScreen> {
   void _zapiszFinalnie() {
     final now = DateTime.now();
 
-    // Tworzymy finalny obiekt z cechami z terenu oraz ustawioną datą obserwacji
     final finalObs = PlantObservation(
       id: widget.observation.id,
       photoPaths: widget.observation.photoPaths,
@@ -117,7 +124,7 @@ class _FormScreenState extends State<FormScreen> {
       coverage: widget.observation.coverage,
       vitality: widget.observation.vitality,
       sociability: widget.observation.sociability,
-      observationDate: now, // Kluczowe dla isComplete
+      observationDate: now, // USTAWIA DATE - teraz roślina "zniknie" po dodaniu nazwy
     );
 
     context.read<PlantsViewModel>().addObservation(finalObs);
@@ -125,19 +132,21 @@ class _FormScreenState extends State<FormScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Zapisano!"),
-        content: const Text("Dane terenowe zostały zapisane. Roślina czeka na identyfikację w menu 'Opisz spotkane rośliny'."),
-        actions: [
-          TextButton(
-            onPressed: () {
-              context.read<ObservationViewModel>().reset();
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            },
-            child: const Text("OK"),
-          )
-        ],
-      ),
+      builder: (ctx) =>
+          AlertDialog(
+            title: const Text("Zapisano!"),
+            content: const Text(
+                "Dane terenowe zapisane. Przejdź do 'Opisz spotkane rośliny'."),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  context.read<ObservationViewModel>().reset();
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                },
+                child: const Text("OK"),
+              )
+            ],
+          ),
     );
   }
 }

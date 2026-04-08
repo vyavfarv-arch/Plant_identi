@@ -11,11 +11,11 @@ class PlantsViewModel extends ChangeNotifier {
   List<PlantObservation> get allObservations => _observations;
   List<String> get selectedPlantNames => _selectedPlantNames;
 
-  // Lista do "Opisz Spotkane Rośliny" (rośliny bez nazwy/daty)
+  // Lista do "Opisz Spotkane Rośliny" (rośliny niekompletne)
   List<PlantObservation> get incompleteObservations =>
       _observations.where((obs) => !obs.isComplete).toList();
 
-  // Lista do "Magazynu Roślin" (filtrowanie datą)
+  // Lista do "Magazynu Roślin" (filtrowanie po dacie)
   List<PlantObservation> get filteredCompleteObservations {
     var list = _observations.where((obs) => obs.isComplete).toList();
     if (_filterDate != null) {
@@ -28,14 +28,14 @@ class PlantsViewModel extends ChangeNotifier {
     return list;
   }
 
-  // Logika dla Mapy: Pusta mapa na start, pokazuje tylko zaznaczone gatunki
+  // Logika dla Mapy: Pokaż tylko te, których displayName jest zaznaczony
   List<PlantObservation> get mapFilteredObservations {
     var allComplete = _observations.where((obs) => obs.isComplete).toList();
     if (_selectedPlantNames.isEmpty) return [];
     return allComplete.where((obs) => _selectedPlantNames.contains(obs.displayName)).toList();
   }
 
-  // Pobieranie unikalnych nazw do listy filtrów na mapie
+  // Pobieranie unikalnych nazw do filtrów
   List<String> get uniquePlantNames {
     return _observations
         .where((obs) => obs.isComplete && obs.displayName != "Nieznana roślina")
@@ -69,7 +69,6 @@ class PlantsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ROZBUDOWANA METODA AKTUALIZACJI (Szczegółowa Identyfikacja)
   void updateObservationDetailed({
     required String id,
     String? family,
@@ -101,7 +100,7 @@ class PlantsViewModel extends ChangeNotifier {
         coverage: old.coverage,
         vitality: old.vitality,
         sociability: old.sociability,
-        observationDate: old.observationDate,
+        observationDate: old.observationDate, // Zachowujemy datę z terenu
         family: family,
         genus: genus,
         species: species,

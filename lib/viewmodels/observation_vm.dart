@@ -25,11 +25,19 @@ class ObservationViewModel extends ChangeNotifier {
     _isInitializing = true;
     notifyListeners();
 
-    await _cameraService.initCamera();
-    _currentPosition = await _locationService.getCurrentLocation();
+    try {
+      // Najpierw aparat - to jest priorytet dla użytkownika
+      await _cameraService.initCamera();
+      notifyListeners(); // Odśwież, żeby pokazać obraz z aparatu jak najszybciej
 
-    _isInitializing = false;
-    notifyListeners();
+      // Lokalizacja pobierana w tle - nie blokuje renderowania aparatu
+      _currentPosition = await _locationService.getCurrentLocation();
+    } catch (e) {
+      print("Błąd inicjalizacji: $e");
+    } finally {
+      _isInitializing = false;
+      notifyListeners();
+    }
   }
 
   // Akcja: Zrób zdjęcie

@@ -16,15 +16,8 @@ class _CameraScreenState extends State<CameraScreen> {
   @override
   void initState() {
     super.initState();
-    // Inicjalizuj aparat po zbudowaniu pierwszej klatki
+    // Inicjalizuj aparat po wejściu na ekran
     Future.microtask(() => context.read<ObservationViewModel>().init());
-  }
-
-  @override
-  void dispose() {
-    // VM zajmuje się dispose kontrolera wewnątrz swojej metody dispose,
-    // ale możemy tu dodać logikę zatrzymania streamu klatek jeśli to konieczne.
-    super.dispose();
   }
 
   @override
@@ -39,82 +32,56 @@ class _CameraScreenState extends State<CameraScreen> {
 
           return Stack(
             children: [
-              Center(
-                child: CameraPreview(vm.controller!),
-              ),
-              Positioned(
-                top: 50,
-                left: 10,
-                child: Row(
-                  children: vm.currentPhotoPaths.map((path) {
-                    return Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: Container(
-                        width: 70,
-                        height: 70,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.white, width: 2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
-                          child: Image.file(File(path), fit: BoxFit.cover),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              Positioned(
-                bottom: 40,
-                left: 0,
-                right: 0,
-                child: Column(
-                  children: [
-                    Text(
-                      "Zdjęcia: ${vm.currentPhotoPaths.length} / 3",
-                      style: const TextStyle(color: Colors.white, fontSize: 18),
-                    ),
-                    const SizedBox(height: 20),
-                    GestureDetector(
-                      onTap: vm.canTakePhoto ? () => vm.takePhoto() : null,
-                      child: Container(
-                        height: 80,
-                        width: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 4),
-                          color: vm.canTakePhoto ? Colors.white.withOpacity(0.5) : Colors.grey,
-                        ),
-                        child: Icon(
-                            Icons.camera_alt,
-                            size: 40,
-                            color: vm.canTakePhoto ? Colors.white : Colors.black26
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (vm.currentPhotoPaths.isNotEmpty)
-                Positioned(
-                  bottom: 55,
-                  right: 30,
-                  child: FloatingActionButton(
-                    backgroundColor: Colors.green,
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const ClassificationScreen()),
-                      );
-                    },
-                    child: const Icon(Icons.arrow_forward),
-                  ),
-                ),
+              Center(child: CameraPreview(vm.controller!)),
+              // UI miniaturek i przycisków...
+              _buildUI(context, vm),
             ],
           );
         },
       ),
+    );
+  }
+
+  Widget _buildUI(BuildContext context, ObservationViewModel vm) {
+    return Stack(
+      children: [
+        Positioned(
+          top: 50,
+          left: 10,
+          child: Row(
+            children: vm.currentPhotoPaths.map((path) => Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Image.file(File(path), width: 70, height: 70, fit: BoxFit.cover),
+            )).toList(),
+          ),
+        ),
+        Positioned(
+          bottom: 40,
+          left: 0,
+          right: 0,
+          child: Column(
+            children: [
+              Text("Zdjęcia: ${vm.currentPhotoPaths.length} / 3", style: const TextStyle(color: Colors.white)),
+              const SizedBox(height: 20),
+              IconButton(
+                iconSize: 80,
+                icon: const Icon(Icons.camera_alt, color: Colors.white),
+                onPressed: vm.canTakePhoto ? () => vm.takePhoto() : null,
+              ),
+            ],
+          ),
+        ),
+        if (vm.currentPhotoPaths.isNotEmpty)
+          Positioned(
+            bottom: 55,
+            right: 30,
+            child: FloatingActionButton(
+              backgroundColor: Colors.green,
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ClassificationScreen())),
+              child: const Icon(Icons.arrow_forward),
+            ),
+          ),
+      ],
     );
   }
 }

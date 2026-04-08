@@ -65,7 +65,7 @@ class BrowsePlantsScreen extends StatelessWidget {
     return ListTile(
       contentPadding: const EdgeInsets.only(left: 32, right: 16),
       title: Text("Obserwacja z ${DateFormat('yyyy-MM-dd').format(obs.observationDate ?? obs.timestamp)}"),
-      subtitle: Text("Pewność: ${obs.certainty ?? 'brak danych'}"),
+      subtitle: Text("Ilość: ${obs.abundance} | Pewność: ${obs.certainty ?? 'brak'}"),
       onTap: () => _showPlantCard(context, obs),
       trailing: PopupMenuButton<String>(
         onSelected: (val) {

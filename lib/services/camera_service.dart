@@ -7,7 +7,7 @@ class CameraService {
 
   // Inicjalizacja aparatu
   Future<void> initCamera() async {
-    // Jeśli kontroler już istnieje, najpierw go zamknij
+    // ZAMKNIJ istniejący kontroler przed nową inicjalizacją
     if (_controller != null) {
       await _controller!.dispose();
       _controller = null;
@@ -19,6 +19,7 @@ class CameraService {
         _cameras![0],
         ResolutionPreset.medium,
         enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.jpeg, // Wymuszenie formatu pomaga na niektórych urządzeniach
       );
       await _controller!.initialize();
     }
