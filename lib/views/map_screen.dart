@@ -14,8 +14,9 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  BitmapDescriptor? grassIcon;
-
+  BitmapDescriptor? grassIcon,
+  enum MapViewMode { plants, syntaxa }
+  String _selectedRank = "Zespół";
   @override
   void initState() {
     super.initState();
@@ -79,6 +80,23 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _showFilterDialog(BuildContext context, PlantsViewModel vm) {
+  const Text("Tryb widoku:", style: TextStyle(fontWeight: FontWeight.bold)),
+  Row(
+  children: [
+  ChoiceChip(label: const Text("Rośliny"), selected: _mode == MapViewMode.plants, onSelected: (s) => setState(() => _mode = MapViewMode.plants)),
+  const SizedBox(width: 10),
+  ChoiceChip(label: const Text("Syntaksony"), selected: _mode == MapViewMode.syntaxa, onSelected: (s) => setState(() => _mode = MapViewMode.syntaxa)),
+  ],
+  ),
+  if (_mode == MapViewMode.syntaxa) ...[
+  const Divider(),
+  const Text("Ranga:"),
+  DropdownButton<String>(
+  value: _selectedRank,
+  items: ["Zespół", "Związek", "Rząd", "Klasa"].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+  onChanged: (v) => setState(() => _selectedRank = v!),
+  ),
+  ]
     showDialog(
       context: context,
       builder: (ctx) {

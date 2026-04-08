@@ -25,14 +25,15 @@ class PlantObservation {
   String? subspecies;
   String? latinName;
   String? polishName;
-  String? localName; // "Nazwa" w formularzu
+  String? localName;
   String? certainty;
   String? idDoubts;
   String? keyMorphologicalTraits;
   String? confusingSpecies;
-  String? characteristicFeature; // NOWE
+  String? characteristicFeature;
   String? plantUsage;
-  String? cultivation; // NOWE
+  String? cultivation;
+  String? phytosociologicalStatus; // Charakterystyczny, Wyróżniający, Popularny
 
   PlantObservation({
     required this.id,
@@ -101,6 +102,7 @@ class PlantObservation {
       'characteristicFeature': characteristicFeature,
       'plantUsage': plantUsage,
       'cultivation': cultivation,
+      'phytosociologicalStatus':phytosociologicalStatus
     };
   }
 
@@ -133,6 +135,7 @@ class PlantObservation {
       characteristicFeature: map['characteristicFeature'],
       plantUsage: map['plantUsage'],
       cultivation: map['cultivation'],
+        phytosociologicalStatus: map['phytosociologicalStatus'],
     );
   }
 }

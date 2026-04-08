@@ -17,11 +17,34 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
   String? _selectedType;
   String? _selectedLayer;
   String? _selectedAbundance;
-  String? _selectedCoverage;
   String? _selectedVitality;
   String? _selectedSociability;
 
   final List<String> _types = ["Drzewo", "Krzew", "Krzewinka", "Zielona"];
+  final Map<String, String> _layerDescriptions = {
+    "A": "Warstwa drzew (>7m)",
+    "B": "Warstwa krzewów (0.5-7m)",
+    "C": "Warstwa runa (rośliny zielne)",
+    "D": "Warstwa mszysta (mchy, porosty)"
+  };
+
+  final Map<String, String> _abundanceDescriptions = {
+    "5": "75-100% pokrycia",
+    "4": "50-75%",
+    "3": "25-50%",
+    "2": "5-25%",
+    "1": "<5%, licznie",
+    "+": "<5%, nielicznie",
+    "r": "pojedynczo"
+  };
+
+  final Map<String, String> _sociabilityDescriptions = {
+    "1": "Pojedynczo",
+    "2": "Kępkowo / grupowo",
+    "3": "W małych płatach",
+    "4": "W dużych płatach / łanowo",
+    "5": "Tworzy czyste zbiorowisko"
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -67,11 +90,16 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
               },
             ),
             const SizedBox(height: 20),
-            _buildDropdown("Warstwa", ["A", "B", "C", "D"], (v) => _selectedLayer = v),
-            _buildDropdown("Ilościowość", ["5", "4", "3", "2", "1", "r", "+"], (v) => _selectedAbundance = v),
-            _buildDropdown("Pokrycie", ["0-25%", "25-50%", "50-75%", "75-100%"], (v) => _selectedCoverage = v),
-            _buildDropdown("Żywotność", ["Bardzo dobra", "Dobra", "Słaba", "Zamierająca"], (v) => _selectedVitality = v),
-            _buildDropdown("Towarzyskość", ["1", "2", "3", "4", "5"], (v) => _selectedSociability = v),
+            _buildDropdown("Warstwa fitosocjologiczna", _layerDescriptions.keys.toList(),
+                    (v) => _selectedLayer = v,
+                itemBuilder: (key) => Text("$key - ${_layerDescriptions[key]}")),
+            _buildDropdown("Ilościowość", _abundanceDescriptions.keys.toList(),
+                    (v) => _selectedLayer = v,
+                itemBuilder: (key) => Text("$key - ${_abundanceDescriptions[key]}")),
+            _buildDropdown("Towarzyskość", _sociabilityDescriptions.keys.toList(),
+                    (v) => _selectedLayer = v,
+                itemBuilder: (key) => Text("$key - ${_sociabilityDescriptions[key]}")),
+
             const SizedBox(height: 30),
             SizedBox(
               width: double.infinity,
@@ -114,7 +142,6 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
       biologicalType: _selectedType,
       phytosociologicalLayer: _selectedLayer,
       abundance: _selectedAbundance,
-      coverage: _selectedCoverage,
       vitality: _selectedVitality,
       sociability: _selectedSociability,
     );

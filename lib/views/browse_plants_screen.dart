@@ -84,6 +84,13 @@ class BrowsePlantsScreen extends StatelessWidget {
   }
 
   void _showPlantCard(BuildContext context, PlantObservation obs) {
+    Row(
+      children: [
+        Expanded(child: Text(obs.displayName, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.green))),
+        if (obs.phytosociologicalStatus != null)
+          Chip(label: Text(obs.phytosociologicalStatus!, style: const TextStyle(fontSize: 10))),
+      ],
+    ),
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

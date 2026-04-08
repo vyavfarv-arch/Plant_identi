@@ -16,10 +16,12 @@ class DetailDescriptionScreen extends StatefulWidget {
 class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
   final Map<String, TextEditingController> _controllers = {};
   String? _selectedCertainty;
+  String? _selectedStatus;
 
   @override
   void initState() {
     super.initState();
+
     _initData();
   }
 
@@ -37,7 +39,9 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
     _controllers['usage'] = TextEditingController(text: obs.plantUsage);
     _controllers['cultivation'] = TextEditingController(text: obs.cultivation);
 
+    _selectedStatus = obs.phytosociologicalStatus;
     _selectedCertainty = obs.certainty;
+
   }
 
   @override
@@ -110,7 +114,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
 
   Widget _buildNamingSection() {
     return ExpansionTile(
-      title: const Text("1. Nazewnictwo (wymagane)"),
+      title: const Text("Nazewnictwo (wymagane)"),
       children: [
         _inputField(_controllers['localName']!, "Nazwa (Główna)", hint: "Np. Babka lancetowata"),
         _inputField(_controllers['family']!, "Rodzina (Familia)"),
@@ -122,8 +126,23 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
   }
 
   Widget _buildCertaintySection() {
+    const Padding(
+      padding: EdgeInsets.all(10.0),
+      child: Text("Status fitosocjologiczny:", style: TextStyle(fontWeight: FontWeight.bold)),
+    ),
+    Column(
+    children: ["Charakterystyczny", "Wyróżniający", "Popularny"].map((status) =>
+    RadioListTile<String>(
+    title: Text(status),
+    value: status,
+    groupValue: _selectedStatus,
+    onChanged: (v) => setState(() => _selectedStatus = v),
+    )
+    ).toList(),
+    )
     return ExpansionTile(
-      title: const Text("2. Pewność"),
+      title: const Text("Pewność"),
+
       children: [
         DropdownButtonFormField<String>(
           value: _selectedCertainty,
@@ -141,7 +160,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
 
   Widget _buildUsageSection() {
     return ExpansionTile(
-      title: const Text("3. Wykorzystanie"),
+      title: const Text("Wykorzystanie"),
       children: [
         _inputField(_controllers['usage']!, "Zastosowanie", isLong: true),
         _inputField(_controllers['cultivation']!, "Hodowla", isLong: true),
