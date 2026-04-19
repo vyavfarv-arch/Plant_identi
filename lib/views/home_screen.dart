@@ -3,7 +3,8 @@ import 'camera_screen.dart';
 import 'description_grid_screen.dart';
 import 'browse_plants_screen.dart';
 import 'map_screen.dart';
-import 'releve_map_screen.dart'; // DODANO: Nowy ekran dla zdjęcia fitosocjologicznego
+import 'releve_map_screen.dart';
+import 'releve_list_map_screen.dart'; // DODAJ TEN IMPORT
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -54,7 +55,6 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // AKTUALIZACJA: Przycisk nr 5 prowadzi do ReleveMapScreen
               _buildMenuButton(context,
                   title: 'Zdjęcie fitosocjologiczne',
                   icon: Icons.border_style,
@@ -62,6 +62,7 @@ class HomeScreen extends StatelessWidget {
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReleveMapScreen()))
               ),
               const SizedBox(height: 20),
+
               _buildMenuButton(context,
                   title: 'Wyświetl obszary',
                   icon: Icons.layers,

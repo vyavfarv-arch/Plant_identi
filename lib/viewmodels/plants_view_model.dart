@@ -3,8 +3,6 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/plant_observation.dart';
 import '../models/releve.dart';
 import '../services/storage_service.dart';
-import '../services/phytosociology_service.dart';
-
 
 class PlantsViewModel extends ChangeNotifier {
   final StorageService _storage = StorageService();
@@ -46,66 +44,41 @@ class PlantsViewModel extends ChangeNotifier {
         .toList();
   }
 
-  // --- LOGIKA RELEVE (ZDJĘĆ FITOSOCJOLOGICZNYCH) ---
-  bool _isPointInPolygon(LatLng point, List<LatLng> polygon) {
-    int i, j = polygon.length - 1;
-    bool oddNodes = false;
-    double x = point.longitude;
-    double y = point.latitude;
+  // --- ZARZĄDZANIE OBSZARAMI (RELEVE) ---
 
-    for (i = 0; i < polygon.length; i++) {
-      if ((polygon[i].latitude < y && polygon[j].latitude >= y ||
-          polygon[j].latitude < y && polygon[i].latitude >= y) &&
-          (polygon[i].longitude <= x || polygon[j].longitude <= x)) {
-        if (polygon[i].longitude + (y - polygon[i].latitude) / (polygon[j].latitude - polygon[i].latitude) * (polygon[j].longitude - polygon[i].longitude) < x) {
-          oddNodes = !oddNodes;
-        }
-      }
-      j = i;
-    }
-    return oddNodes;
-  }
-  void createReleve(List<LatLng> points) {
-    if (points.length < 3) return;
-
-    final plantsInArea = _observations.where((obs) =>
-        _isPointInPolygon(LatLng(obs.latitude, obs.longitude), points)
-    ).map((e) => e.id).toList();
-
-    final newReleve = Releve(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      polygon: List.from(points),
-      date: DateTime.now(),
-      plantObservationIds: plantsInArea,
-    );
-
-    _releves.add(newReleve);
-    _updateReleveSyntaxon(newReleve);
+  // Metoda wywoływana z ReleveMapScreen po wypełnieniu ankiety
+  void saveNewReleve(Releve releve) {
+    _releves.add(releve);
+    _storage.saveReleves(_releves);
     notifyListeners();
   }
 
-  void _updateReleveSyntaxon(Releve releve) {
-    final areaPlants = _observations.where((o) => releve.plantObservationIds.contains(o.id)).toList();
-    final result = PhytosociologyService().calculateBestFit(areaPlants);
-    releve.assignedSyntaxonId = result['syntaxonId'];
-    releve.isHeterogeneous = result['warning'] != null;
+  void deleteReleve(String id) {
+    _releves.removeWhere((r) => r.id == id);
+    _storage.saveReleves(_releves);
+    notifyListeners();
+  }
+
+  void updateReleve(String id, String newName, String newType) {
+    final index = _releves.indexWhere((r) => r.id == id);
+    if (index != -1) {
+      final old = _releves[index];
+      _releves[index] = Releve(
+        id: old.id,
+        name: newName,
+        type: newType,
+        points: old.points, // Zachowujemy punkty
+        date: old.date,
+      );
+      _storage.saveReleves(_releves);
+      notifyListeners();
+    }
   }
 
   // --- OBSŁUGA OBSERWACJI ---
 
   void addObservation(PlantObservation obs) {
     _observations.add(obs);
-
-    // Automatyczne przypisanie nowej rośliny do istniejących obszarów fito
-    for (var releve in _releves) {
-      if (releve.polygon.contains(LatLng(obs.latitude, obs.longitude))) {
-        if (!releve.plantObservationIds.contains(obs.id)) {
-          releve.plantObservationIds.add(obs.id);
-          _updateReleveSyntaxon(releve);
-        }
-      }
-    }
-
     _storage.saveObservations(_observations);
     notifyListeners();
   }
@@ -149,6 +122,8 @@ class PlantsViewModel extends ChangeNotifier {
         species: species,
         subspecies: subspecies,
         localName: localName,
+        latinName: latinName,
+        phytosociologicalStatus: phytosociologicalStatus,
         certainty: certainty,
         idDoubts: doubts,
         keyMorphologicalTraits: keyTraits,
@@ -162,7 +137,13 @@ class PlantsViewModel extends ChangeNotifier {
     }
   }
 
-  // --- FILTROWANIE ---
+  // --- ŁADOWANIE I FILTROWANIE ---
+
+  Future<void> loadFromDisk() async {
+    _observations = await _storage.loadObservations();
+    _releves = await _storage.loadReleves(); // Ładowanie obszarów
+    notifyListeners();
+  }
 
   void toggleNameFilter(String name) {
     if (_selectedPlantNames.contains(name)) {
@@ -175,11 +156,6 @@ class PlantsViewModel extends ChangeNotifier {
 
   void setFilterDate(DateTime? date) {
     _filterDate = date;
-    notifyListeners();
-  }
-
-  Future<void> loadFromDisk() async {
-    _observations = await _storage.loadObservations();
     notifyListeners();
   }
 

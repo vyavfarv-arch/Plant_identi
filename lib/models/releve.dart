@@ -4,7 +4,7 @@ class Releve {
   final String id;
   final String name;
   final String type; // "Zespół", "Związek", "Rząd", "Klasa"
-  final List<LatLng> points;
+  final List<LatLng> points; // Używamy nazwy 'points'
   final DateTime date;
 
   Releve({
@@ -30,7 +30,9 @@ class Releve {
       id: map['id'],
       name: map['name'],
       type: map['type'],
-      points: (map['points'] as List).map((p) => LatLng(p['lat'], p['lng'])).toList(),
+      points: (map['points'] as List)
+          .map((p) => LatLng(p['lat'] as double, p['lng'] as double))
+          .toList(),
       date: DateTime.parse(map['date']),
     );
   }

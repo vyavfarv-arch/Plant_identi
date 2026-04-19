@@ -188,24 +188,6 @@ class BrowsePlantsScreen extends StatelessWidget {
               _infoItem(Icons.handyman, "Zastosowanie", obs.plantUsage ?? "-"),
               _infoItem(Icons.home, "Hodowla", obs.cultivation ?? "-"),
 
-              _sectionHeader("5. Powiązane płaty fitosocjologiczne"),
-              Builder(builder: (context) {
-                final vm = context.read<PlantsViewModel>();
-                // Filtrujemy wszystkie releves, które na swojej liście mają ID tej konkretnej rośliny
-                final assignedReleves = vm.allReleves.where((r) => r.plantObservationIds.contains(obs.id)).toList();
-
-                if (assignedReleves.isEmpty) return const Text("Brak przypisanych płatów.");
-
-                return Column(
-                  children: assignedReleves.map((r) => ListTile(
-                    dense: true,
-                    leading: const Icon(Icons.category, color: Colors.deepPurple),
-                    title: Text("Płat: ${r.assignedSyntaxonId ?? 'Nieokreślony'}"),
-                    subtitle: Text("Data utworzenia: ${DateFormat('yyyy-MM-dd').format(r.date)}"),
-                  )).toList(),
-                );
-              }),
-
               const SizedBox(height: 15),
               _sectionHeader("Cechy z terenu"),
 

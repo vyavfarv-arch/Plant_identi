@@ -46,49 +46,8 @@ class _MapScreenState extends State<MapScreen> {
       });
     }
   }
-  void _showReleveDetails(BuildContext context, Releve releve) {
-    final vm = context.read<PlantsViewModel>();
-    // Znajdujemy pełne obiekty roślin na podstawie ich ID zapisanych w płacie
-    final plantsInReleve = vm.allObservations
-        .where((obs) => releve.plantObservationIds.contains(obs.id))
-        .toList();
 
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Syntakson: ${releve.assignedSyntaxonId ?? 'Nieoznaczony'}",
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.deepPurple),
-            ),
-            const SizedBox(height: 10),
-            if (releve.isHeterogeneous)
-              const Text("⚠️ Uwaga: Wykryto niejednorodność obszaru!", style: TextStyle(color: Colors.red)),
-            const Divider(),
-            const Text("Gatunki w tym płacie:", style: TextStyle(fontWeight: FontWeight.bold)),
-            Expanded(
-              child: ListView.builder(
-                itemCount: plantsInReleve.length,
-                itemBuilder: (context, index) {
-                  final plant = plantsInReleve[index];
-                  return ListTile(
-                    leading: const Icon(Icons.eco, color: Colors.green),
-                    title: Text(plant.displayName),
-                    subtitle: Text(plant.latinName ?? "Brak nazwy łacińskiej"),
-                    trailing: Text(plant.phytosociologicalStatus ?? "-"),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<PlantsViewModel>();
@@ -109,24 +68,31 @@ class _MapScreenState extends State<MapScreen> {
           target: LatLng(52.237, 21.017),
           zoom: 6,
         ),
-        myLocationEnabled: true, // PRZENIESIONO DO ŚRODKA
-        // Wyświetlanie poligonów (płatów)
+        myLocationEnabled: true,
+        // Wyświetlanie poligonów (płatów fitosocjologicznych)
         polygons: _mode == MapViewMode.syntaxa
             ? vm.allReleves.map((r) {
-          final color = Colors.green; // Tu docelowo logika z PhytosociologyService
           return Polygon(
             polygonId: PolygonId(r.id),
-            points: r.polygon,
-            fillColor: color.withOpacity(0.4),
-            strokeColor: color,
+            points: r.points,
+            fillColor: Colors.green.withOpacity(0.4),
+            strokeColor: Colors.green,
             strokeWidth: 2,
-            onTap: () => _showReleveDetails(context, r),
-            consumeTapEvents: true,
+            consumeTapEvents: true, // Musi być true, aby onTap działało
+            onTap: () {
+              // Wyświetlamy prostą informację u dołu ekranu po kliknięciu w obszar
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("${r.type}: ${r.name}"),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
           );
         }).toSet()
             : {},
         // Wyświetlanie markerów (roślin)
-        markers: _mode == MapViewMode.plants // DODANO WARUNEK
+        markers: _mode == MapViewMode.plants
             ? plantsToDisplay.map((obs) => Marker(
           markerId: MarkerId(obs.id),
           position: LatLng(obs.latitude, obs.longitude),
@@ -159,13 +125,19 @@ class _MapScreenState extends State<MapScreen> {
                           ChoiceChip(
                               label: const Text("Rośliny"),
                               selected: _mode == MapViewMode.plants,
-                              onSelected: (s) { if(s) setState(() => _mode = MapViewMode.plants); setDialogState(() {}); }
+                              onSelected: (s) {
+                                if(s) setState(() => _mode = MapViewMode.plants);
+                                setDialogState(() {});
+                              }
                           ),
                           const SizedBox(width: 10),
                           ChoiceChip(
                               label: const Text("Syntaksony"),
                               selected: _mode == MapViewMode.syntaxa,
-                              onSelected: (s) { if(s) setState(() => _mode = MapViewMode.syntaxa); setDialogState(() {}); }
+                              onSelected: (s) {
+                                if(s) setState(() => _mode = MapViewMode.syntaxa);
+                                setDialogState(() {});
+                              }
                           ),
                         ],
                       ),
@@ -175,7 +147,10 @@ class _MapScreenState extends State<MapScreen> {
                         DropdownButton<String>(
                           value: _selectedRank,
                           items: ["Zespół", "Związek", "Rząd", "Klasa"].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
-                          onChanged: (v) { setState(() => _selectedRank = v!); setDialogState(() {}); },
+                          onChanged: (v) {
+                            setState(() => _selectedRank = v!);
+                            setDialogState(() {});
+                          },
                         ),
                       ] else ...[
                         ...vm.uniquePlantNames.map((name) => CheckboxListTile(
