@@ -61,6 +61,13 @@ class HomeScreen extends StatelessWidget {
                   color: Colors.deepPurple,
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReleveMapScreen()))
               ),
+              const SizedBox(height: 20),
+              _buildMenuButton(context,
+                  title: 'Wyświetl obszary',
+                  icon: Icons.layers,
+                  color: Colors.indigo,
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReleveListMapScreen()))
+              ),
             ],
           ),
         ),
