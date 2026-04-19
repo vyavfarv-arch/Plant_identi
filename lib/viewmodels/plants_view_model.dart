@@ -10,7 +10,8 @@ class PlantsViewModel extends ChangeNotifier {
   List<Releve> _releves = [];
   DateTime? _filterDate;
   final List<String> _selectedPlantNames = [];
-
+  Releve? _filterArea; // NOWE: wybrany obszar do filtrowania
+  Releve? get filterArea => _filterArea;
   List<PlantObservation> get allObservations => _observations;
   List<String> get selectedPlantNames => _selectedPlantNames;
   List<Releve> get allReleves => _releves;
@@ -21,8 +22,11 @@ class PlantsViewModel extends ChangeNotifier {
   List<PlantObservation> get incompleteObservations =>
       _observations.where((obs) => !obs.isComplete).toList();
 
+// Zaktualizowany getter filtrowania
   List<PlantObservation> get filteredCompleteObservations {
     var list = _observations.where((obs) => obs.isComplete).toList();
+
+    // Filtr daty
     if (_filterDate != null) {
       list = list.where((obs) =>
       obs.observationDate!.year == _filterDate!.year &&
@@ -30,10 +34,56 @@ class PlantsViewModel extends ChangeNotifier {
           obs.observationDate!.day == _filterDate!.day
       ).toList();
     }
+
+    // NOWE: Filtr obszaru
+    if (_filterArea != null) {
+      list = list.where((obs) =>
+          isPointInPolygon(LatLng(obs.latitude, obs.longitude), _filterArea!.points)
+      ).toList();
+    }
+
     return list;
   }
+
+  void setFilterArea(Releve? area) {
+    _filterArea = area;
+    notifyListeners();
+  }
+
   List<Releve> get filteredReleves {
     return _releves.where((r) => _selectedReleveTypes.contains(r.type)).toList();
+  }
+  bool isPointInPolygon(LatLng point, List<LatLng> polygon) {
+    int i, j = polygon.length - 1;
+    bool oddNodes = false;
+    double x = point.longitude;
+    double y = point.latitude;
+
+    for (i = 0; i < polygon.length; i++) {
+      if ((polygon[i].latitude < y && polygon[j].latitude >= y ||
+          polygon[j].latitude < y && polygon[i].latitude >= y) &&
+          (polygon[i].longitude <= x || polygon[j].longitude <= x)) {
+        if (polygon[i].longitude + (y - polygon[i].latitude) / (polygon[j].latitude - polygon[i].latitude) * (polygon[j].longitude - polygon[i].longitude) < x) {
+          oddNodes = !oddNodes;
+        }
+      }
+      j = i;
+    }
+    return oddNodes;
+  }
+
+// Pobiera listę roślin znajdujących się w danym obszarze
+  List<PlantObservation> getPlantsInReleve(Releve releve) {
+    return _observations.where((plant) {
+      return isPointInPolygon(LatLng(plant.latitude, plant.longitude), releve.points);
+    }).toList();
+  }
+
+// Pobiera listę obszarów, w których znajduje się konkretna roślina
+  List<Releve> getRelevesForPlant(PlantObservation plant) {
+    return _releves.where((releve) {
+      return isPointInPolygon(LatLng(plant.latitude, plant.longitude), releve.points);
+    }).toList();
   }
   void toggleReleveTypeFilter(String type) {
     if (_selectedReleveTypes.contains(type)) {

@@ -3,7 +3,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../models/releve.dart';
 import '../viewmodels/plants_view_model.dart';
-import 'releve_map_screen.dart'; // Import ekranu tworzenia
+import 'releve_map_screen.dart';
+import 'releve_details_screen.dart';
 
 class ReleveListMapScreen extends StatelessWidget {
   const ReleveListMapScreen({super.key});
@@ -32,7 +33,12 @@ class ReleveListMapScreen extends StatelessWidget {
           strokeColor: _getColorForType(releve.type),
           strokeWidth: 2,
           consumeTapEvents: true,
-          onTap: () => _showEditDeleteDialog(context, releve, vm),
+          onTap: () {
+            Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => ReleveDetailsScreen(releve: releve))
+            );
+          },
         )).toSet(),
       ),
       // PRZYCISK DODAWANIA (PLUS)

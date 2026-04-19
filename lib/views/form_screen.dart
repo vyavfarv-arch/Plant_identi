@@ -124,7 +124,7 @@ class _FormScreenState extends State<FormScreen> {
       coverage: widget.observation.coverage,
       vitality: widget.observation.vitality,
       sociability: widget.observation.sociability,
-      observationDate: now, // USTAWIA DATE - teraz roślina "zniknie" po dodaniu nazwy
+      observationDate: now,
     );
 
     context.read<PlantsViewModel>().addObservation(finalObs);
