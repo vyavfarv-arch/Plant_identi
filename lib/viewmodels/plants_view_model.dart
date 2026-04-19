@@ -10,7 +10,7 @@ class PlantsViewModel extends ChangeNotifier {
   List<Releve> _releves = [];
   DateTime? _filterDate;
   final List<String> _selectedPlantNames = [];
-  Releve? _filterArea; // NOWE: wybrany obszar do filtrowania
+  Releve? _filterArea;
   Releve? get filterArea => _filterArea;
   List<PlantObservation> get allObservations => _observations;
   List<String> get selectedPlantNames => _selectedPlantNames;

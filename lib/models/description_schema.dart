@@ -18,7 +18,10 @@ class SchemaGenerator {
     switch (type) {
       case "Grzyb": return _fungusSchema();
       case "Mszaki": return _bryophyteSchema();
-      case "Zielona": return _herbaceousSchema();
+      case "Zielne": return _herbaceousSchema();
+      case "Drzewo": return _treeSchema();
+      case "Krzew": return _shrubSchema();
+      case "Krzewinka": return _dwarfShrubSchema();
       default: return _herbaceousSchema();
     }
   }
@@ -27,21 +30,37 @@ class SchemaGenerator {
     return [
       DescriptionCategory(
           number: "1",
-          title: "Owocnik",
+          title: "Kapelusz / Owocnik",
           subCategories: {
-            "Forma": ["kapeluszowy", "hubowaty", "maczugowaty", "kulisty"],
-            "Powierzchnia kapelusza": ["gładka", "lepka", "kosmata", "łuskowata"],
-          },
-          referenceImages: {
-            "kapeluszowy": "assets/ref/fungus_cap.png",
-            "hubowaty": "assets/ref/fungus_shelf.png",
+            "Kształt": ["wypukły", "płaski", "wklęsły", "lejkowaty", "stożkowaty"],
+            "Powierzchnia": ["sucha", "lepka/śluzowata", "aksamitna", "łuskowata"],
+            "Brzeg": ["podwinięty", "prosty", "pofalowany", "prążkowany"],
           }
       ),
       DescriptionCategory(
         number: "2",
-        title: "Hymenofor",
+        title: "Hymenofor (spód)",
         subCategories: {
-          "Typ": ["rurki", "blaszki", "kolce", "fałdy"],
+          "Typ": ["rurki", "blaszki", "kolce", "listewki", "gładki"],
+          "Sposób przyrośnięcia": ["wolne", "zatokowato wycięte", "zbiegające"],
+        },
+      ),
+      DescriptionCategory(
+        number: "3",
+        title: "Trzon",
+        subCategories: {
+          "Kształt": ["walcowaty", "bulwiasty", "wrzecionowaty", "pusty w środku"],
+          "Pierścień": ["obecny (ruchomy)", "obecny (przyrośnięty)", "brak"],
+          "Pochwa u nasady": ["obecna", "brak"],
+        },
+      ),
+      DescriptionCategory(
+        number: "4",
+        title: "Miąższ",
+        subCategories: {
+          "Zmiana barwy": ["nie zmienia", "sinieje", "czerwienieje", "czernieje"],
+          "Mleczko": ["brak", "obecne (białe)", "obecne (pomarańczowe/inne)"],
+          "Zapach": ["brak", "grzybowy", "owocowy", "mączny", "nieprzyjemny"],
         },
       ),
     ];
@@ -51,22 +70,124 @@ class SchemaGenerator {
     return [
       DescriptionCategory(
         number: "1",
-        title: "Budowa gametofitu",
+        title: "Gametofit (część zielona)",
         subCategories: {
-          "Pokrój": ["listkowaty", "plechowaty"],
-          "Ulistnienie": ["dwustronne", "wielostronne"],
+          "Typ budowy": ["listkowaty (mech)", "plechowaty (wątrobowiec)"],
+          "Pokrój": ["darnie luźne", "darnie zbite", "płożący", "wzniesiony pierzasto"],
+          "Żeberko w listku": ["brak", "pojedyncze", "podwójne"],
         },
       ),
       DescriptionCategory(
         number: "2",
-        title: "Sporofit",
+        title: "Sporofit (część zarodniowa)",
         subCategories: {
-          "Czepek": ["gładki", "owłosiony"],
-          "Puszka": ["kulista", "walcowata", "wygięta"],
+          "Seta (trzonek)": ["krótka", "długa", "brak"],
+          "Puszka": ["z wieczkiem", "otwierająca się szczelinami"],
+          "Perystom (uzębienie)": ["obecny", "brak"],
+        },
+      ),
+      DescriptionCategory(
+        number: "3",
+        title: "Siedlisko",
+        subCategories: {
+          "Podłoże": ["gleba", "kamienie/skały", "kora drzew", "martwe drewno"],
         },
       ),
     ];
   }
+
+  static List<DescriptionCategory> _dwarfShrubSchema() {
+    return [
+      DescriptionCategory(
+        number: "1",
+        title: "Morfologia",
+        subCategories: {
+          "Wzrost": ["podnoszący się", "płożący", "poduszkowy"],
+          "Drewnienie": ["tylko u nasady", "całe pędy"],
+        },
+      ),
+      DescriptionCategory(
+        number: "2",
+        title: "Liście",
+        subCategories: {
+          "Typ": ["skórzaste", "wrzosowate (drobne)", "łopatkowate"],
+          "Brzeg": ["podwinięty", "piłkowany", "gładki"],
+          "Zimozieloność": ["tak", "nie"],
+        },
+      ),
+    ];
+  }
+
+  static List<DescriptionCategory> _shrubSchema() {
+    return [
+      DescriptionCategory(
+        number: "1",
+        title: "Budowa ogólna",
+        subCategories: {
+          "Pokrój": ["wzniesiony", "rozłożysty", "płożący", "kulisty"],
+          "Gęstość": ["zwarty", "ażurowy", "formujący zarośla"],
+          "Pędy": ["proste", "łukowato wygięte", "zygzakowate"],
+        },
+      ),
+      DescriptionCategory(
+        number: "2",
+        title: "Cechy pędów",
+        subCategories: {
+          "Uzbrojenie": ["brak", "kolce", "ciernie"],
+          "Przekrój": ["obły", "kanciasty"],
+          "Rdzeń": ["pełny", "pusty", "komorowy"],
+        },
+      ),
+      DescriptionCategory(
+        number: "3",
+        title: "Owoce i Kwiaty",
+        subCategories: {
+          "Rodzaj owocu": ["jagoda", "pestkowiec", "torebka", "pozorny (np. róża)"],
+          "Barwa owoców": ["czerwona", "czarna", "niebieska", "żółta", "biała"],
+        },
+      ),
+    ];
+  }
+
+  static List<DescriptionCategory> _treeSchema() {
+    return [
+      DescriptionCategory(
+        number: "1",
+        title: "Pokrój i Pień",
+        subCategories: {
+          "Forma korony": ["stożkowata", "kolumnowa", "płacząca", "parasolowata", "nieregularna"],
+          "Typ pnia": ["jednopniowy", "wielopniowy", "pochylony"],
+          "Wysokość (szacowana)": ["niskie (do 10m)", "średnie (10-20m)", "wysokie (powyżej 20m)"],
+        },
+      ),
+      DescriptionCategory(
+        number: "2",
+        title: "Kora",
+        subCategories: {
+          "Struktura": ["gładka", "spękana podłużnie", "łuszcząca się płatami", "z przetchlinkami", "korkowata"],
+          "Barwa": ["biała", "szara", "brunatna", "czarniawa", "miedziana"],
+        },
+      ),
+      DescriptionCategory(
+        number: "3",
+        title: "Liście / Igły",
+        subCategories: {
+          "Typ": ["liściaste szerokie", "igły", "łuski"],
+          "Trwałość": ["sezonowe (zrzucane)", "zimozielone"],
+          "Ułożenie igieł": ["pojedyncze", "pęczkowe (po 2, 3, 5)", "zebrane na krótkopędach"],
+        },
+      ),
+      DescriptionCategory(
+        number: "4",
+        title: "Organy rozrodcze",
+        subCategories: {
+          "Typ": ["szyszki", "owoce mięsiste", "skrzydlaki", "orzechy"],
+          "Kwitnienie": ["kotki", "kwiaty okazałe", "niepozorne"],
+        },
+      ),
+    ];
+  }
+
   static List<DescriptionCategory> _herbaceousSchema() {
     return [
       DescriptionCategory(

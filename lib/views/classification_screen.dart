@@ -20,7 +20,7 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
   String? _selectedVitality;
   String? _selectedSociability;
 
-  final List<String> _types = ["Drzewo", "Krzew", "Krzewinka", "Zielona", "Grzyb", "Mszaki"];
+  final List<String> _types = ["Drzewo", "Krzew", "Krzewinka", "Zielne", "Grzyb", "Mszaki"];
   final Map<String, String> _layerDescriptions = {
     "A": "Warstwa drzew (>7m)",
     "B": "Warstwa krzewów (0.5-7m)",

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../viewmodels/observation_vm.dart';
 import '../models/plant_observation.dart';
 import '../viewmodels/plants_view_model.dart';
@@ -18,6 +19,7 @@ class _FormScreenState extends State<FormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Pobieramy schemat na podstawie typu biologicznego
     final schema = SchemaGenerator.getForType(
         widget.observation.biologicalType ?? "Zielona");
 
@@ -39,7 +41,7 @@ class _FormScreenState extends State<FormScreen> {
                   title: Text(category.title,
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                   children: category.subCategories.entries.map((sub) {
-                    return _buildSubCategorySection(sub.key, sub.value);
+                    return _buildSubCategorySection(category, sub.key, sub.value);
                   }).toList(),
                 );
               },
@@ -64,6 +66,8 @@ class _FormScreenState extends State<FormScreen> {
             runSpacing: 10,
             children: options.map((opt) {
               final isSelected = _selectedValues[subTitle]?.contains(opt) ?? false;
+
+              // Sprawdzamy czy w kategorii istnieją zdjęcia poglądowe dla danej opcji
               final hasImage = category.referenceImages?.containsKey(opt) ?? false;
 
               return InkWell(
@@ -82,7 +86,6 @@ class _FormScreenState extends State<FormScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Zdjęcie poglądowe (jeśli istnieje w schemacie)
                     if (hasImage)
                       Container(
                         width: 80, height: 60,
@@ -93,7 +96,10 @@ class _FormScreenState extends State<FormScreen> {
                             image: AssetImage(category.referenceImages![opt]!),
                             fit: BoxFit.cover,
                           ),
-                          border: Border.all(color: isSelected ? Colors.green : Colors.transparent, width: 2),
+                          border: Border.all(
+                              color: isSelected ? Colors.green : Colors.transparent,
+                              width: 2
+                          ),
                         ),
                       ),
                     Container(
@@ -101,9 +107,16 @@ class _FormScreenState extends State<FormScreen> {
                       decoration: BoxDecoration(
                         color: isSelected ? Colors.green : Colors.grey.shade200,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: isSelected ? Colors.green : Colors.grey.shade400),
+                        border: Border.all(
+                            color: isSelected ? Colors.green : Colors.grey.shade400
+                        ),
                       ),
-                      child: Text(opt, style: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontSize: 12)),
+                      child: Text(opt,
+                          style: TextStyle(
+                              color: isSelected ? Colors.white : Colors.black87,
+                              fontSize: 12
+                          )
+                      ),
                     ),
                   ],
                 ),
@@ -131,6 +144,7 @@ class _FormScreenState extends State<FormScreen> {
   void _zapiszFinalnie() {
     final now = DateTime.now();
 
+    // Tworzymy nową obserwację z wybranymi wielokrotnie cechami
     final finalObs = PlantObservation(
       id: widget.observation.id,
       photoPaths: widget.observation.photoPaths,
