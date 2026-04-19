@@ -1,4 +1,3 @@
-// lib/models/plant_observation.dart
 import 'dart:convert';
 
 class PlantObservation {
@@ -7,17 +6,15 @@ class PlantObservation {
   final double latitude;
   final double longitude;
   final DateTime timestamp;
-  final Map<String, String> characteristics;
+  // ZMIANA: Mapa przechowuje teraz listę tekstów zamiast pojedynczego tekstu
+  final Map<String, List<String>> characteristics;
 
-  // Dane fitosocjologiczne (ustawiane w ClassificationScreen)
   String? biologicalType;
   String? phytosociologicalLayer;
   String? abundance;
   String? coverage;
   String? vitality;
   String? sociability;
-
-  // Szczegółowy opis
   DateTime? observationDate;
   String? family;
   String? genus;
@@ -33,7 +30,7 @@ class PlantObservation {
   String? characteristicFeature;
   String? plantUsage;
   String? cultivation;
-  String? phytosociologicalStatus; // Charakterystyczny, Wyróżniający, Popularny
+  String? phytosociologicalStatus;
 
   PlantObservation({
     required this.id,
@@ -63,16 +60,14 @@ class PlantObservation {
     this.characteristicFeature,
     this.plantUsage,
     this.cultivation,
-    this.phytosociologicalStatus, // DODANO TĘ LINIĘ
+    this.phytosociologicalStatus,
   });
 
   String get displayName => (localName != null && localName!.isNotEmpty)
       ? localName!
       : (polishName != null && polishName!.isNotEmpty) ? polishName! : "Nieznana roślina";
 
-  bool get isComplete =>
-      localName != null && localName!.isNotEmpty &&
-          observationDate != null;
+  bool get isComplete => localName != null && localName!.isNotEmpty && observationDate != null;
 
   Map<String, dynamic> toMap() {
     return {
@@ -81,6 +76,7 @@ class PlantObservation {
       'latitude': latitude,
       'longitude': longitude,
       'timestamp': timestamp.toIso8601String(),
+      // Zapisujemy mapę list jako JSON
       'characteristics': jsonEncode(characteristics),
       'biologicalType': biologicalType,
       'phytosociologicalLayer': phytosociologicalLayer,
@@ -103,18 +99,27 @@ class PlantObservation {
       'characteristicFeature': characteristicFeature,
       'plantUsage': plantUsage,
       'cultivation': cultivation,
-      'phytosociologicalStatus':phytosociologicalStatus
+      'phytosociologicalStatus': phytosociologicalStatus
     };
   }
 
   factory PlantObservation.fromMap(Map<String, dynamic> map) {
+    // Odczyt i konwersja mapy list
+    var rawChars = jsonDecode(map['characteristics'] ?? '{}');
+    Map<String, List<String>> decodedChars = {};
+    if (rawChars is Map) {
+      rawChars.forEach((key, value) {
+        decodedChars[key.toString()] = List<String>.from(value as List);
+      });
+    }
+
     return PlantObservation(
       id: map['id'] ?? '',
-      photoPaths: List<String>.from(jsonDecode(map['photoPaths'])),
+      photoPaths: List<String>.from(jsonDecode(map['photoPaths'] ?? '[]')),
       latitude: map['latitude']?.toDouble() ?? 0.0,
       longitude: map['longitude']?.toDouble() ?? 0.0,
       timestamp: DateTime.parse(map['timestamp']),
-      characteristics: Map<String, String>.from(jsonDecode(map['characteristics'])),
+      characteristics: decodedChars,
       biologicalType: map['biologicalType'],
       phytosociologicalLayer: map['phytosociologicalLayer'],
       abundance: map['abundance'],
@@ -136,7 +141,7 @@ class PlantObservation {
       characteristicFeature: map['characteristicFeature'],
       plantUsage: map['plantUsage'],
       cultivation: map['cultivation'],
-        phytosociologicalStatus: map['phytosociologicalStatus'],
+      phytosociologicalStatus: map['phytosociologicalStatus'],
     );
   }
 }

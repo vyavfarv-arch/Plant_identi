@@ -14,7 +14,7 @@ class FormScreen extends StatefulWidget {
 }
 
 class _FormScreenState extends State<FormScreen> {
-  final Map<String, String> _selectedValues = {};
+  final Map<String, List<String>> _selectedValues = {};
 
   @override
   Widget build(BuildContext context) {
@@ -51,41 +51,61 @@ class _FormScreenState extends State<FormScreen> {
     );
   }
 
-  Widget _buildSubCategorySection(String title, List<String> options) {
+  Widget _buildSubCategorySection(DescriptionCategory category, String subTitle, List<String> options) {
     return Padding(
       padding: const EdgeInsets.all(12.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: TextStyle(color: Colors.grey.shade700, fontSize: 14)),
-          const SizedBox(height: 8),
+          Text(subTitle, style: TextStyle(color: Colors.grey.shade700, fontSize: 14, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 10,
+            runSpacing: 10,
             children: options.map((opt) {
-              final isSelected = _selectedValues[title] == opt;
-              return GestureDetector(
+              final isSelected = _selectedValues[subTitle]?.contains(opt) ?? false;
+              final hasImage = category.referenceImages?.containsKey(opt) ?? false;
+
+              return InkWell(
                 onTap: () {
                   setState(() {
+                    if (_selectedValues[subTitle] == null) {
+                      _selectedValues[subTitle] = [];
+                    }
                     if (isSelected) {
-                      _selectedValues.remove(title);
+                      _selectedValues[subTitle]!.remove(opt);
                     } else {
-                      _selectedValues[title] = opt;
+                      _selectedValues[subTitle]!.add(opt);
                     }
                   });
                 },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isSelected ? Colors.green : Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: isSelected ? Colors.green : Colors
-                        .grey.shade400),
-                  ),
-                  child: Text(opt, style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.black87)),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Zdjęcie poglądowe (jeśli istnieje w schemacie)
+                    if (hasImage)
+                      Container(
+                        width: 80, height: 60,
+                        margin: const EdgeInsets.only(bottom: 4),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(4),
+                          image: DecorationImage(
+                            image: AssetImage(category.referenceImages![opt]!),
+                            fit: BoxFit.cover,
+                          ),
+                          border: Border.all(color: isSelected ? Colors.green : Colors.transparent, width: 2),
+                        ),
+                      ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected ? Colors.green : Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: isSelected ? Colors.green : Colors.grey.shade400),
+                      ),
+                      child: Text(opt, style: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontSize: 12)),
+                    ),
+                  ],
                 ),
               );
             }).toList(),

@@ -129,8 +129,13 @@ class PlantCardView {
 
   static Widget _buildFieldCharacteristics(PlantObservation obs) {
     if (obs.characteristics.isEmpty) return const Text("Brak dodatkowych cech.");
+
     return Column(
-      children: obs.characteristics.entries.map((e) => _infoItem(Icons.check_circle_outline, e.key, e.value)).toList(),
+      children: obs.characteristics.entries.map((e) {
+        // Łączymy listę wybranych cech w jeden ciąg tekstowy
+        String valuesText = e.value.join(", ");
+        return _infoItem(Icons.check_circle_outline, e.key, valuesText);
+      }).toList(),
     );
   }
 

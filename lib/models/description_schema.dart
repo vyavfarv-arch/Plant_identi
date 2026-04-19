@@ -2,17 +2,71 @@ class DescriptionCategory {
   final String number;
   final String title;
   final Map<String, List<String>> subCategories;
+  // Mapa przechowująca ścieżki do zdjęć poglądowych dla konkretnych opcji
+  final Map<String, String>? referenceImages;
 
-  DescriptionCategory({required this.number, required this.title, required this.subCategories});
+  DescriptionCategory({
+    required this.number,
+    required this.title,
+    required this.subCategories,
+    this.referenceImages,
+  });
 }
 
 class SchemaGenerator {
   static List<DescriptionCategory> getForType(String type) {
-    if (type == "Zielona") return _herbaceousSchema();
-    // Domyślnie zwraca zielne, dopóki nie dodasz drzew/krzewów
-    return _herbaceousSchema();
+    switch (type) {
+      case "Grzyb": return _fungusSchema();
+      case "Mszaki": return _bryophyteSchema();
+      case "Zielona": return _herbaceousSchema();
+      default: return _herbaceousSchema();
+    }
   }
 
+  static List<DescriptionCategory> _fungusSchema() {
+    return [
+      DescriptionCategory(
+          number: "1",
+          title: "Owocnik",
+          subCategories: {
+            "Forma": ["kapeluszowy", "hubowaty", "maczugowaty", "kulisty"],
+            "Powierzchnia kapelusza": ["gładka", "lepka", "kosmata", "łuskowata"],
+          },
+          referenceImages: {
+            "kapeluszowy": "assets/ref/fungus_cap.png",
+            "hubowaty": "assets/ref/fungus_shelf.png",
+          }
+      ),
+      DescriptionCategory(
+        number: "2",
+        title: "Hymenofor",
+        subCategories: {
+          "Typ": ["rurki", "blaszki", "kolce", "fałdy"],
+        },
+      ),
+    ];
+  }
+
+  static List<DescriptionCategory> _bryophyteSchema() {
+    return [
+      DescriptionCategory(
+        number: "1",
+        title: "Budowa gametofitu",
+        subCategories: {
+          "Pokrój": ["listkowaty", "plechowaty"],
+          "Ulistnienie": ["dwustronne", "wielostronne"],
+        },
+      ),
+      DescriptionCategory(
+        number: "2",
+        title: "Sporofit",
+        subCategories: {
+          "Czepek": ["gładki", "owłosiony"],
+          "Puszka": ["kulista", "walcowata", "wygięta"],
+        },
+      ),
+    ];
+  }
   static List<DescriptionCategory> _herbaceousSchema() {
     return [
       DescriptionCategory(
