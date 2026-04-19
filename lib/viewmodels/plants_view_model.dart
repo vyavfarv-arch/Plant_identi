@@ -15,6 +15,9 @@ class PlantsViewModel extends ChangeNotifier {
   List<String> get selectedPlantNames => _selectedPlantNames;
   List<Releve> get allReleves => _releves;
 
+  final List<String> _selectedReleveTypes = ["Zespół", "Związek", "Rząd", "Klasa"];
+  List<String> get selectedReleveTypes => _selectedReleveTypes;
+
   List<PlantObservation> get incompleteObservations =>
       _observations.where((obs) => !obs.isComplete).toList();
 
@@ -29,7 +32,17 @@ class PlantsViewModel extends ChangeNotifier {
     }
     return list;
   }
-
+  List<Releve> get filteredReleves {
+    return _releves.where((r) => _selectedReleveTypes.contains(r.type)).toList();
+  }
+  void toggleReleveTypeFilter(String type) {
+    if (_selectedReleveTypes.contains(type)) {
+      _selectedReleveTypes.remove(type);
+    } else {
+      _selectedReleveTypes.add(type);
+    }
+    notifyListeners();
+  }
   List<PlantObservation> get mapFilteredObservations {
     var allComplete = _observations.where((obs) => obs.isComplete).toList();
     if (_selectedPlantNames.isEmpty) return [];

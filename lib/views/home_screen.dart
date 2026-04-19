@@ -56,14 +56,6 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 20),
 
               _buildMenuButton(context,
-                  title: 'Zdjęcie fitosocjologiczne',
-                  icon: Icons.border_style,
-                  color: Colors.deepPurple,
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReleveMapScreen()))
-              ),
-              const SizedBox(height: 20),
-
-              _buildMenuButton(context,
                   title: 'Wyświetl obszary',
                   icon: Icons.layers,
                   color: Colors.indigo,

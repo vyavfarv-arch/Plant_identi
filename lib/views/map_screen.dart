@@ -64,45 +64,18 @@ class _MapScreenState extends State<MapScreen> {
         ],
       ),
       body: GoogleMap(
-        initialCameraPosition: const CameraPosition(
-          target: LatLng(52.237, 21.017),
-          zoom: 6,
-        ),
+        initialCameraPosition: const CameraPosition(target: LatLng(52.237, 21.017), zoom: 6),
         myLocationEnabled: true,
-        // Wyświetlanie poligonów (płatów fitosocjologicznych)
-        polygons: _mode == MapViewMode.syntaxa
-            ? vm.allReleves.map((r) {
-          return Polygon(
-            polygonId: PolygonId(r.id),
-            points: r.points,
-            fillColor: Colors.green.withOpacity(0.4),
-            strokeColor: Colors.green,
-            strokeWidth: 2,
-            consumeTapEvents: true, // Musi być true, aby onTap działało
-            onTap: () {
-              // Wyświetlamy prostą informację u dołu ekranu po kliknięciu w obszar
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text("${r.type}: ${r.name}"),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            },
-          );
-        }).toSet()
-            : {},
-        // Wyświetlanie markerów (roślin)
-        markers: _mode == MapViewMode.plants
-            ? plantsToDisplay.map((obs) => Marker(
+        mapType: MapType.satellite, // ZMIANA: Zawsze mapa satelitarna
+        markers: plantsToDisplay.map((obs) => Marker(
           markerId: MarkerId(obs.id),
           position: LatLng(obs.latitude, obs.longitude),
           icon: grassIcon ?? BitmapDescriptor.defaultMarker,
           infoWindow: InfoWindow(
-            title: obs.displayName,
-            snippet: "Ilość: ${obs.abundance}",
+              title: obs.displayName,
+              snippet: "Ilość: ${obs.abundance}"
           ),
-        )).toSet()
-            : {},
+        )).toSet(),
       ),
     );
   }
@@ -110,68 +83,25 @@ class _MapScreenState extends State<MapScreen> {
   void _showFilterDialog(BuildContext context, PlantsViewModel vm) {
     showDialog(
       context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-            builder: (context, setDialogState) {
-              return AlertDialog(
-                title: const Text("Filtry mapy"),
-                content: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text("Tryb widoku:", style: TextStyle(fontWeight: FontWeight.bold)),
-                      Row(
-                        children: [
-                          ChoiceChip(
-                              label: const Text("Rośliny"),
-                              selected: _mode == MapViewMode.plants,
-                              onSelected: (s) {
-                                if(s) setState(() => _mode = MapViewMode.plants);
-                                setDialogState(() {});
-                              }
-                          ),
-                          const SizedBox(width: 10),
-                          ChoiceChip(
-                              label: const Text("Syntaksony"),
-                              selected: _mode == MapViewMode.syntaxa,
-                              onSelected: (s) {
-                                if(s) setState(() => _mode = MapViewMode.syntaxa);
-                                setDialogState(() {});
-                              }
-                          ),
-                        ],
-                      ),
-                      const Divider(),
-                      if (_mode == MapViewMode.syntaxa) ...[
-                        const Text("Ranga:"),
-                        DropdownButton<String>(
-                          value: _selectedRank,
-                          items: ["Zespół", "Związek", "Rząd", "Klasa"].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
-                          onChanged: (v) {
-                            setState(() => _selectedRank = v!);
-                            setDialogState(() {});
-                          },
-                        ),
-                      ] else ...[
-                        ...vm.uniquePlantNames.map((name) => CheckboxListTile(
-                          title: Text(name),
-                          value: vm.selectedPlantNames.contains(name),
-                          onChanged: (val) {
-                            vm.toggleNameFilter(name);
-                            setDialogState(() {});
-                          },
-                        )).toList(),
-                      ]
-                    ],
-                  ),
-                ),
-                actions: [
-                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("ZAMKNIJ"))
-                ],
-              );
-            }
-        );
-      },
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text("Wybierz rośliny do wyświetlenia"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: vm.uniquePlantNames.map((name) => CheckboxListTile(
+                title: Text(name),
+                value: vm.selectedPlantNames.contains(name),
+                onChanged: (val) {
+                  vm.toggleNameFilter(name);
+                  setDialogState(() {});
+                },
+              )).toList(),
+            ),
+          ),
+          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("ZAMKNIJ"))],
+        ),
+      ),
     );
   }
 }

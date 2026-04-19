@@ -3,6 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../models/releve.dart';
 import '../viewmodels/plants_view_model.dart';
+import 'releve_map_screen.dart'; // Import ekranu tworzenia
 
 class ReleveListMapScreen extends StatelessWidget {
   const ReleveListMapScreen({super.key});
@@ -12,23 +13,74 @@ class ReleveListMapScreen extends StatelessWidget {
     final vm = context.watch<PlantsViewModel>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Zapisane obszary")),
+      appBar: AppBar(
+        title: const Text("Zapisane obszary"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: () => _showTypeFilterDialog(context, vm),
+          ),
+        ],
+      ),
       body: GoogleMap(
         initialCameraPosition: const CameraPosition(target: LatLng(52.23, 21.01), zoom: 12),
         mapType: MapType.hybrid,
-        polygons: vm.allReleves.map((releve) => Polygon(
+        polygons: vm.filteredReleves.map((releve) => Polygon(
           polygonId: PolygonId(releve.id),
           points: releve.points,
-          fillColor: Colors.blue.withOpacity(0.4),
-          strokeColor: Colors.blue,
+          fillColor: _getColorForType(releve.type).withOpacity(0.4),
+          strokeColor: _getColorForType(releve.type),
           strokeWidth: 2,
           consumeTapEvents: true,
           onTap: () => _showEditDeleteDialog(context, releve, vm),
         )).toSet(),
       ),
+      // PRZYCISK DODAWANIA (PLUS)
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.green,
+        onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ReleveMapScreen())
+        ),
+        child: const Icon(Icons.add, size: 30, color: Colors.white),
+      ),
     );
   }
 
+  Color _getColorForType(String type) {
+    switch (type) {
+      case "Zespół": return Colors.blue;
+      case "Związek": return Colors.purple;
+      case "Rząd": return Colors.orange;
+      case "Klasa": return Colors.red;
+      default: return Colors.green;
+    }
+  }
+
+  void _showTypeFilterDialog(BuildContext context, PlantsViewModel vm) {
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setStateDialog) => AlertDialog(
+          title: const Text("Filtruj typy obszarów"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: ["Zespół", "Związek", "Rząd", "Klasa"].map((type) => CheckboxListTile(
+              title: Text(type),
+              value: vm.selectedReleveTypes.contains(type),
+              onChanged: (val) {
+                vm.toggleReleveTypeFilter(type);
+                setStateDialog(() {}); // Odśwież dialog
+              },
+            )).toList(),
+          ),
+          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))],
+        ),
+      ),
+    );
+  }
+
+  // ... (Metoda _showEditDeleteDialog pozostaje bez zmian jak w Twoim pliku) ...
   void _showEditDeleteDialog(BuildContext context, Releve releve, PlantsViewModel vm) {
     final nameController = TextEditingController(text: releve.name);
     String currentType = releve.type;
