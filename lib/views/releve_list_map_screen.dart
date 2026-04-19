@@ -71,16 +71,34 @@ class ReleveListMapScreen extends StatelessWidget {
           title: const Text("Filtruj typy obszarów"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: ["Zespół", "Związek", "Rząd", "Klasa"].map((type) => CheckboxListTile(
-              title: Text(type),
-              value: vm.selectedReleveTypes.contains(type),
-              onChanged: (val) {
-                vm.toggleReleveTypeFilter(type);
-                setStateDialog(() {}); // Odśwież dialog
-              },
-            )).toList(),
+            children: [
+              // Pasek wyszukiwania
+              TextField(
+                decoration: const InputDecoration(
+                  labelText: "Szukaj po nazwie (np. las bukowy)",
+                  prefixIcon: Icon(Icons.search),
+                ),
+                onChanged: (v) => vm.setAreaSearchQuery(v),
+              ),
+              const SizedBox(height: 15),
+
+              // Rozwinięcie listy wygenerowanych CheckboxListTile za pomocą '...'
+              ...["Zespół", "Związek", "Rząd", "Klasa"].map((type) => CheckboxListTile(
+                title: Text(type),
+                value: vm.selectedReleveTypes.contains(type),
+                onChanged: (val) {
+                  vm.toggleReleveTypeFilter(type);
+                  setStateDialog(() {}); // Odśwież dialog
+                },
+              )).toList(),
+            ],
           ),
-          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))],
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text("OK")
+            )
+          ],
         ),
       ),
     );

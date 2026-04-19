@@ -8,6 +8,7 @@ class PlantsViewModel extends ChangeNotifier {
   final StorageService _storage = StorageService();
   List<PlantObservation> _observations = [];
   List<Releve> _releves = [];
+  String _areaSearchQuery = "";
   DateTime? _filterDate;
   final List<String> _selectedPlantNames = [];
   Releve? _filterArea;
@@ -51,7 +52,11 @@ class PlantsViewModel extends ChangeNotifier {
   }
 
   List<Releve> get filteredReleves {
-    return _releves.where((r) => _selectedReleveTypes.contains(r.type)).toList();
+    return _releves.where((r) {
+      final matchesType = selectedReleveTypes.contains(r.type);
+      final matchesName = r.name.toLowerCase().contains(_areaSearchQuery.toLowerCase());
+      return matchesType && matchesName;
+    }).toList();
   }
   bool isPointInPolygon(LatLng point, List<LatLng> polygon) {
     int i, j = polygon.length - 1;
@@ -106,6 +111,22 @@ class PlantsViewModel extends ChangeNotifier {
         .toSet()
         .toList();
   }
+  void setAreaSearchQuery(String query) {
+    _areaSearchQuery = query;
+    notifyListeners();
+  }
+  void assignParent(String childId, String? parentId) {
+    final index = _releves.indexWhere((r) => r.id == childId);
+    if (index != -1) {
+      _releves[index].parentId = parentId;
+      _storage.saveReleves(_releves);
+      notifyListeners();
+    }
+  }
+  List<Releve> getChildren(String parentId) {
+    return _releves.where((r) => r.parentId == parentId).toList();
+  }
+
 
   // --- ZARZĄDZANIE OBSZARAMI (RELEVE) ---
 
@@ -226,5 +247,22 @@ class PlantsViewModel extends ChangeNotifier {
     _observations.removeWhere((o) => o.id == id);
     _storage.saveObservations(_observations);
     notifyListeners();
+  }
+  bool isValidParent(String childType, String parentType) {
+    if (childType == "Rząd") return parentType == "Klasa";
+    if (childType == "Związek") return parentType == "Rząd";
+    if (childType == "Zespół") return parentType == "Związek";
+    return false; // Klasa nie może mieć rodzica
+  }
+  Releve? getParentArea(String? parentId) {
+    if (parentId == null) return null;
+    try {
+      return _releves.firstWhere((r) => r.id == parentId);
+    } catch (e) {
+      return null;
+    }
+  }
+  List<Releve> getPotentialParents(Releve child) {
+    return _releves.where((r) => isValidParent(child.type, r.type)).toList();
   }
 }

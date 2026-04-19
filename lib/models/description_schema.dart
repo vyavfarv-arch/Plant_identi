@@ -5,11 +5,13 @@ class DescriptionCategory {
   // Mapa przechowująca ścieżki do zdjęć poglądowych dla konkretnych opcji
   final Map<String, String>? referenceImages;
 
+
   DescriptionCategory({
     required this.number,
     required this.title,
     required this.subCategories,
     this.referenceImages,
+
   });
 }
 

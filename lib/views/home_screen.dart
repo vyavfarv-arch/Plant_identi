@@ -4,7 +4,8 @@ import 'description_grid_screen.dart';
 import 'browse_plants_screen.dart';
 import 'map_screen.dart';
 import 'releve_map_screen.dart';
-import 'releve_list_map_screen.dart'; // DODAJ TEN IMPORT
+import 'releve_list_map_screen.dart';
+import "area_managment_screen.dart";
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -61,6 +62,14 @@ class HomeScreen extends StatelessWidget {
                   color: Colors.indigo,
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReleveListMapScreen()))
               ),
+              const SizedBox(height: 20),
+              _buildMenuButton(context,
+                  title: 'Zarządzaj strukturą obszarów',
+                  icon: Icons.account_tree,
+                  color: Colors.blueGrey,
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AreaManagementScreen()))
+              ),
+
             ],
           ),
         ),

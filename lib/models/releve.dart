@@ -6,6 +6,7 @@ class Releve {
   final String type; // "Zespół", "Związek", "Rząd", "Klasa"
   final List<LatLng> points; // Używamy nazwy 'points'
   final DateTime date;
+  String? parentId;
 
   Releve({
     required this.id,
