@@ -38,6 +38,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
     _controllers['characteristic'] = TextEditingController(text: obs.characteristicFeature);
     _controllers['usage'] = TextEditingController(text: obs.plantUsage);
     _controllers['cultivation'] = TextEditingController(text: obs.cultivation);
+    _controllers['latinName'] = TextEditingController(text: obs.latinName);
 
     _selectedStatus = obs.phytosociologicalStatus;
     _selectedCertainty = obs.certainty;
@@ -120,7 +121,9 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
         _inputField(_controllers['family']!, "Rodzina (Familia)"),
         _inputField(_controllers['genus']!, "Rodzaj (Genus)"),
         _inputField(_controllers['species']!, "Gatunek (Species)"),
+        _inputField(_controllers['latinName']!, "Nazwa Łacińska (Kluczowa)"),
         _inputField(_controllers['subspecies']!, "Odmiana (opcjonalnie)"),
+
       ],
     );
   }
@@ -206,7 +209,10 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       confusing: _controllers['confusing']!.text,
       characteristic: _controllers['characteristic']!.text,
       usage: _controllers['usage']!.text,
+      latinName: _controllers['latinName']!.text,
+      phytosociologicalStatus: _selectedStatus,
       cultivation: _controllers['cultivation']!.text,
+
     );
 
     Navigator.pop(context);

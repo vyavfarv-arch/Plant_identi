@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart'; // Wymagane dla LatLng
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/plant_observation.dart';
 import '../models/releve.dart';
 import '../services/storage_service.dart';
@@ -8,8 +8,7 @@ import '../services/phytosociology_service.dart';
 class PlantsViewModel extends ChangeNotifier {
   final StorageService _storage = StorageService();
   List<PlantObservation> _observations = [];
-  List<Releve> _releves = []; // Lista zdjęć fitosocjologicznych
-
+  List<Releve> _releves = [];
   DateTime? _filterDate;
   final List<String> _selectedPlantNames = [];
 
@@ -46,13 +45,59 @@ class PlantsViewModel extends ChangeNotifier {
         .toList();
   }
 
-  // GŁÓWNA METODA DODAWANIA (Z AUTOMATYKĄ FITO)
+  // --- LOGIKA RELEVE (ZDJĘĆ FITOSOCJOLOGICZNYCH) ---
+  bool _isPointInPolygon(LatLng point, List<LatLng> polygon) {
+    int i, j = polygon.length - 1;
+    bool oddNodes = false;
+    double x = point.longitude;
+    double y = point.latitude;
+
+    for (i = 0; i < polygon.length; i++) {
+      if ((polygon[i].latitude < y && polygon[j].latitude >= y ||
+          polygon[j].latitude < y && polygon[i].latitude >= y) &&
+          (polygon[i].longitude <= x || polygon[j].longitude <= x)) {
+        if (polygon[i].longitude + (y - polygon[i].latitude) / (polygon[j].latitude - polygon[i].latitude) * (polygon[j].longitude - polygon[i].longitude) < x) {
+          oddNodes = !oddNodes;
+        }
+      }
+      j = i;
+    }
+    return oddNodes;
+  }
+  void createReleve(List<LatLng> points) {
+    if (points.length < 3) return;
+
+    final plantsInArea = _observations.where((obs) =>
+        _isPointInPolygon(LatLng(obs.latitude, obs.longitude), points)
+    ).map((e) => e.id).toList();
+
+    final newReleve = Releve(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      polygon: List.from(points),
+      date: DateTime.now(),
+      plantObservationIds: plantsInArea,
+    );
+
+    _releves.add(newReleve);
+    _updateReleveSyntaxon(newReleve);
+    notifyListeners();
+  }
+
+  void _updateReleveSyntaxon(Releve releve) {
+    final areaPlants = _observations.where((o) => releve.plantObservationIds.contains(o.id)).toList();
+    final result = PhytosociologyService().calculateBestFit(areaPlants);
+    releve.assignedSyntaxonId = result['syntaxonId'];
+    releve.isHeterogeneous = result['warning'] != null;
+  }
+
+  // --- OBSŁUGA OBSERWACJI ---
+
   void addObservation(PlantObservation obs) {
     _observations.add(obs);
 
-    // Automatyczne przypisanie nowej rośliny do istniejących obszarów (kwadratów)
+    // Automatyczne przypisanie nowej rośliny do istniejących obszarów fito
     for (var releve in _releves) {
-      if (releve.area.contains(LatLng(obs.latitude, obs.longitude))) {
+      if (releve.polygon.contains(LatLng(obs.latitude, obs.longitude))) {
         if (!releve.plantObservationIds.contains(obs.id)) {
           releve.plantObservationIds.add(obs.id);
           _updateReleveSyntaxon(releve);
@@ -64,70 +109,6 @@ class PlantsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Logika przeliczania syntaksonu dla zdjęcia
-  void _updateReleveSyntaxon(Releve releve) {
-    final areaPlants = _observations.where((o) => releve.plantObservationIds.contains(o.id)).toList();
-    final result = PhytosociologyService().calculateBestFit(areaPlants);
-    releve.assignedSyntaxonId = result['syntaxonId'];
-    releve.isHeterogeneous = result['warning'] != null;
-  }
-
-  void toggleNameFilter(String name) {
-    if (_selectedPlantNames.contains(name)) {
-      _selectedPlantNames.remove(name);
-    } else {
-      _selectedPlantNames.add(name);
-    }
-    notifyListeners();
-  }
-
-  Future<void> loadFromDisk() async {
-    _observations = await _storage.loadObservations();
-    notifyListeners();
-  }
-  void createReleve(LatLng p1, LatLng p2) {
-    final bounds = LatLngBounds(
-      southwest: LatLng(
-        p1.latitude < p2.latitude ? p1.latitude : p2.latitude,
-        p1.longitude < p2.longitude ? p1.longitude : p2.longitude,
-      ),
-      northeast: LatLng(
-        p1.latitude > p2.latitude ? p1.latitude : p2.latitude,
-        p1.longitude > p2.longitude ? p1.longitude : p2.longitude,
-      ),
-    );
-
-    // Znajdź wszystkie rośliny w tym obszarze
-    final plantsInArea = _observations.where((obs) {
-      final pos = LatLng(obs.latitude, obs.longitude);
-      return bounds.contains(pos);
-    }).map((e) => e.id).toList();
-
-    final newReleve = Releve(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      area: bounds,
-      date: DateTime.now(),
-      plantObservationIds: plantsInArea,
-    );
-
-    _releves.add(newReleve);
-
-    // Oblicz najlepszy fit syntaksonu (używa Twojej logiki z PhytosociologyService)
-    _updateReleveSyntaxon(newReleve);
-
-    notifyListeners();
-  }
-  void setFilterDate(DateTime? date) {
-    _filterDate = date;
-    notifyListeners();
-  }
-
-  void addObservation(PlantObservation observation) {
-    _observations.add(observation);
-    _storage.saveObservations(_observations);
-    notifyListeners();
-  }
-
   void updateObservationDetailed({
     required String id,
     String? family,
@@ -135,6 +116,8 @@ class PlantsViewModel extends ChangeNotifier {
     String? species,
     String? subspecies,
     String? localName,
+    String? latinName,
+    String? phytosociologicalStatus,
     String? certainty,
     String? doubts,
     String? keyTraits,
@@ -159,7 +142,7 @@ class PlantsViewModel extends ChangeNotifier {
         coverage: old.coverage,
         vitality: old.vitality,
         sociability: old.sociability,
-        observationDate: old.observationDate, // Zachowujemy datę z terenu
+        observationDate: old.observationDate,
         family: family,
         genus: genus,
         species: species,
@@ -176,6 +159,27 @@ class PlantsViewModel extends ChangeNotifier {
       _storage.saveObservations(_observations);
       notifyListeners();
     }
+  }
+
+  // --- FILTROWANIE ---
+
+  void toggleNameFilter(String name) {
+    if (_selectedPlantNames.contains(name)) {
+      _selectedPlantNames.remove(name);
+    } else {
+      _selectedPlantNames.add(name);
+    }
+    notifyListeners();
+  }
+
+  void setFilterDate(DateTime? date) {
+    _filterDate = date;
+    notifyListeners();
+  }
+
+  Future<void> loadFromDisk() async {
+    _observations = await _storage.loadObservations();
+    notifyListeners();
   }
 
   void deleteObservation(String id) {

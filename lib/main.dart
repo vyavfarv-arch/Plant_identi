@@ -3,10 +3,14 @@ import 'package:provider/provider.dart';
 import 'viewmodels/observation_vm.dart';
 import 'viewmodels/plants_view_model.dart';
 import 'views/home_screen.dart';
+import 'services/phytosociology_service.dart'; // DODAJ TEN IMPORT
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicjalizacja bazy syntaksonów z pliku JSON
   await PhytosociologyService().init();
+
   runApp(
     MultiProvider(
       providers: [

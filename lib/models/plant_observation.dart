@@ -63,7 +63,7 @@ class PlantObservation {
     this.characteristicFeature,
     this.plantUsage,
     this.cultivation,
-    this.phytosociologicalStatus,
+    this.phytosociologicalStatus, // DODANO TĘ LINIĘ
   });
 
   String get displayName => (localName != null && localName!.isNotEmpty)

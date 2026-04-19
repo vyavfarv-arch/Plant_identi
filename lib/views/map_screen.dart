@@ -5,8 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/plants_view_model.dart';
+import '../models/releve.dart';
 
 enum MapViewMode { plants, syntaxa }
+
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
 
@@ -18,13 +20,13 @@ class _MapScreenState extends State<MapScreen> {
   BitmapDescriptor? grassIcon;
   MapViewMode _mode = MapViewMode.plants;
   String _selectedRank = "Zespół";
+
   @override
   void initState() {
     super.initState();
     _loadAndResizeIcon();
   }
 
-  // Funkcja skalująca obrazek do mniejszego rozmiaru
   Future<Uint8List> _getBytesFromAsset(String path, int width) async {
     ByteData data = await rootBundle.load(path);
     ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(), targetWidth: width);
@@ -34,7 +36,6 @@ class _MapScreenState extends State<MapScreen> {
 
   void _loadAndResizeIcon() async {
     try {
-      // Zmniejszamy szerokość ikony do 110 pikseli
       final Uint8List markerIconBytes = await _getBytesFromAsset('assets/grass.png', 110);
       setState(() {
         grassIcon = BitmapDescriptor.fromBytes(markerIconBytes);
@@ -45,7 +46,49 @@ class _MapScreenState extends State<MapScreen> {
       });
     }
   }
+  void _showReleveDetails(BuildContext context, Releve releve) {
+    final vm = context.read<PlantsViewModel>();
+    // Znajdujemy pełne obiekty roślin na podstawie ich ID zapisanych w płacie
+    final plantsInReleve = vm.allObservations
+        .where((obs) => releve.plantObservationIds.contains(obs.id))
+        .toList();
 
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Syntakson: ${releve.assignedSyntaxonId ?? 'Nieoznaczony'}",
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+            ),
+            const SizedBox(height: 10),
+            if (releve.isHeterogeneous)
+              const Text("⚠️ Uwaga: Wykryto niejednorodność obszaru!", style: TextStyle(color: Colors.red)),
+            const Divider(),
+            const Text("Gatunki w tym płacie:", style: TextStyle(fontWeight: FontWeight.bold)),
+            Expanded(
+              child: ListView.builder(
+                itemCount: plantsInReleve.length,
+                itemBuilder: (context, index) {
+                  final plant = plantsInReleve[index];
+                  return ListTile(
+                    leading: const Icon(Icons.eco, color: Colors.green),
+                    title: Text(plant.displayName),
+                    subtitle: Text(plant.latinName ?? "Brak nazwy łacińskiej"),
+                    trailing: Text(plant.phytosociologicalStatus ?? "-"),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<PlantsViewModel>();
@@ -63,19 +106,37 @@ class _MapScreenState extends State<MapScreen> {
       ),
       body: GoogleMap(
         initialCameraPosition: const CameraPosition(
-            target: LatLng(52.237, 21.017),
-            zoom: 6
+          target: LatLng(52.237, 21.017),
+          zoom: 6,
         ),
-        myLocationEnabled: true,
-        markers: plantsToDisplay.map((obs) => Marker(
+        myLocationEnabled: true, // PRZENIESIONO DO ŚRODKA
+        // Wyświetlanie poligonów (płatów)
+        polygons: _mode == MapViewMode.syntaxa
+            ? vm.allReleves.map((r) {
+          final color = Colors.green; // Tu docelowo logika z PhytosociologyService
+          return Polygon(
+            polygonId: PolygonId(r.id),
+            points: r.polygon,
+            fillColor: color.withOpacity(0.4),
+            strokeColor: color,
+            strokeWidth: 2,
+            onTap: () => _showReleveDetails(context, r),
+            consumeTapEvents: true,
+          );
+        }).toSet()
+            : {},
+        // Wyświetlanie markerów (roślin)
+        markers: _mode == MapViewMode.plants // DODANO WARUNEK
+            ? plantsToDisplay.map((obs) => Marker(
           markerId: MarkerId(obs.id),
           position: LatLng(obs.latitude, obs.longitude),
           icon: grassIcon ?? BitmapDescriptor.defaultMarker,
           infoWindow: InfoWindow(
-              title: obs.displayName, // Zmieniono z plantName
-              snippet: "Ilość: ${obs.abundance}"
+            title: obs.displayName,
+            snippet: "Ilość: ${obs.abundance}",
           ),
-        )).toSet(),
+        )).toSet()
+            : {},
       ),
     );
   }
@@ -84,7 +145,7 @@ class _MapScreenState extends State<MapScreen> {
     showDialog(
       context: context,
       builder: (ctx) {
-        return StatefulBuilder( // Używamy StatefulBuilder wewnątrz dialogu
+        return StatefulBuilder(
             builder: (context, setDialogState) {
               return AlertDialog(
                 title: const Text("Filtry mapy"),
@@ -117,17 +178,21 @@ class _MapScreenState extends State<MapScreen> {
                           onChanged: (v) { setState(() => _selectedRank = v!); setDialogState(() {}); },
                         ),
                       ] else ...[
-                        // Lista roślin (vm.uniquePlantNames)
                         ...vm.uniquePlantNames.map((name) => CheckboxListTile(
                           title: Text(name),
                           value: vm.selectedPlantNames.contains(name),
-                          onChanged: (val) { vm.toggleNameFilter(name); setDialogState(() {}); },
+                          onChanged: (val) {
+                            vm.toggleNameFilter(name);
+                            setDialogState(() {});
+                          },
                         )).toList(),
                       ]
                     ],
                   ),
                 ),
-                actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("ZAMKNIJ"))],
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("ZAMKNIJ"))
+                ],
               );
             }
         );

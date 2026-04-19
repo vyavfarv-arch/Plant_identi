@@ -42,10 +42,11 @@ class _ReleveMapScreenState extends State<ReleveMapScreen> {
           }
         },
         // Wyświetlanie punktów i prostokąta
-        markers: _tappedPoints.asMap().entries.map((e) => Marker(
+        markers: _tappedPoints.asMap().entries.map<Marker>((e) => Marker(
           markerId: MarkerId("p${e.key}"),
           position: e.value,
-          label: "Punkt ${e.key + 1}",
+          // POPRAWKA: Zmiana label na infoWindow
+          infoWindow: InfoWindow(title: "Punkt ${e.key + 1}"),
         )).toSet(),
         polygons: _tappedPoints.length == 2 ? {
           Polygon(
@@ -71,10 +72,11 @@ class _ReleveMapScreenState extends State<ReleveMapScreen> {
   }
 
   void _confirmReleve(BuildContext context) {
-    context.read<PlantsViewModel>().createReleve(_tappedPoints[0], _tappedPoints[1]);
+
+    context.read<PlantsViewModel>().createReleve(_tappedPoints);
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Utworzono zdjęcie fitosocjologiczne i przypisano rośliny.")),
+      const SnackBar(content: Text("Utworzono płat fitosocjologiczny na podstawie wielokąta.")),
     );
     Navigator.pop(context);
   }
