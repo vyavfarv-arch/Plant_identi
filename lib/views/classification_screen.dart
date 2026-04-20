@@ -49,7 +49,7 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Klasyfikacja i Fitosocjologia")),
+      appBar: AppBar(title: const Text("Klasyfikacja")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

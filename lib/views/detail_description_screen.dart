@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/plant_observation.dart';
 import '../viewmodels/plants_view_model.dart';
 import '../models/description_schema.dart';
+import 'dart:io';
 
 class DetailDescriptionScreen extends StatefulWidget {
   final PlantObservation observation;
@@ -29,7 +30,6 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
     final obs = widget.observation;
     _controllers['family'] = TextEditingController(text: obs.family);
     _controllers['genus'] = TextEditingController(text: obs.genus);
-    _controllers['species'] = TextEditingController(text: obs.species);
     _controllers['subspecies'] = TextEditingController(text: obs.subspecies);
     _controllers['localName'] = TextEditingController(text: obs.localName);
     _controllers['idDoubts'] = TextEditingController(text: obs.idDoubts);
@@ -52,6 +52,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
+          _buildCapturedPhotosPreview(), // Nowa sekcja: Podgląd zdjęć
           _buildFieldObservationSummary(), // Podgląd cech z terenu
           const Divider(height: 40, thickness: 2),
           _buildNamingSection(), // 1. Nazewnictwo
@@ -64,7 +65,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.all(15)
             ),
-            onPressed: _saveAndGoBack,
+            onPressed: _saveAndGoBack, //
             child: const Text("ZAPISZ I WRÓĆ", style: TextStyle(fontWeight: FontWeight.bold)),
           ),
           const SizedBox(height: 50),
@@ -72,7 +73,73 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       ),
     );
   }
+  Widget _buildCapturedPhotosPreview() {
+    final photos = widget.observation.photoPaths; //
+    if (photos.isEmpty) return const SizedBox.shrink();
 
+    return Container(
+      height: 120,
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: photos.length,
+        itemBuilder: (context, index) {
+          final path = photos[index];
+          return GestureDetector(
+            onLongPress: () => _showFullScreenImage(context, path),
+            child: Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  File(path),
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // --- WIDOK POWIĘKSZONEGO ZDJĘCIA ---
+  void _showFullScreenImage(BuildContext context, String imagePath) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        insetPadding: const EdgeInsets.all(10),
+        backgroundColor: Colors.transparent,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.pop(ctx),
+              child: InteractiveViewer(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(15),
+                  child: Image.file(
+                    File(imagePath),
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.pop(ctx),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
   // --- PODGLĄD CECH TERENOWYCH ---
   Widget _buildFieldObservationSummary() {
     final obs = widget.observation;
@@ -115,14 +182,13 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
 
   Widget _buildNamingSection() {
     return ExpansionTile(
-      title: const Text("Nazewnictwo (wymagane)"),
+      title: const Text("Taksonomia"),
       children: [
         _inputField(_controllers['localName']!, "Nazwa (Główna)", hint: "Np. Babka lancetowata"),
         _inputField(_controllers['family']!, "Rodzina (Familia)"),
         _inputField(_controllers['genus']!, "Rodzaj (Genus)"),
-        _inputField(_controllers['species']!, "Gatunek (Species)"),
-        _inputField(_controllers['latinName']!, "Nazwa Łacińska (Kluczowa)"),
-        _inputField(_controllers['subspecies']!, "Odmiana (opcjonalnie)"),
+        _inputField(_controllers['latinName']!, "Nazwa Łacińska "),
+        _inputField(_controllers['subspecies']!, "Odmiana "),
 
       ],
     );
@@ -132,10 +198,6 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
     return ExpansionTile(
       title: const Text("Pewność"),
       children: [
-        const Padding(
-          padding: EdgeInsets.all(10.0),
-          child: Text("Status fitosocjologiczny:", style: TextStyle(fontWeight: FontWeight.bold)),
-        ),
         Column(
           children: ["Charakterystyczny", "Wyróżniający", "Popularny"].map((status) =>
               RadioListTile<String>(
@@ -146,6 +208,11 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
               )
           ).toList(),
         ),
+        const Padding(
+          padding: EdgeInsets.all(10.0),
+          child: Text("Status fitosocjologiczny:", style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+
         const Divider(),
         DropdownButtonFormField<String>(
           value: _selectedCertainty,
@@ -154,7 +221,6 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
           decoration: const InputDecoration(labelText: "Stopień pewności"),
         ),
         _inputField(_controllers['idDoubts']!, "Wątpliwość", isLong: true),
-        _inputField(_controllers['keyTraits']!, "Cechy morfologiczne", isLong: true),
         _inputField(_controllers['confusing']!, "Gatunki mylone z..."),
         _inputField(_controllers['characteristic']!, "Cecha charakterystyczna"),
       ],
