@@ -14,6 +14,7 @@ class Releve {
     required this.type,
     required this.points,
     required this.date,
+    this.parentId,
   });
 
   Map<String, dynamic> toMap() {
@@ -23,6 +24,7 @@ class Releve {
       'type': type,
       'points': points.map((p) => {'lat': p.latitude, 'lng': p.longitude}).toList(),
       'date': date.toIso8601String(),
+      'parentId': parentId,
     };
   }
 
@@ -35,6 +37,7 @@ class Releve {
           .map((p) => LatLng(p['lat'] as double, p['lng'] as double))
           .toList(),
       date: DateTime.parse(map['date']),
+      parentId: map['parentId'],
     );
   }
 }

@@ -64,34 +64,74 @@ class ReleveListMapScreen extends StatelessWidget {
   }
 
   void _showTypeFilterDialog(BuildContext context, PlantsViewModel vm) {
+    final searchController = TextEditingController(text: vm.areaSearchQuery);
+
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setStateDialog) => AlertDialog(
-          title: const Text("Filtruj typy obszarów"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Pasek wyszukiwania
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: "Szukaj po nazwie (np. las bukowy)",
-                  prefixIcon: Icon(Icons.search),
-                ),
-                onChanged: (v) => vm.setAreaSearchQuery(v),
-              ),
-              const SizedBox(height: 15),
+          title: const Text("Filtruj obszary"),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Poprawiona wyszukiwarka z przyciskiem CZYSZCZENIA
+                  TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      labelText: "Szukaj po nazwie",
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: searchController.text.isNotEmpty
+                          ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          searchController.clear();
+                          vm.clearAreaSearchQuery();
+                          setStateDialog(() {});
+                        },
+                      )
+                          : null,
+                    ),
+                    onChanged: (v) {
+                      vm.setAreaSearchQuery(v);
+                      setStateDialog(() {}); // Odśwież widok ikony czyszczenia
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  const Text("Wybierz typy i konkretne płaty:",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  const Divider(),
 
-              // Rozwinięcie listy wygenerowanych CheckboxListTile za pomocą '...'
-              ...["Zespół", "Związek", "Rząd", "Klasa"].map((type) => CheckboxListTile(
-                title: Text(type),
-                value: vm.selectedReleveTypes.contains(type),
-                onChanged: (val) {
-                  vm.toggleReleveTypeFilter(type);
-                  setStateDialog(() {}); // Odśwież dialog
-                },
-              )).toList(),
-            ],
+                  // Hierarchiczny Multiselect dla każdego typu
+                  ...["Zespół", "Związek", "Rząd", "Klasa"].map((rank) {
+                    final names = vm.getUniqueNamesForRank(rank);
+                    return ExpansionTile(
+                      leading: Checkbox(
+                        value: vm.selectedReleveTypes.contains(rank),
+                        onChanged: (val) {
+                          vm.toggleReleveTypeFilter(rank);
+                          setStateDialog(() {});
+                        },
+                      ),
+                      title: Text(rank),
+                      children: names.isEmpty
+                          ? [const Padding(padding: EdgeInsets.all(8), child: Text("Brak zapisanych nazw"))]
+                          : names.map((name) => CheckboxListTile(
+                        dense: true,
+                        title: Text(name),
+                        value: vm.isNameSelected(rank, name),
+                        onChanged: (val) {
+                          vm.toggleNameSelection(rank, name);
+                          setStateDialog(() {});
+                        },
+                      )).toList(),
+                    );
+                  }).toList(),
+                ],
+              ),
+            ),
           ),
           actions: [
             TextButton(

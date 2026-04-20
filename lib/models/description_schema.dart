@@ -5,13 +5,11 @@ class DescriptionCategory {
   // Mapa przechowująca ścieżki do zdjęć poglądowych dla konkretnych opcji
   final Map<String, String>? referenceImages;
 
-
   DescriptionCategory({
     required this.number,
     required this.title,
     required this.subCategories,
     this.referenceImages,
-
   });
 }
 
@@ -193,13 +191,17 @@ class SchemaGenerator {
   static List<DescriptionCategory> _herbaceousSchema() {
     return [
       DescriptionCategory(
-        number: "1",
-        title: "System korzeniowy",
-        subCategories: {
-          "Typ": ["palowy", "wiązowy", "sercowaty", "kłączowy"],
-          "Głębokość": ["płytki", "średni", "głęboki"],
-          "Organy ziemne": ["bulwy", "kłącza", "cebule", "brak"],
-        },
+          number: "1",
+          title: "System korzeniowy",
+          subCategories: {
+            "Typ": ["palowy", "wiązkowy", "sercowaty", "kłączowy"], // Zmieniono z wiązowy na wiązkowy
+            "Głębokość": ["płytki", "średni", "głęboki"],
+            "Organy ziemne": ["bulwy", "kłącza", "cebule", "brak"],
+          },
+          referenceImages: {
+           "palowy": "assets/ref/korzen_palowy.png"
+
+          }
       ),
       DescriptionCategory(
         number: "2",
@@ -213,22 +215,25 @@ class SchemaGenerator {
         },
       ),
       DescriptionCategory(
-        number: "3",
-        title: "Liście",
-        subCategories: {
-          "Ulistnienie": ["skrętoległe", "naprzeciwległe", "okółkowe"],
-          "Typ liścia": ["pojedynczy", "pierzasty", "dłoniasty"],
-          "Kształt blaszki": ["Igiełkowy", "równowąski", "lancetowaty", "eliptyczny", "jajowaty", "sercowaty", "Łopatowaty", "owalny", "Odwrotnie jajowaty", "strzałkowaty", "nerkowy"],
-          "Brzeg Liścia": ["całobrzegi", "piłkowany", "ząbkowany", "karbowany", "falisty", "kolczasty"],
-          "Unerwienie": ["pierzaste", "dłoniaste", "równoległe"],
-          "Wcięcie": ["Wrębne", "Dzielne", "klapowate", "sieczne"],
-        },
+          number: "3",
+          title: "Liście",
+          subCategories: {
+            "Ulistnienie": ["skrętoległe", "naprzeciwległe", "okółkowe"],
+            "Typ liścia": ["pojedynczy", "pierzasty", "dłoniasty"],
+            "Kształt blaszki": ["igiełkowy", "równowąski", "lancetowaty", "eliptyczny", "jajowaty", "sercowaty", "łopatowaty", "owalny", "odwrotnie jajowaty", "strzałkowaty", "nerkowy"], // Zmieniłem wielkość liter dla spójności
+            "Brzeg Liścia": ["całobrzegi", "piłkowany", "ząbkowany", "karbowany", "falisty", "kolczasty"],
+            "Unerwienie": ["pierzaste", "dłoniaste", "równoległe"],
+            "Wcięcie": ["wrębne", "dzielne", "klapowate", "sieczne"],
+          },
+          referenceImages: {
+
+          }
       ),
       DescriptionCategory(
         number: "4",
         title: "Kwiatostany",
         subCategories: {
-          "Obecność": ["Brak", "Obecne", "Obecne nierozwinięte"],
+          "Obecność": ["brak", "obecne", "obecne nierozwinięte"],
           "Typ Kwiatostanu": ["grono", "wiecha", "baldach", "koszyczek", "kłos", "główka"],
           "Zapach": ["brak", "słaby", "intensywny"],
         },

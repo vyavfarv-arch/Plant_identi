@@ -18,11 +18,18 @@ class PlantsViewModel extends ChangeNotifier {
   List<Releve> get allReleves => _releves;
 
   final List<String> _selectedReleveTypes = ["Zespół", "Związek", "Rząd", "Klasa"];
+  final Map<String, Set<String>> _selectedSpecificNames = {};
   List<String> get selectedReleveTypes => _selectedReleveTypes;
 
   List<PlantObservation> get incompleteObservations =>
       _observations.where((obs) => !obs.isComplete).toList();
-
+  List<String> getUniqueNamesForRank(String rank) {
+    return _releves
+        .where((r) => r.type == rank)
+        .map((r) => r.name)
+        .toSet()
+        .toList();
+  }
 // Zaktualizowany getter filtrowania
   List<PlantObservation> get filteredCompleteObservations {
     var list = _observations.where((obs) => obs.isComplete).toList();
@@ -35,8 +42,10 @@ class PlantsViewModel extends ChangeNotifier {
           obs.observationDate!.day == _filterDate!.day
       ).toList();
     }
+    bool isNameSelected(String rank, String name) {
+      return _selectedSpecificNames[rank]?.contains(name) ?? false;
+    }
 
-    // NOWE: Filtr obszaru
     if (_filterArea != null) {
       list = list.where((obs) =>
           isPointInPolygon(LatLng(obs.latitude, obs.longitude), _filterArea!.points)
@@ -51,11 +60,15 @@ class PlantsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+// ZAKTUALIZOWANY GETTER FILTROWANIA
   List<Releve> get filteredReleves {
     return _releves.where((r) {
-      final matchesType = selectedReleveTypes.contains(r.type);
-      final matchesName = r.name.toLowerCase().contains(_areaSearchQuery.toLowerCase());
-      return matchesType && matchesName;
+      final matchesType = _selectedReleveTypes.contains(r.type);
+      final matchesSearch = _areaSearchQuery.isEmpty ||
+          r.name.toLowerCase().contains(_areaSearchQuery.toLowerCase());
+      final specificNames = _selectedSpecificNames[r.type] ?? {};
+      final matchesSpecific = specificNames.isEmpty || specificNames.contains(r.name);
+      return matchesType && matchesSearch && matchesSpecific;
     }).toList();
   }
   bool isPointInPolygon(LatLng point, List<LatLng> polygon) {
@@ -151,8 +164,9 @@ class PlantsViewModel extends ChangeNotifier {
         id: old.id,
         name: newName,
         type: newType,
-        points: old.points, // Zachowujemy punkty
+        points: old.points,
         date: old.date,
+        parentId: old.parentId,
       );
       _storage.saveReleves(_releves);
       notifyListeners();
@@ -225,7 +239,7 @@ class PlantsViewModel extends ChangeNotifier {
 
   Future<void> loadFromDisk() async {
     _observations = await _storage.loadObservations();
-    _releves = await _storage.loadReleves(); // Ładowanie obszarów
+    _releves = await _storage.loadReleves();
     notifyListeners();
   }
 
@@ -252,7 +266,7 @@ class PlantsViewModel extends ChangeNotifier {
     if (childType == "Rząd") return parentType == "Klasa";
     if (childType == "Związek") return parentType == "Rząd";
     if (childType == "Zespół") return parentType == "Związek";
-    return false; // Klasa nie może mieć rodzica
+    return false;
   }
   Releve? getParentArea(String? parentId) {
     if (parentId == null) return null;
@@ -265,4 +279,18 @@ class PlantsViewModel extends ChangeNotifier {
   List<Releve> getPotentialParents(Releve child) {
     return _releves.where((r) => isValidParent(child.type, r.type)).toList();
   }
+  void toggleNameSelection(String rank, String name) {
+    _selectedSpecificNames.putIfAbsent(rank, () => {});
+    if (_selectedSpecificNames[rank]!.contains(name)) {
+      _selectedSpecificNames[rank]!.remove(name);
+    } else {
+      _selectedSpecificNames[rank]!.add(name);
+    }
+    notifyListeners();
+  }
+  void clearAreaSearchQuery() {
+    _areaSearchQuery = "";
+    notifyListeners();
+  }
+
 }

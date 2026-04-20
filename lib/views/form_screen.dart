@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../viewmodels/observation_vm.dart';
 import '../models/plant_observation.dart';
 import '../viewmodels/plants_view_model.dart';
@@ -19,7 +18,6 @@ class _FormScreenState extends State<FormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Pobieramy schemat na podstawie typu biologicznego
     final schema = SchemaGenerator.getForType(
         widget.observation.biologicalType ?? "Zielona");
 
@@ -66,11 +64,17 @@ class _FormScreenState extends State<FormScreen> {
             runSpacing: 10,
             children: options.map((opt) {
               final isSelected = _selectedValues[subTitle]?.contains(opt) ?? false;
-
-              // Sprawdzamy czy w kategorii istnieją zdjęcia poglądowe dla danej opcji
               final hasImage = category.referenceImages?.containsKey(opt) ?? false;
+              final imagePath = hasImage ? category.referenceImages![opt]! : "";
 
-              return InkWell(
+              return GestureDetector(
+                // LONG PRESS: Otwiera podgląd zdjęcia
+                onLongPress: () {
+                  if (hasImage) {
+                    _showImagePreview(context, imagePath, opt);
+                  }
+                },
+                // TAP: Zaznacza / Odznacza opcję
                 onTap: () {
                   setState(() {
                     if (_selectedValues[subTitle] == null) {
@@ -86,22 +90,33 @@ class _FormScreenState extends State<FormScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Zdjęcie poglądowe z ErrorBuilderem
                     if (hasImage)
                       Container(
                         width: 80, height: 60,
                         margin: const EdgeInsets.only(bottom: 4),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(4),
-                          image: DecorationImage(
-                            image: AssetImage(category.referenceImages![opt]!),
-                            fit: BoxFit.cover,
-                          ),
                           border: Border.all(
                               color: isSelected ? Colors.green : Colors.transparent,
-                              width: 2
+                              width: 3
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: Image.asset(
+                            imagePath,
+                            fit: BoxFit.cover,
+                            // Zabezpieczenie przed brakiem pliku w folderze
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              color: Colors.grey.shade300,
+                              child: const Icon(Icons.broken_image, color: Colors.grey, size: 30),
+                            ),
                           ),
                         ),
                       ),
+
+                    // Etykieta tekstowa
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
@@ -128,6 +143,41 @@ class _FormScreenState extends State<FormScreen> {
     );
   }
 
+  // --- WIDOK POWIĘKSZONEGO ZDJĘCIA POGLĄDOWEGO ---
+  void _showImagePreview(BuildContext context, String imagePath, String title) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        clipBehavior: Clip.antiAlias, // <--- POPRAWKA TUTAJ
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppBar(
+              title: Text(title, style: const TextStyle(fontSize: 16)),
+              automaticallyImplyLeading: false,
+              actions: [
+                IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx))
+              ],
+            ),
+            Image.asset(
+              imagePath,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => const Padding(
+                padding: EdgeInsets.all(40.0),
+                child: Text("Brak pliku w folderze assets/ref/", textAlign: TextAlign.center),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Text("Zdjęcie poglądowe", style: TextStyle(color: Colors.grey)),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSaveButton() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -144,7 +194,6 @@ class _FormScreenState extends State<FormScreen> {
   void _zapiszFinalnie() {
     final now = DateTime.now();
 
-    // Tworzymy nową obserwację z wybranymi wielokrotnie cechami
     final finalObs = PlantObservation(
       id: widget.observation.id,
       photoPaths: widget.observation.photoPaths,
