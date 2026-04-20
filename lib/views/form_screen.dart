@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:provider/provider.dart';
 import '../viewmodels/observation_vm.dart';
 import '../models/plant_observation.dart';
@@ -19,12 +20,41 @@ class _FormScreenState extends State<FormScreen> {
   @override
   Widget build(BuildContext context) {
     final schema = SchemaGenerator.getForType(
-        widget.observation.biologicalType ?? "Zielona");
+        widget.observation.biologicalType ?? "Zielne");
 
     return Scaffold(
       appBar: AppBar(title: Text('Opis: ${widget.observation.biologicalType}')),
       body: Column(
         children: [
+          // NOWA SEKCJA: Podgląd zrobionych zdjęć (przeniesiona tutaj)
+          Consumer<ObservationViewModel>(
+            builder: (context, obsVm, child) {
+              if (obsVm.currentPhotoPaths.isEmpty) return const SizedBox.shrink();
+              return Container(
+                height: 120,
+                color: Colors.black.withOpacity(0.05),
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: obsVm.currentPhotoPaths.length,
+                  itemBuilder: (ctx, i) => Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.file(
+                        File(obsVm.currentPhotoPaths[i]),
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          const Divider(height: 1),
+          // Reszta formularza
           Expanded(
             child: ListView.builder(
               itemCount: schema.length,

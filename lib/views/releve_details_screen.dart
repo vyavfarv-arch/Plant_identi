@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/releve.dart';
 import '../viewmodels/plants_view_model.dart';
 import 'plant_card_view.dart';
+import 'habitat_form_screen.dart';
 
 class ReleveDetailsScreen extends StatelessWidget {
   final Releve releve;
@@ -27,7 +28,7 @@ class ReleveDetailsScreen extends StatelessWidget {
               if (val == 'delete') _confirmDelete(context, vm);
             },
             itemBuilder: (ctx) => [
-              const PopupMenuItem(value: 'delete', child: Text('Usuń obszar całkowicie', style: TextStyle(color: Colors.red))),
+              const PopupMenuItem(value: 'delete', child: Text('Usuń obszar', style: TextStyle(color: Colors.red))),
             ],
           ),
         ],
@@ -64,19 +65,28 @@ class ReleveDetailsScreen extends StatelessWidget {
   }
 
   Widget _buildHierarchySection(BuildContext context, PlantsViewModel vm, Releve? parent, List<Releve> children) {
+    String parentTitle = releve.type == "Klasa" ? "Klasa" : (parent != null ? "Nadrzędny: ${parent.name}" : "Brak obszaru nadrzędnego");
     return Container(
       padding: const EdgeInsets.all(12),
       child: Column(
         children: [
-          // WIDOK RODZICA
           ListTile(
             dense: true,
-            leading: const Icon(Icons.arrow_upward, color: Colors.blueGrey),
-            title: Text(parent != null ? "Nadrzędny: ${parent.name}" : "Brak obszaru nadrzędnego"),
-            subtitle: Text(parent?.type ?? "Kliknij aby przypisać zgodnie z hierarchią"),
-            trailing: const Icon(Icons.edit, size: 18),
-            onTap: () => _showAssignParentDialog(context, releve, vm),
+            leading: const Icon(Icons.account_balance, color: Colors.blueGrey),
+            title: Text(parentTitle),
+            subtitle: Text(releve.type == "Klasa" ? "" : (parent?.type ?? "Kliknij, aby przypisać")),
+            onTap: releve.type == "Klasa" ? null : () => _showAssignParentDialog(context, releve, vm),
           ),
+
+          // PRZYCISK INFORMACJI O SIEDLISKU
+          ListTile(
+            leading: const Icon(Icons.landscape, color: Colors.brown),
+            title: const Text("Informacje o siedlisku "),
+            subtitle: Text(releve.habitat == null ? "Brak opisu" : "Opisano siedlisko"),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HabitatFormScreen(releve: releve))),
+          ),
+          // WIDOK RODZICA
 
           // WIDOK DZIECI
           if (children.isNotEmpty)

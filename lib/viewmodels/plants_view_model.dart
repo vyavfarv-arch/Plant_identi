@@ -3,6 +3,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/plant_observation.dart';
 import '../models/releve.dart';
 import '../services/storage_service.dart';
+import '../models/habitat_info.dart';
+
 
 class PlantsViewModel extends ChangeNotifier {
   final StorageService _storage = StorageService();
@@ -16,13 +18,17 @@ class PlantsViewModel extends ChangeNotifier {
   List<PlantObservation> get allObservations => _observations;
   List<String> get selectedPlantNames => _selectedPlantNames;
   List<Releve> get allReleves => _releves;
+  DateTimeRange? _filterDateRange;
+  DateTimeRange? get filterDateRange => _filterDateRange;
 
   final List<String> _selectedReleveTypes = ["Zespół", "Związek", "Rząd", "Klasa"];
   final Map<String, Set<String>> _selectedSpecificNames = {};
   List<String> get selectedReleveTypes => _selectedReleveTypes;
+  String get areaSearchQuery => _areaSearchQuery;
 
   List<PlantObservation> get incompleteObservations =>
       _observations.where((obs) => !obs.isComplete).toList();
+
   List<String> getUniqueNamesForRank(String rank) {
     return _releves
         .where((r) => r.type == rank)
@@ -30,17 +36,20 @@ class PlantsViewModel extends ChangeNotifier {
         .toSet()
         .toList();
   }
+  bool isNameSelected(String rank, String name) {
+    return _selectedSpecificNames[rank]?.contains(name) ?? false;
+  }
 // Zaktualizowany getter filtrowania
   List<PlantObservation> get filteredCompleteObservations {
     var list = _observations.where((obs) => obs.isComplete).toList();
 
     // Filtr daty
-    if (_filterDate != null) {
-      list = list.where((obs) =>
-      obs.observationDate!.year == _filterDate!.year &&
-          obs.observationDate!.month == _filterDate!.month &&
-          obs.observationDate!.day == _filterDate!.day
-      ).toList();
+    if (_filterDateRange != null) {
+      list = list.where((obs) {
+        final date = obs.observationDate ?? obs.timestamp;
+        return date.isAfter(_filterDateRange!.start.subtract(const Duration(days: 1))) &&
+            date.isBefore(_filterDateRange!.end.add(const Duration(days: 1)));
+      }).toList();
     }
     bool isNameSelected(String rank, String name) {
       return _selectedSpecificNames[rank]?.contains(name) ?? false;
@@ -172,7 +181,14 @@ class PlantsViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
-
+  void updateReleveHabitat(String releveId, HabitatInfo info) {
+    final index = _releves.indexWhere((r) => r.id == releveId);
+    if (index != -1) {
+      _releves[index].habitat = info;
+      _storage.saveReleves(_releves);
+      notifyListeners();
+    }
+  }
   // --- OBSŁUGA OBSERWACJI ---
 
   void addObservation(PlantObservation obs) {
@@ -252,8 +268,8 @@ class PlantsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setFilterDate(DateTime? date) {
-    _filterDate = date;
+  void setFilterDateRange(DateTimeRange? range) {
+    _filterDateRange = range;
     notifyListeners();
   }
 

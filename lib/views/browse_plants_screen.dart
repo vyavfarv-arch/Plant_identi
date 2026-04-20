@@ -21,15 +21,15 @@ class BrowsePlantsScreen extends StatelessWidget {
         actions: [
           // Filtr daty
           IconButton(
-            icon: const Icon(Icons.calendar_month),
+            icon: const Icon(Icons.date_range),
             onPressed: () async {
-              final picked = await showDatePicker(
+              final picked = await showDateRangePicker(
                 context: context,
-                initialDate: DateTime.now(),
                 firstDate: DateTime(2020),
                 lastDate: DateTime(2100),
+                initialDateRange: vm.filterDateRange,
               );
-              vm.setFilterDate(picked);
+              vm.setFilterDateRange(picked);
             },
           ),
           // Filtr obszaru (ikona zmienia kolor, gdy filtr jest aktywny)
@@ -44,7 +44,7 @@ class BrowsePlantsScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.filter_alt_off),
             onPressed: () {
-              vm.setFilterDate(null);
+              vm.setFilterDateRange(null);
               vm.setFilterArea(null);
             },
           ),
