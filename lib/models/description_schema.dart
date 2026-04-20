@@ -194,7 +194,7 @@ class SchemaGenerator {
           number: "1",
           title: "System korzeniowy",
           subCategories: {
-            "Typ": ["palowy", "wiązkowy", "sercowaty", "kłączowy"], // Zmieniono z wiązowy na wiązkowy
+            "Typ": ["palowy", "wiązkowy", "sercowaty", "kłączowy"],
             "Głębokość": ["płytki", "średni", "głęboki"],
             "Organy ziemne": ["bulwy", "kłącza", "cebule", "brak"],
           },
