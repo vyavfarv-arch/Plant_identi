@@ -14,6 +14,7 @@ class ClassificationScreen extends StatefulWidget {
 }
 
 class _ClassificationScreenState extends State<ClassificationScreen> {
+  final TextEditingController _familyController = TextEditingController();
   String? _selectedType;
   String? _selectedLayer;
   String? _selectedAbundance;
@@ -44,6 +45,14 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
     "3": "W małych płatach",
     "4": "W dużych płatach / łanowo",
     "5": "Tworzy gęste zbiorowisko"
+  };
+
+
+  final Map<String, String> _vitalityDescriptions = {
+    "1": "Bardzo dobra",
+    "2": "Dobra",
+    "3": "Słaba",
+    "4": "Zamierająca",
   };
 
   @override
@@ -107,10 +116,25 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
                 _sociabilityDescriptions,
                     (v) => setState(() => _selectedSociability = v)
             ),
+            _buildDetailedDropdown(
+                "Żywotność",
+                _vitalityDescriptions,
+                    (v) => setState(() => _selectedSociability = v)
+            ),
 
-            // Opcjonalnie Żywotność (dropdown bez mapy opisów)
-            _buildDropdown("Żywotność", ["Bardzo dobra", "Dobra", "Słaba", "Zamierająca"], (v) => setState(() => _selectedVitality = v)),
-
+            // Opcjonalnie Żywotność (dropdown bez mapy opisów
+            const Text("Dane systematyczne:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: TextField(
+                controller: _familyController,
+                decoration: const InputDecoration(
+                  labelText: "Rodzina (np. Asteraceae)",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const Divider(),
             const SizedBox(height: 30),
             SizedBox(
               width: double.infinity,
@@ -121,11 +145,26 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
                 child: const Text("DALEJ DO OPISU", style: TextStyle(color: Colors.white, fontSize: 18)),
               ),
             ),
+            const SizedBox(height: 20),
+            const Text("Dane systematyczne:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: TextField(
+                controller: _familyController,
+                decoration: const InputDecoration(
+                  labelText: "Rodzina (np. Asteraceae)",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const Divider(),
           ],
         ),
       ),
     );
   }
+
+
   Widget _buildDetailedDropdown(String label, Map<String, String> dataMap, Function(String?) onChanged) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -161,6 +200,7 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
       timestamp: DateTime.now(),
       characteristics: {}, // Pusta mapa, wypełniona w FormScreen
       biologicalType: _selectedType,
+      family: _familyController.text,
       phytosociologicalLayer: _selectedLayer,
       abundance: _selectedAbundance,
       vitality: _selectedVitality,

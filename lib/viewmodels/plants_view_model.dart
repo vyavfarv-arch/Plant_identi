@@ -21,6 +21,9 @@ class PlantsViewModel extends ChangeNotifier {
   DateTimeRange? _filterDateRange;
   DateTimeRange? get filterDateRange => _filterDateRange;
 
+  final List<String> _selectedFamilies = [];
+  List<String> get selectedFamilies => _selectedFamilies;
+
   final List<String> _selectedReleveTypes = ["Zespół", "Związek", "Rząd", "Klasa"];
   final Map<String, Set<String>> _selectedSpecificNames = {};
   List<String> get selectedReleveTypes => _selectedReleveTypes;
@@ -38,6 +41,14 @@ class PlantsViewModel extends ChangeNotifier {
   }
   bool isNameSelected(String rank, String name) {
     return _selectedSpecificNames[rank]?.contains(name) ?? false;
+  }
+  // Pobieranie unikalnych rodzin z bazy
+  List<String> get uniqueFamilies {
+    return _observations
+        .where((obs) => obs.family != null && obs.family!.isNotEmpty)
+        .map((obs) => obs.family!)
+        .toSet()
+        .toList();
   }
 // Zaktualizowany getter filtrowania
   List<PlantObservation> get filteredCompleteObservations {
@@ -60,7 +71,9 @@ class PlantsViewModel extends ChangeNotifier {
           isPointInPolygon(LatLng(obs.latitude, obs.longitude), _filterArea!.points)
       ).toList();
     }
-
+    if (_selectedFamilies.isNotEmpty) {
+      list = list.where((obs) => _selectedFamilies.contains(obs.family)).toList();
+    }
     return list;
   }
 
@@ -98,7 +111,14 @@ class PlantsViewModel extends ChangeNotifier {
     }
     return oddNodes;
   }
-
+  void toggleFamilyFilter(String family) {
+    if (_selectedFamilies.contains(family)) {
+      _selectedFamilies.remove(family);
+    } else {
+      _selectedFamilies.add(family);
+    }
+    notifyListeners();
+  }
 // Pobiera listę roślin znajdujących się w danym obszarze
   List<PlantObservation> getPlantsInReleve(Releve releve) {
     return _observations.where((plant) {

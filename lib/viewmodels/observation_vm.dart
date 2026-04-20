@@ -16,7 +16,7 @@ class ObservationViewModel extends ChangeNotifier {
   bool _isInitializing = false;
 
   List<String> get currentPhotoPaths => _currentPhotoPaths;
-  bool get canTakePhoto => _currentPhotoPaths.length < 3;
+  bool get canTakePhoto => _currentPhotoPaths.length < 10;
   bool get isInitializing => _isInitializing;
   CameraController? get controller => _cameraService.controller;
   Position? get currentPosition => _currentPosition;

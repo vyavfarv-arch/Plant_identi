@@ -5,7 +5,8 @@ import 'package:intl/intl.dart';
 import '../models/plant_observation.dart';
 import '../viewmodels/plants_view_model.dart';
 import 'detail_description_screen.dart';
-import 'plant_card_view.dart'; // Import nowego, wspólnego widoku karty
+import 'plant_card_view.dart';
+
 
 class BrowsePlantsScreen extends StatelessWidget {
   const BrowsePlantsScreen({super.key});
@@ -48,6 +49,11 @@ class BrowsePlantsScreen extends StatelessWidget {
               vm.setFilterArea(null);
             },
           ),
+          IconButton(
+            icon: Icon(Icons.account_tree_outlined,
+                color: vm.selectedFamilies.isNotEmpty ? Colors.orange : null),
+            onPressed: () => _showFamilyFilterDialog(context, vm),
+          ),
         ],
       ),
       body: Builder(
@@ -84,7 +90,30 @@ class BrowsePlantsScreen extends StatelessWidget {
       ),
     );
   }
-
+  void _showFamilyFilterDialog(BuildContext context, PlantsViewModel vm) {
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text("Filtruj według rodzin"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: vm.uniqueFamilies.map((family) => CheckboxListTile(
+                title: Text(family),
+                value: vm.selectedFamilies.contains(family),
+                onChanged: (val) {
+                  vm.toggleFamilyFilter(family);
+                  setDialogState(() {});
+                },
+              )).toList(),
+            ),
+          ),
+          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))],
+        ),
+      ),
+    );
+  }
   Widget _buildDetailTile(BuildContext context, PlantObservation obs, PlantsViewModel vm) {
     return ListTile(
       contentPadding: const EdgeInsets.only(left: 32, right: 16),
