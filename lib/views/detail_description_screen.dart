@@ -261,8 +261,8 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       return;
     }
 
-    final vm = context.read<ObservationViewModel>();
-    vm.updateObservationDetailed(
+    final obsVm = context.read<ObservationViewModel>();
+    obsVm.updateObservationDetailed(
       id: widget.observation.id,
       family: _controllers['family']!.text,
       genus: _controllers['genus']!.text,

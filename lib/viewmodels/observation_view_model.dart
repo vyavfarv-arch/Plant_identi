@@ -116,6 +116,13 @@ class ObservationViewModel extends ChangeNotifier {
     final index = _observations.indexWhere((o) => o.id == id);
     if (index != -1) {
       final old = _observations[index];
+
+      // NOWA LOGIKA: Jeśli roślina nie miała daty, a teraz nadajemy jej nazwę, ustawiamy datę na teraz
+      DateTime? finalDate = old.observationDate;
+      if (finalDate == null && localName != null && localName.isNotEmpty) {
+        finalDate = DateTime.now();
+      }
+
       _observations[index] = PlantObservation(
         id: old.id,
         photoPaths: old.photoPaths,
@@ -129,7 +136,7 @@ class ObservationViewModel extends ChangeNotifier {
         coverage: old.coverage,
         vitality: old.vitality,
         sociability: old.sociability,
-        observationDate: old.observationDate,
+        observationDate: finalDate, // Używamy wyliczonej daty
         family: family,
         genus: genus,
         species: species,
