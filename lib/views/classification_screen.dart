@@ -1,8 +1,6 @@
-// lib/views/classification_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../viewmodels/observation_vm.dart';
-import 'dart:io';
+import '../viewmodels/observation_view_model.dart';
 import '../models/plant_observation.dart';
 import 'form_screen.dart';
 

@@ -2,25 +2,59 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart'; // Dodano dla LatLng
 import '../models/plant_observation.dart';
-import '../viewmodels/observation_view_model.dart';
+import '../viewmodels/observation_view_model.dart'; // Dane roślin
+import '../viewmodels/releve_view_model.dart';    // Dane obszarów
+import '../viewmodels/search_filter_view_model.dart'; // Stan filtrów
+import '../services/spatial_service.dart'; // Logika geometryczna
 import 'detail_description_screen.dart';
 import 'plant_card_view.dart';
-
 
 class BrowsePlantsScreen extends StatelessWidget {
   const BrowsePlantsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Watch zapewnia odświeżanie całego ekranu przy zmianie filtrów w VM
-    final vm = context.watch<PlantsViewModel>();
+    // Pobieramy dostęp do nowych modeli
+    final obsVm = context.watch<ObservationViewModel>();
+    final filterVm = context.watch<SearchFilterViewModel>();
+    final releveVm = context.read<ReleveViewModel>();
+
+    // Ręczne filtrowanie listy obserwacji na podstawie stanu z filterVm
+    final plants = obsVm.completeObservations.where((obs) {
+      // Filtr daty
+      if (filterVm.filterDateRange != null) {
+        final date = obs.observationDate ?? obs.timestamp;
+        if (date.isBefore(filterVm.filterDateRange!.start) ||
+            date.isAfter(filterVm.filterDateRange!.end.add(const Duration(days: 1)))) {
+          return false;
+        }
+      }
+
+      // Filtr rodziny
+      if (filterVm.selectedFamilies.isNotEmpty) {
+        if (obs.family == null || !filterVm.selectedFamilies.contains(obs.family)) {
+          return false;
+        }
+      }
+
+      // Filtr obszaru przy użyciu SpatialService
+      if (filterVm.filterArea != null) {
+        if (!SpatialService.isPointInPolygon(
+            LatLng(obs.latitude, obs.longitude), filterVm.filterArea!.points)) {
+          return false;
+        }
+      }
+
+      return true;
+    }).toList();
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Magazyn Roślin'),
         actions: [
-          // Filtr daty
+          // Filtr daty - korzysta z SearchFilterViewModel
           IconButton(
             icon: const Icon(Icons.date_range),
             onPressed: () async {
@@ -28,45 +62,38 @@ class BrowsePlantsScreen extends StatelessWidget {
                 context: context,
                 firstDate: DateTime(2020),
                 lastDate: DateTime(2100),
-                initialDateRange: vm.filterDateRange,
+                initialDateRange: filterVm.filterDateRange,
               );
-              vm.setFilterDateRange(picked);
+              filterVm.setFilterDateRange(picked);
             },
           ),
-          // Filtr obszaru (ikona zmienia kolor, gdy filtr jest aktywny)
+          // Filtr obszaru
           IconButton(
             icon: Icon(
                 Icons.layers,
-                color: vm.filterArea != null ? Colors.orange : null
+                color: filterVm.filterArea != null ? Colors.orange : null
             ),
-            onPressed: () => _showAreaFilterDialog(context, vm),
+            onPressed: () => _showAreaFilterDialog(context, releveVm, filterVm),
           ),
-          // Reset wszystkich filtrów
+          // Reset filtrów
           IconButton(
             icon: const Icon(Icons.filter_alt_off),
-            onPressed: () {
-              vm.setFilterDateRange(null);
-              vm.setFilterArea(null);
-            },
+            onPressed: () => filterVm.resetAllFilters(),
           ),
+          // Filtr rodzin
           IconButton(
             icon: Icon(Icons.account_tree_outlined,
-                color: vm.selectedFamilies.isNotEmpty ? Colors.orange : null),
-            onPressed: () => _showFamilyFilterDialog(context, vm),
+                color: filterVm.selectedFamilies.isNotEmpty ? Colors.orange : null),
+            onPressed: () => _showFamilyFilterDialog(context, obsVm, filterVm),
           ),
         ],
       ),
       body: Builder(
         builder: (context) {
-          final plants = vm.filteredCompleteObservations;
-
           if (plants.isEmpty) {
-            return const Center(
-              child: Text("Brak roślin spełniających kryteria filtrów."),
-            );
+            return const Center(child: Text("Brak roślin spełniających kryteria filtrów."));
           }
 
-          // Grupowanie roślin po nazwie wyświetlanej
           final Map<String, List<PlantObservation>> grouped = {};
           for (var p in plants) {
             final name = p.displayName;
@@ -81,7 +108,7 @@ class BrowsePlantsScreen extends StatelessWidget {
                 ),
                 title: Text("${entry.key} (${entry.value.length})"),
                 children: entry.value
-                    .map((obs) => _buildDetailTile(context, obs, vm))
+                    .map((obs) => _buildDetailTile(context, obs, obsVm))
                     .toList(),
               );
             }).toList(),
@@ -90,7 +117,8 @@ class BrowsePlantsScreen extends StatelessWidget {
       ),
     );
   }
-  void _showFamilyFilterDialog(BuildContext context, PlantsViewModel vm) {
+
+  void _showFamilyFilterDialog(BuildContext context, ObservationViewModel obsVm, SearchFilterViewModel filterVm) {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -99,11 +127,11 @@ class BrowsePlantsScreen extends StatelessWidget {
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: vm.uniqueFamilies.map((family) => CheckboxListTile(
+              children: obsVm.uniqueFamilies.map((family) => CheckboxListTile(
                 title: Text(family),
-                value: vm.selectedFamilies.contains(family),
+                value: filterVm.selectedFamilies.contains(family),
                 onChanged: (val) {
-                  vm.toggleFamilyFilter(family);
+                  filterVm.toggleFamilyFilter(family);
                   setDialogState(() {});
                 },
               )).toList(),
@@ -114,12 +142,12 @@ class BrowsePlantsScreen extends StatelessWidget {
       ),
     );
   }
-  Widget _buildDetailTile(BuildContext context, PlantObservation obs, PlantsViewModel vm) {
+
+  Widget _buildDetailTile(BuildContext context, PlantObservation obs, ObservationViewModel obsVm) {
     return ListTile(
       contentPadding: const EdgeInsets.only(left: 32, right: 16),
       title: Text("Obserwacja z ${DateFormat('yyyy-MM-dd').format(obs.observationDate ?? obs.timestamp)}"),
       subtitle: Text("Ilość: ${obs.abundance} | Pewność: ${obs.certainty ?? 'brak'}"),
-      // ZMIANA: Wywołanie wspólnego widoku zamiast lokalnej metody
       onTap: () => PlantCardView.show(context, obs),
       trailing: PopupMenuButton<String>(
         onSelected: (val) {
@@ -129,7 +157,7 @@ class BrowsePlantsScreen extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => DetailDescriptionScreen(observation: obs))
             );
           } else if (val == 'delete') {
-            vm.deleteObservation(obs.id);
+            obsVm.deleteObservation(obs.id);
           }
         },
         itemBuilder: (ctx) => [
@@ -140,7 +168,7 @@ class BrowsePlantsScreen extends StatelessWidget {
     );
   }
 
-  void _showAreaFilterDialog(BuildContext context, PlantsViewModel vm) {
+  void _showAreaFilterDialog(BuildContext context, ReleveViewModel releveVm, SearchFilterViewModel filterVm) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -153,18 +181,18 @@ class BrowsePlantsScreen extends StatelessWidget {
               ListTile(
                 title: const Text("Wszystkie obszary (Brak filtra)"),
                 onTap: () {
-                  vm.setFilterArea(null);
+                  filterVm.setFilterArea(null);
                   Navigator.pop(ctx);
                 },
               ),
               const Divider(),
-              ...vm.allReleves.map((releve) => ListTile(
+              ...releveVm.allReleves.map((releve) => ListTile(
                 leading: const Icon(Icons.border_outer, color: Colors.indigo),
-                title: Text(releve.name),
+                title: Text(releve.commonName),
                 subtitle: Text(releve.type),
-                selected: vm.filterArea?.id == releve.id,
+                selected: filterVm.filterArea?.id == releve.id,
                 onTap: () {
-                  vm.setFilterArea(releve);
+                  filterVm.setFilterArea(releve);
                   Navigator.pop(ctx);
                 },
               )).toList(),

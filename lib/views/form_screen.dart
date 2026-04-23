@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
-import '../viewmodels/observation_vm.dart';
+import '../viewmodels/observation_view_model.dart';
 import '../models/plant_observation.dart';
-import '../viewmodels/plants_view_model.dart';
 import '../models/description_schema.dart';
 
 class FormScreen extends StatefulWidget {
@@ -26,7 +25,7 @@ class _FormScreenState extends State<FormScreen> {
       appBar: AppBar(title: Text('Opis: ${widget.observation.biologicalType}')),
       body: Column(
         children: [
-          // NOWA SEKCJA: Podgląd zrobionych zdjęć (przeniesiona tutaj)
+          // Podgląd zrobionych zdjęć pobierany z ObservationViewModel
           Consumer<ObservationViewModel>(
             builder: (context, obsVm, child) {
               if (obsVm.currentPhotoPaths.isEmpty) return const SizedBox.shrink();
@@ -54,7 +53,6 @@ class _FormScreenState extends State<FormScreen> {
             },
           ),
           const Divider(height: 1),
-          // Reszta formularza
           Expanded(
             child: ListView.builder(
               itemCount: schema.length,
@@ -98,13 +96,11 @@ class _FormScreenState extends State<FormScreen> {
               final imagePath = hasImage ? category.referenceImages![opt]! : "";
 
               return GestureDetector(
-                // LONG PRESS: Otwiera podgląd zdjęcia
                 onLongPress: () {
                   if (hasImage) {
                     _showImagePreview(context, imagePath, opt);
                   }
                 },
-                // TAP: Zaznacza / Odznacza opcję
                 onTap: () {
                   setState(() {
                     if (_selectedValues[subTitle] == null) {
@@ -120,7 +116,6 @@ class _FormScreenState extends State<FormScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Zdjęcie poglądowe z ErrorBuilderem
                     if (hasImage)
                       Container(
                         width: 80, height: 60,
@@ -137,7 +132,6 @@ class _FormScreenState extends State<FormScreen> {
                           child: Image.asset(
                             imagePath,
                             fit: BoxFit.cover,
-                            // Zabezpieczenie przed brakiem pliku w folderze
                             errorBuilder: (context, error, stackTrace) => Container(
                               color: Colors.grey.shade300,
                               child: const Icon(Icons.broken_image, color: Colors.grey, size: 30),
@@ -145,8 +139,6 @@ class _FormScreenState extends State<FormScreen> {
                           ),
                         ),
                       ),
-
-                    // Etykieta tekstowa
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
@@ -173,13 +165,12 @@ class _FormScreenState extends State<FormScreen> {
     );
   }
 
-  // --- WIDOK POWIĘKSZONEGO ZDJĘCIA POGLĄDOWEGO ---
   void _showImagePreview(BuildContext context, String imagePath, String title) {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        clipBehavior: Clip.antiAlias, // <--- POPRAWKA TUTAJ
+        clipBehavior: Clip.antiAlias,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -232,6 +223,7 @@ class _FormScreenState extends State<FormScreen> {
       timestamp: widget.observation.timestamp,
       characteristics: Map.from(_selectedValues),
       biologicalType: widget.observation.biologicalType,
+      family: widget.observation.family, // ZACHOWANIE RODZINY
       phytosociologicalLayer: widget.observation.phytosociologicalLayer,
       abundance: widget.observation.abundance,
       coverage: widget.observation.coverage,
@@ -240,7 +232,8 @@ class _FormScreenState extends State<FormScreen> {
       observationDate: now,
     );
 
-    context.read<PlantsViewModel>().addObservation(finalObs);
+
+    context.read<ObservationViewModel>().addObservation(finalObs);
 
     showDialog(
       context: context,

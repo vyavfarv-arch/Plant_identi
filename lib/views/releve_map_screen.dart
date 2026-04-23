@@ -3,7 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/releve.dart';
-import '../viewmodels/plants_view_model.dart';
+import '../viewmodels/releve_view_model.dart';
 
 class ReleveMapScreen extends StatefulWidget {
   const ReleveMapScreen({super.key});
@@ -37,7 +37,7 @@ class _ReleveMapScreenState extends State<ReleveMapScreen> {
             markers: _polygonPoints.asMap().entries.map((e) => Marker(
               markerId: MarkerId("p${e.key}"),
               position: e.value,
-              onTap: () => _removePoint(e.key), // Kliknięcie w róg usuwa go
+              onTap: () => _removePoint(e.key),
             )).toSet(),
             polygons: _polygonPoints.length >= 3 ? {
               Polygon(
@@ -57,7 +57,7 @@ class _ReleveMapScreenState extends State<ReleveMapScreen> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.all(15)),
                 onPressed: () => _showReleveSurvey(context),
-                child: const Text("DODAJ ZDJĘCIE", style: TextStyle(color: Colors.white, fontSize: 16)),
+                child: const Text("ZAPISZ OBSZAR", style: TextStyle(color: Colors.white, fontSize: 16)),
               ),
             ),
         ],
@@ -66,7 +66,9 @@ class _ReleveMapScreenState extends State<ReleveMapScreen> {
   }
 
   void _showReleveSurvey(BuildContext context) {
-    final nameController = TextEditingController();
+    // ZMIANA: Dwa kontrolery dla dwóch nazw
+    final commonNameController = TextEditingController();
+    final phytoNameController = TextEditingController();
     String selectedType = "Zespół";
 
     showDialog(
@@ -74,32 +76,45 @@ class _ReleveMapScreenState extends State<ReleveMapScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setStateDialog) => AlertDialog(
           title: const Text("Szczegóły płatu"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: nameController, decoration: const InputDecoration(labelText: "Nazwa zdjęcia")),
-              const SizedBox(height: 10),
-              DropdownButtonFormField<String>(
-                value: selectedType,
-                items: ["Zespół", "Związek", "Rząd", "Klasa"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-                onChanged: (v) => setStateDialog(() => selectedType = v!),
-                decoration: const InputDecoration(labelText: "Typ"),
-              ),
-            ],
+          content: SingleChildScrollView( // Dodano dla bezpieczeństwa przy wielu polach
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                    controller: commonNameController,
+                    decoration: const InputDecoration(labelText: "Nazwa zwyczajowa (np. Przy rzece)")
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                    controller: phytoNameController,
+                    decoration: const InputDecoration(labelText: "Nazwa fitosocjologiczna (np. Alnion)")
+                ),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: selectedType,
+                  items: ["Zespół", "Związek", "Rząd", "Klasa"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                  onChanged: (v) => setStateDialog(() => selectedType = v!),
+                  decoration: const InputDecoration(labelText: "Typ"),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("ANULUJ")),
             ElevatedButton(
               onPressed: () {
-                if (nameController.text.isNotEmpty) {
+                if (commonNameController.text.isNotEmpty) {
+                  // ZMIANA: Użycie nowych parametrów w konstruktorze Releve
                   final newReleve = Releve(
                     id: const Uuid().v4(),
-                    name: nameController.text,
+                    commonName: commonNameController.text,
+                    phytosociologicalName: phytoNameController.text,
                     type: selectedType,
                     points: List.from(_polygonPoints),
                     date: DateTime.now(),
                   );
-                  context.read<PlantsViewModel>().saveNewReleve(newReleve);
+                  // ZMIANA: Użycie ReleveViewModel
+                  context.read<ReleveViewModel>().saveNewReleve(newReleve);
                   Navigator.pop(ctx);
                   Navigator.pop(context);
                 }

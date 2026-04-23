@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/plant_observation.dart';
-import '../viewmodels/plants_view_model.dart';
+import '../viewmodels/observation_view_model.dart';
 import '../models/description_schema.dart';
 import 'dart:io';
 
@@ -261,7 +261,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       return;
     }
 
-    final vm = context.read<PlantsViewModel>();
+    final vm = context.read<ObservationViewModel>();
     vm.updateObservationDetailed(
       id: widget.observation.id,
       family: _controllers['family']!.text,

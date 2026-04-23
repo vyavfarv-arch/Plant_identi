@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/releve.dart';
 import '../models/habitat_info.dart';
-import '../viewmodels/plants_view_model.dart';
+import '../viewmodels/releve_view_model.dart';
 
 class HabitatFormScreen extends StatefulWidget {
   final Releve releve;
@@ -100,7 +100,8 @@ class _HabitatFormScreenState extends State<HabitatFormScreen> {
       ph: double.tryParse(_phController.text),
       litterLayer: _selectedLitter,
     );
-    context.read<PlantsViewModel>().updateReleveHabitat(widget.releve.id, info);
+    // ZMIANA: Wywołanie metody w ReleveViewModel
+    context.read<ReleveViewModel>().updateReleveHabitat(widget.releve.id, info);
     Navigator.pop(context);
   }
 }

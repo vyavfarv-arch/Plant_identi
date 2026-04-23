@@ -2,7 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/plant_observation.dart';
-import '../viewmodels/plants_view_model.dart';
+import '../viewmodels/releve_view_model.dart'; // ZMIANA: Nowy ViewModel
+import '../services/spatial_service.dart';    // ZMIANA: Nowy serwis do geometrii
 import 'releve_details_screen.dart';
 
 class PlantCardView {
@@ -50,7 +51,7 @@ class PlantCardView {
               _infoItem(Icons.handyman, "Zastosowanie", obs.plantUsage ?? "-"),
               _infoItem(Icons.home, "Hodowla", obs.cultivation ?? "-"),
               _sectionHeader("5. Lokalizacja w płatach"),
-              _buildReleveLinks(context, obs),
+              _buildReleveLinks(context, obs), // Wywołanie poprawionej metody
               const SizedBox(height: 15),
               _sectionHeader("Cechy z terenu"),
               _buildFieldCharacteristics(obs),
@@ -107,8 +108,12 @@ class PlantCardView {
 
   static Widget _buildReleveLinks(BuildContext context, PlantObservation obs) {
     return Builder(builder: (context) {
-      final vm = context.read<PlantsViewModel>();
-      final foundInReleves = vm.getRelevesForPlant(obs);
+      // ZMIANA: Pobieramy dane z ReleveViewModel
+      final releveVm = context.read<ReleveViewModel>();
+
+      // ZMIANA: Używamy SpatialService do znalezienia obszarów dla rośliny
+      final foundInReleves = SpatialService.getAreasForPlant(releveVm.allReleves, obs);
+
       if (foundInReleves.isEmpty) {
         return const Text("Roślina poza zdefiniowanymi obszarami.");
       }
@@ -116,17 +121,18 @@ class PlantCardView {
         children: foundInReleves.map((r) => ListTile(
           dense: true,
           leading: const Icon(Icons.layers, color: Colors.indigo),
-          title: Text("${r.type}: ${r.name}"),
-          subtitle: const Text("Kliknij, aby zobaczyć szczegóły płatu"),
+          // ZMIANA: r.name -> r.commonName
+          title: Text("${r.type}: ${r.commonName}"),
+          subtitle: Text("Naukowo: ${r.phytosociologicalName}"),
+          trailing: const Icon(Icons.chevron_right, size: 18),
           onTap: () {
-            Navigator.pop(context); // Zamknij kartę
+            Navigator.pop(context); // Zamknij kartę (bottom sheet)
             Navigator.push(context, MaterialPageRoute(builder: (_) => ReleveDetailsScreen(releve: r)));
           },
         )).toList(),
       );
     });
   }
-
   static Widget _buildFieldCharacteristics(PlantObservation obs) {
     if (obs.characteristics.isEmpty) return const Text("Brak dodatkowych cech.");
 

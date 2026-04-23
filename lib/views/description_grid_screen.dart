@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../viewmodels/plants_view_model.dart';
+import '../viewmodels/observation_view_model.dart';
 import 'detail_description_screen.dart';
 
 class DescriptionGridScreen extends StatelessWidget {
@@ -11,7 +11,7 @@ class DescriptionGridScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Opisz Spotkane Rośliny')),
-      body: Consumer<PlantsViewModel>(
+      body: Consumer<ObservationViewModel>(
         builder: (context, plantsVm, child) {
           final list = plantsVm.incompleteObservations;
 

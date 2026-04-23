@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../viewmodels/observation_vm.dart';
 import 'classification_screen.dart';
+import '../viewmodels/observation_view_model.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});

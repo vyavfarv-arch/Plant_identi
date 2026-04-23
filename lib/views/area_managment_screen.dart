@@ -1,27 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/releve.dart';
-import '../viewmodels/plants_view_model.dart';
+import '../viewmodels/releve_view_model.dart'; // ZMIANA: Import właściwego ViewModelu
 
 class AreaManagementScreen extends StatelessWidget {
   const AreaManagementScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final vm = context.watch<PlantsViewModel>();
+    // ZMIANA: Watchujemy ReleveViewModel zamiast PlantsViewModel
+    final releveVm = context.watch<ReleveViewModel>();
+
     // Pokazujemy tylko elementy "główne" (bez rodzica) na szczycie listy
-    final rootAreas = vm.allReleves.where((r) => r.parentId == null).toList();
+    final rootAreas = releveVm.allReleves.where((r) => r.parentId == null).toList();
 
     return Scaffold(
       appBar: AppBar(title: const Text("Struktura i Porządkowanie")),
       body: ListView.builder(
         itemCount: rootAreas.length,
-        itemBuilder: (context, index) => _buildAreaTile(context, rootAreas[index], vm),
+        itemBuilder: (context, index) => _buildAreaTile(context, rootAreas[index], releveVm),
       ),
     );
   }
 
-  Widget _buildAreaTile(BuildContext context, Releve area, PlantsViewModel vm, [int depth = 0]) {
+  Widget _buildAreaTile(BuildContext context, Releve area, ReleveViewModel vm, [int depth = 0]) {
     final children = vm.getChildren(area.id);
 
     return Column(
@@ -29,8 +31,9 @@ class AreaManagementScreen extends StatelessWidget {
         ListTile(
           contentPadding: EdgeInsets.only(left: 16.0 * (depth + 1)),
           leading: Icon(_getIcon(area.type), color: _getColor(area.type)),
-          title: Text(area.name),
-          subtitle: Text(area.type),
+          // ZMIANA: area.name -> area.commonName
+          title: Text(area.commonName),
+          subtitle: Text("${area.type}: ${area.phytosociologicalName}"),
           trailing: IconButton(
             icon: const Icon(Icons.account_tree_outlined),
             onPressed: () => _showAssignParentDialog(context, area, vm),
@@ -42,11 +45,11 @@ class AreaManagementScreen extends StatelessWidget {
     );
   }
 
-  void _showAssignParentDialog(BuildContext context, Releve child, PlantsViewModel vm) {
+  void _showAssignParentDialog(BuildContext context, Releve child, ReleveViewModel vm) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text("Przypisz nadrzędny dla: ${child.name}"),
+        title: Text("Przypisz nadrzędny dla: ${child.commonName}"),
         content: SizedBox(
           width: double.maxFinite,
           child: ListView(
@@ -60,9 +63,9 @@ class AreaManagementScreen extends StatelessWidget {
                 },
               ),
               const Divider(),
-              // Można przypisać tylko do obszarów o "szerszym" znaczeniu (uproszczone)
-              ...vm.allReleves.where((r) => r.id != child.id).map((potentialParent) => ListTile(
-                title: Text(potentialParent.name),
+              // Można przypisać tylko do obszarów spełniających logikę hierarchii
+              ...vm.allReleves.where((r) => r.id != child.id && vm.isValidParent(child.type, r.type)).map((potentialParent) => ListTile(
+                title: Text(potentialParent.commonName),
                 subtitle: Text(potentialParent.type),
                 onTap: () {
                   vm.assignParent(child.id, potentialParent.id);
@@ -83,8 +86,12 @@ class AreaManagementScreen extends StatelessWidget {
   }
 
   Color _getColor(String type) {
-    if (type == "Klasa") return Colors.red;
-    if (type == "Rząd") return Colors.orange;
-    return Colors.blue;
+    switch (type) {
+      case "Klasa": return Colors.red;
+      case "Rząd": return Colors.orange;
+      case "Związek": return Colors.purple;
+      case "Zespół": return Colors.blue;
+      default: return Colors.green;
+    }
   }
 }

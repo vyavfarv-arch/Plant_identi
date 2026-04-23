@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
-import '../viewmodels/plants_view_model.dart';
-import '../models/releve.dart';
+import '../viewmodels/observation_view_model.dart';
+import '../viewmodels/search_filter_view_model.dart';
+
 
 enum MapViewMode { plants, syntaxa }
 
@@ -18,7 +19,9 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   BitmapDescriptor? grassIcon;
+  // ignore: unused_field
   MapViewMode _mode = MapViewMode.plants;
+  // ignore: unused_field
   String _selectedRank = "Zespół";
 
   @override
@@ -47,11 +50,18 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
-    final vm = context.watch<PlantsViewModel>();
-    final plantsToDisplay = vm.mapFilteredObservations;
+    // ZMIANA: Pobieranie danych z ObservationViewModel i filtrów z SearchFilterViewModel
+    final obsVm = context.watch<ObservationViewModel>();
+    final filterVm = context.watch<SearchFilterViewModel>();
+
+    // LOGIKA FILTROWANIA: Wyświetlamy rośliny pasujące do wybranych nazw
+    // Jeśli żadna nazwa nie jest wybrana, lista jest pusta (zgodnie z poprzednią logiką)
+    final plantsToDisplay = obsVm.completeObservations.where((obs) {
+      if (filterVm.selectedPlantNames.isEmpty) return false;
+      return filterVm.selectedPlantNames.contains(obs.displayName);
+    }).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -59,14 +69,14 @@ class _MapScreenState extends State<MapScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list_alt),
-            onPressed: () => _showFilterDialog(context, vm),
+            onPressed: () => _showFilterDialog(context, obsVm, filterVm),
           ),
         ],
       ),
       body: GoogleMap(
         initialCameraPosition: const CameraPosition(target: LatLng(52.237, 21.017), zoom: 6),
         myLocationEnabled: true,
-        mapType: MapType.satellite, // ZMIANA: Zawsze mapa satelitarna
+        mapType: MapType.satellite,
         markers: plantsToDisplay.map((obs) => Marker(
           markerId: MarkerId(obs.id),
           position: LatLng(obs.latitude, obs.longitude),
@@ -80,7 +90,8 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  void _showFilterDialog(BuildContext context, PlantsViewModel vm) {
+  // ZMIANA: Przekazanie obsVm i filterVm do dialogu
+  void _showFilterDialog(BuildContext context, ObservationViewModel obsVm, SearchFilterViewModel filterVm) {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -89,11 +100,14 @@ class _MapScreenState extends State<MapScreen> {
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: vm.uniquePlantNames.map((name) => CheckboxListTile(
+              // Używamy unikalnych nazw z bazy obserwacji
+              children: obsVm.uniquePlantNames.map((name) => CheckboxListTile(
                 title: Text(name),
-                value: vm.selectedPlantNames.contains(name),
+                // Sprawdzamy stan w SearchFilterViewModel
+                value: filterVm.selectedPlantNames.contains(name),
                 onChanged: (val) {
-                  vm.toggleNameFilter(name);
+                  // Przełączamy filtr w SearchFilterViewModel
+                  filterVm.togglePlantNameFilter(name);
                   setDialogState(() {});
                 },
               )).toList(),

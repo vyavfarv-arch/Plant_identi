@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'viewmodels/observation_vm.dart';
-import 'viewmodels/observation_vm.dart';
-import 'viewmodels/releve_view_model.dart';
-import 'viewmodels/search_filter_view_model.dart';
-import 'views/home_screen.dart';
-import 'services/phytosociology_service.dart'; // DODAJ TEN IMPORT
+import 'viewmodels/observation_view_model.dart'; // Jedyny plik dla obserwacji
+import 'viewmodels/releve_view_model.dart'; // Zarządzanie obszarami
+import 'viewmodels/search_filter_view_model.dart'; // Filtrowanie
+import 'services/phytosociology_service.dart'; //
+import 'views/home_screen.dart'; // DODANO: Brakujący import dla HomeScreen
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,9 +13,14 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        // Ładujemy dane z dysku przy starcie dla obu VM danych
+        // Zaktualizowano: ObservationViewModel w Twoim pliku obsługuje zarówno sesję aparatu,
+        // jak i bazę danych roślin (loadFromDisk)
         ChangeNotifierProvider(create: (_) => ObservationViewModel()..loadFromDisk()),
+
+        // Obsługa obszarów, ich nazw i hierarchii
         ChangeNotifierProvider(create: (_) => ReleveViewModel()..loadFromDisk()),
+
+        // Globalny stan filtrów (zakresy dat, rodziny, multiselect)
         ChangeNotifierProvider(create: (_) => SearchFilterViewModel()),
       ],
       child: const MyApp(),
@@ -41,7 +45,6 @@ class MyApp extends StatelessWidget {
           foregroundColor: Colors.black,
         ),
       ),
-
       home: const HomeScreen(),
     );
   }

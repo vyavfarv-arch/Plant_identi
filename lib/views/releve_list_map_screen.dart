@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../models/releve.dart';
-import '../viewmodels/plants_view_model.dart';
+import '../viewmodels/releve_view_model.dart'; // ZMIANA: Import właściwego VM
 import 'releve_map_screen.dart';
 import 'releve_details_screen.dart';
 
@@ -11,7 +11,8 @@ class ReleveListMapScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final vm = context.watch<PlantsViewModel>();
+    // ZMIANA: Korzystamy z ReleveViewModel zamiast PlantsViewModel
+    final releveVm = context.watch<ReleveViewModel>();
 
     return Scaffold(
       appBar: AppBar(
@@ -19,14 +20,15 @@ class ReleveListMapScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
-            onPressed: () => _showTypeFilterDialog(context, vm),
+            onPressed: () => _showTypeFilterDialog(context, releveVm),
           ),
         ],
       ),
       body: GoogleMap(
         initialCameraPosition: const CameraPosition(target: LatLng(52.23, 21.01), zoom: 12),
         mapType: MapType.hybrid,
-        polygons: vm.filteredReleves.map((releve) => Polygon(
+        // ZMIANA: VM posiada własny getter filteredReleves uwzględniający nazwy i typy
+        polygons: releveVm.filteredReleves.map((releve) => Polygon(
           polygonId: PolygonId(releve.id),
           points: releve.points,
           fillColor: _getColorForType(releve.type).withOpacity(0.4),
@@ -41,7 +43,6 @@ class ReleveListMapScreen extends StatelessWidget {
           },
         )).toSet(),
       ),
-      // PRZYCISK DODAWANIA (PLUS)
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.green,
         onPressed: () => Navigator.push(
@@ -63,7 +64,7 @@ class ReleveListMapScreen extends StatelessWidget {
     }
   }
 
-  void _showTypeFilterDialog(BuildContext context, PlantsViewModel vm) {
+  void _showTypeFilterDialog(BuildContext context, ReleveViewModel vm) {
     final searchController = TextEditingController(text: vm.areaSearchQuery);
 
     showDialog(
@@ -77,7 +78,6 @@ class ReleveListMapScreen extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Poprawiona wyszukiwarka z przyciskiem CZYSZCZENIA
                   TextField(
                     controller: searchController,
                     decoration: InputDecoration(
@@ -96,7 +96,7 @@ class ReleveListMapScreen extends StatelessWidget {
                     ),
                     onChanged: (v) {
                       vm.setAreaSearchQuery(v);
-                      setStateDialog(() {}); // Odśwież widok ikony czyszczenia
+                      setStateDialog(() {});
                     },
                   ),
                   const SizedBox(height: 20),
@@ -104,7 +104,6 @@ class ReleveListMapScreen extends StatelessWidget {
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                   const Divider(),
 
-                  // Hierarchiczny Multiselect dla każdego typu
                   ...["Zespół", "Związek", "Rząd", "Klasa"].map((rank) {
                     final names = vm.getUniqueNamesForRank(rank);
                     return ExpansionTile(
@@ -144,20 +143,22 @@ class ReleveListMapScreen extends StatelessWidget {
     );
   }
 
-  // ... (Metoda _showEditDeleteDialog pozostaje bez zmian jak w Twoim pliku) ...
-  void _showEditDeleteDialog(BuildContext context, Releve releve, PlantsViewModel vm) {
-    final nameController = TextEditingController(text: releve.name);
+  void _showEditDeleteDialog(BuildContext context, Releve releve, ReleveViewModel vm) {
+    // ZMIANA: Obsługa dwóch nazw w edycji
+    final commonNameController = TextEditingController(text: releve.commonName);
+    final phytoNameController = TextEditingController(text: releve.phytosociologicalName);
     String currentType = releve.type;
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setStateDialog) => AlertDialog(
-          title: Text("Edytuj: ${releve.name}"),
+          title: Text("Edytuj: ${releve.commonName}"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameController, decoration: const InputDecoration(labelText: "Nazwa")),
+              TextField(controller: commonNameController, decoration: const InputDecoration(labelText: "Nazwa zwyczajowa")),
+              TextField(controller: phytoNameController, decoration: const InputDecoration(labelText: "Nazwa fitosocjologiczna")),
               DropdownButtonFormField<String>(
                 value: currentType,
                 items: ["Zespół", "Związek", "Rząd", "Klasa"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
@@ -175,7 +176,8 @@ class ReleveListMapScreen extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () {
-                vm.updateReleve(releve.id, nameController.text, currentType);
+                // ZMIANA: Wywołanie aktualizacji z dwiema nazwami
+                vm.updateReleve(releve.id, commonNameController.text, phytoNameController.text, currentType);
                 Navigator.pop(ctx);
               },
               child: const Text("ZAPISZ ZMIANY"),
