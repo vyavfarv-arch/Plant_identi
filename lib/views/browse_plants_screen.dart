@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/plant_observation.dart';
-import '../viewmodels/plants_view_model.dart';
+import '../viewmodels/observation_view_model.dart';
 import 'detail_description_screen.dart';
 import 'plant_card_view.dart';
 

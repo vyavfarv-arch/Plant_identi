@@ -3,16 +3,18 @@ import 'habitat_info.dart';
 
 class Releve {
   final String id;
-  final String name;
-  final String type; // "Zespół", "Związek", "Rząd", "Klasa"
-  final List<LatLng> points; // Używamy nazwy 'points'
+  final String commonName;           // Nazwa orientacyjna (np. "Przy rzece")
+  final String phytosociologicalName; // Nazwa naukowa do powiązań (np. "Alnion glutinosae")
+  final String type;                 // Zespół, Związek, Rząd, Klasa
+  final List<LatLng> points;
   final DateTime date;
   String? parentId;
   HabitatInfo? habitat;
 
   Releve({
     required this.id,
-    required this.name,
+    required this.commonName,
+    required this.phytosociologicalName,
     required this.type,
     required this.points,
     required this.date,
@@ -23,7 +25,8 @@ class Releve {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'name': name,
+      'commonName': commonName,
+      'phytosociologicalName': phytosociologicalName,
       'type': type,
       'points': points.map((p) => {'lat': p.latitude, 'lng': p.longitude}).toList(),
       'date': date.toIso8601String(),
@@ -35,11 +38,10 @@ class Releve {
   factory Releve.fromMap(Map<String, dynamic> map) {
     return Releve(
       id: map['id'],
-      name: map['name'],
+      commonName: map['commonName'] ?? '',
+      phytosociologicalName: map['phytosociologicalName'] ?? '',
       type: map['type'],
-      points: (map['points'] as List)
-          .map((p) => LatLng(p['lat'] as double, p['lng'] as double))
-          .toList(),
+      points: (map['points'] as List).map((p) => LatLng(p['lat'], p['lng'])).toList(),
       date: DateTime.parse(map['date']),
       parentId: map['parentId'],
       habitat: map['habitat'] != null ? HabitatInfo.fromMap(map['habitat']) : null,

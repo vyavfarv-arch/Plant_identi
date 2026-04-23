@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'viewmodels/observation_vm.dart';
-import 'viewmodels/plants_view_model.dart';
+import 'viewmodels/observation_vm.dart';
+import 'viewmodels/releve_view_model.dart';
+import 'viewmodels/search_filter_view_model.dart';
 import 'views/home_screen.dart';
 import 'services/phytosociology_service.dart'; // DODAJ TEN IMPORT
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Inicjalizacja bazy syntaksonów z pliku JSON
   await PhytosociologyService().init();
 
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ObservationViewModel()),
-        ChangeNotifierProvider(create: (_) => PlantsViewModel()..loadFromDisk()),
+        // Ładujemy dane z dysku przy starcie dla obu VM danych
+        ChangeNotifierProvider(create: (_) => ObservationViewModel()..loadFromDisk()),
+        ChangeNotifierProvider(create: (_) => ReleveViewModel()..loadFromDisk()),
+        ChangeNotifierProvider(create: (_) => SearchFilterViewModel()),
       ],
       child: const MyApp(),
     ),
