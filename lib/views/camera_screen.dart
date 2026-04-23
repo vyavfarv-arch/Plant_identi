@@ -61,7 +61,7 @@ class _CameraScreenState extends State<CameraScreen> {
           right: 0,
           child: Column(
             children: [
-              Text("Zdjęcia: ${vm.currentPhotoPaths.length} / 3", style: const TextStyle(color: Colors.white)),
+              Text("Zdjęcia: ${vm.currentPhotoPaths.length} / 10", style: const TextStyle(color: Colors.white)),
               const SizedBox(height: 20),
               IconButton(
                 iconSize: 80,

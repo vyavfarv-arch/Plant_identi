@@ -119,11 +119,10 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
             _buildDetailedDropdown(
                 "Żywotność",
                 _vitalityDescriptions,
-                    (v) => setState(() => _selectedSociability = v)
+                    (v) => setState(() => _selectedVitality = v)
             ),
 
             // Opcjonalnie Żywotność (dropdown bez mapy opisów
-            const Text("Dane systematyczne:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: TextField(
@@ -146,17 +145,6 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text("Dane systematyczne:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: TextField(
-                controller: _familyController,
-                decoration: const InputDecoration(
-                  labelText: "Rodzina (np. Asteraceae)",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ),
             const Divider(),
           ],
         ),
@@ -198,7 +186,7 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
       latitude: obsVm.currentPosition?.latitude ?? 0.0,
       longitude: obsVm.currentPosition?.longitude ?? 0.0,
       timestamp: DateTime.now(),
-      characteristics: {}, // Pusta mapa, wypełniona w FormScreen
+      characteristics: {},
       biologicalType: _selectedType,
       family: _familyController.text,
       phytosociologicalLayer: _selectedLayer,
