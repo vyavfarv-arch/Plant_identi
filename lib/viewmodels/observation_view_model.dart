@@ -4,12 +4,14 @@ import 'package:camera/camera.dart';
 import '../models/plant_observation.dart';
 import '../services/camera_service.dart';
 import '../services/location_service.dart';
-import '../services/storage_service.dart'; // Dodano StorageService
+import '../services/storage_service.dart';
+import '../services/database_helper.dart';
 
 class ObservationViewModel extends ChangeNotifier {
   final CameraService _cameraService = CameraService();
   final LocationService _locationService = LocationService();
   final StorageService _storage = StorageService();
+  final DatabaseHelper _db = DatabaseHelper();
 
   // --- LOGIKA TWORZENIA NOWEJ OBSERWACJI ---
   List<String> _currentPhotoPaths = [];
@@ -49,7 +51,7 @@ class ObservationViewModel extends ChangeNotifier {
   // --- METODY ---
 
   Future<void> loadFromDisk() async {
-    _observations = await _storage.loadObservations();
+    _observations = await _db.getObservations(); // Pobranie listy z SQLite
     notifyListeners();
   }
 
@@ -84,16 +86,14 @@ class ObservationViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addObservation(PlantObservation obs) {
-    _observations.add(obs);
-    _storage.saveObservations(_observations);
-    notifyListeners();
+  Future<void> addObservation(PlantObservation obs) async {
+    await _db.insertObservation(obs); // Zapis pojedynczej rośliny
+    await loadFromDisk();
   }
 
-  void deleteObservation(String id) {
-    _observations.removeWhere((o) => o.id == id);
-    _storage.saveObservations(_observations);
-    notifyListeners();
+  Future<void> deleteObservation(String id) async {
+    await _db.deleteObservation(id);
+    await loadFromDisk();
   }
 
   void updateObservationDetailed({

@@ -39,6 +39,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
     _controllers['usage'] = TextEditingController(text: obs.plantUsage);
     _controllers['cultivation'] = TextEditingController(text: obs.cultivation);
     _controllers['latinName'] = TextEditingController(text: obs.latinName);
+    _controllers['species'] = TextEditingController(text: obs.species);
 
     _selectedStatus = obs.phytosociologicalStatus;
     _selectedCertainty = obs.certainty;
@@ -188,6 +189,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
         _inputField(_controllers['family']!, "Rodzina (Familia)"),
         _inputField(_controllers['genus']!, "Rodzaj (Genus)"),
         _inputField(_controllers['latinName']!, "Nazwa Łacińska "),
+        _inputField(_controllers['species']!, "Gatunek (Species)"),
         _inputField(_controllers['subspecies']!, "Odmiana "),
 
       ],
@@ -261,11 +263,13 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       return;
     }
 
-    final obsVm = context.read<ObservationViewModel>();
-    obsVm.updateObservationDetailed(
+    final vm = context.read<ObservationViewModel>();
+
+    vm.updateObservationDetailed(
       id: widget.observation.id,
       family: _controllers['family']!.text,
       genus: _controllers['genus']!.text,
+      // Tutaj aplikacja się wywalała przez brak zainicjalizowanego kontrolera
       species: _controllers['species']!.text,
       subspecies: _controllers['subspecies']!.text,
       localName: _controllers['localName']!.text,
@@ -278,7 +282,6 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       latinName: _controllers['latinName']!.text,
       phytosociologicalStatus: _selectedStatus,
       cultivation: _controllers['cultivation']!.text,
-
     );
 
     Navigator.pop(context);

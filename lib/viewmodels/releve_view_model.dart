@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/releve.dart';
 import '../models/habitat_info.dart';
-import '../services/storage_service.dart';
+import '../services/database_helper.dart'; // ZMIANA: Nowy serwis
 
 class ReleveViewModel extends ChangeNotifier {
-  final StorageService _storage = StorageService();
+  final DatabaseHelper _db = DatabaseHelper(); // ZMIANA
   List<Releve> _releves = [];
 
-  // Filtrowanie
+  // Filtry pozostają w pamięci RAM
   String _areaSearchQuery = "";
   final List<String> _selectedReleveTypes = ["Zespół", "Związek", "Rząd", "Klasa"];
   final Map<String, Set<String>> _selectedSpecificNames = {};
@@ -17,30 +16,28 @@ class ReleveViewModel extends ChangeNotifier {
   String get areaSearchQuery => _areaSearchQuery;
   List<String> get selectedReleveTypes => _selectedReleveTypes;
 
-  // --- ŁADOWANIE I ZAPIS ---
+  // --- ŁADOWANIE I ZAPIS SQLITE ---
 
   Future<void> loadFromDisk() async {
-    _releves = await _storage.loadReleves();
+    _releves = await _db.getReleves(); // Pobranie z bazy
     notifyListeners();
   }
 
-  void saveNewReleve(Releve releve) {
-    _releves.add(releve);
-    _storage.saveReleves(_releves);
-    notifyListeners();
+  Future<void> saveNewReleve(Releve releve) async {
+    await _db.insertReleve(releve); // Zapis do bazy
+    await loadFromDisk();
   }
 
-  void deleteReleve(String id) {
-    _releves.removeWhere((r) => r.id == id);
-    _storage.saveReleves(_releves);
-    notifyListeners();
+  Future<void> deleteReleve(String id) async {
+    await _db.deleteReleve(id); // Usunięcie z bazy
+    await loadFromDisk();
   }
 
-  void updateReleve(String id, String newCommonName, String newPhytoName, String newType) {
+  Future<void> updateReleve(String id, String newCommonName, String newPhytoName, String newType) async {
     final index = _releves.indexWhere((r) => r.id == id);
     if (index != -1) {
       final old = _releves[index];
-      _releves[index] = Releve(
+      final updated = Releve(
         id: old.id,
         commonName: newCommonName,
         phytosociologicalName: newPhytoName,
@@ -50,8 +47,8 @@ class ReleveViewModel extends ChangeNotifier {
         parentId: old.parentId,
         habitat: old.habitat,
       );
-      _storage.saveReleves(_releves);
-      notifyListeners();
+      await _db.insertReleve(updated);
+      await loadFromDisk();
     }
   }
 
@@ -64,11 +61,11 @@ class ReleveViewModel extends ChangeNotifier {
     return false;
   }
 
-  void assignParent(String childId, String? parentId) {
+  Future<void> assignParent(String childId, String? parentId) async {
     final index = _releves.indexWhere((r) => r.id == childId);
     if (index != -1) {
       _releves[index].parentId = parentId;
-      _storage.saveReleves(_releves);
+      await _db.insertReleve(_releves[index]);
       notifyListeners();
     }
   }
@@ -84,11 +81,11 @@ class ReleveViewModel extends ChangeNotifier {
   List<Releve> getPotentialParents(Releve child) =>
       _releves.where((r) => isValidParent(child.type, r.type)).toList();
 
-  void updateReleveHabitat(String releveId, HabitatInfo info) {
+  Future<void> updateReleveHabitat(String releveId, HabitatInfo info) async {
     final index = _releves.indexWhere((r) => r.id == releveId);
     if (index != -1) {
       _releves[index].habitat = info;
-      _storage.saveReleves(_releves);
+      await _db.insertReleve(_releves[index]);
       notifyListeners();
     }
   }

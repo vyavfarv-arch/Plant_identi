@@ -1,5 +1,6 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'habitat_info.dart';
+import 'dart:convert';
 
 class Releve {
   final String id;
@@ -28,14 +29,15 @@ class Releve {
       'commonName': commonName,
       'phytosociologicalName': phytosociologicalName,
       'type': type,
-      'points': points.map((p) => {'lat': p.latitude, 'lng': p.longitude}).toList(),
-      'date': date.toIso8601String(),
+      'pointsJson': jsonEncode(points.map((p) => {'lat': p.latitude, 'lng': p.longitude}).toList()),
       'parentId': parentId,
-      'habitat': habitat?.toMap(),
+      'date': date.toIso8601String(),
+      'habitatJson': habitat != null ? jsonEncode(habitat!.toMap()) : null,
     };
   }
 
   factory Releve.fromMap(Map<String, dynamic> map) {
+    var pointsData = jsonDecode(map['pointsJson'] ?? '[]') as List;
     return Releve(
       id: map['id'],
       commonName: map['commonName'] ?? '',

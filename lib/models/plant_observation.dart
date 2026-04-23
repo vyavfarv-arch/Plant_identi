@@ -99,7 +99,10 @@ class PlantObservation {
       'characteristicFeature': characteristicFeature,
       'plantUsage': plantUsage,
       'cultivation': cultivation,
-      'phytosociologicalStatus': phytosociologicalStatus
+      'phytosociologicalStatus': phytosociologicalStatus,
+      'photoPathsJson': jsonEncode(photoPaths),
+      'characteristicsJson': jsonEncode(characteristics),
+      'observationDate': observationDate?.toIso8601String(),
     };
   }
 
