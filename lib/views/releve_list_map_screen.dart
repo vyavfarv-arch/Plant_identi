@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
-import '../models/releve.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../viewmodels/search_filter_view_model.dart';
-import 'releve_map_screen.dart';
+import '../models/releve.dart';
 import 'releve_details_screen.dart';
 
-class ReleveListMapScreen extends StatelessWidget {
+class ReleveListMapScreen extends StatefulWidget {
   const ReleveListMapScreen({super.key});
+
+  @override
+  State<ReleveListMapScreen> createState() => _ReleveListMapScreenState();
+}
+
+class _ReleveListMapScreenState extends State<ReleveListMapScreen> {
+  // Usunięto nieużywaną zmienną _mapController
 
   @override
   Widget build(BuildContext context) {
     final releveVm = context.watch<ReleveViewModel>();
     final filterVm = context.watch<SearchFilterViewModel>();
 
-    // Filtrowanie "w locie" na ekranie
     final filteredReleves = releveVm.allReleves.where((r) {
       final matchesType = filterVm.selectedReleveTypes.contains(r.type);
       final matchesSearch = filterVm.areaSearchQuery.isEmpty ||
@@ -27,173 +32,137 @@ class ReleveListMapScreen extends StatelessWidget {
 
       return matchesType && matchesSearch && matchesSpecific;
     }).toList();
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Zapisane obszary"),
+        title: const Text("Mapa Obszarów"),
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
-            onPressed: () => _showTypeFilterDialog(context, releveVm),
+            onPressed: () => _showFilterDialog(context, releveVm, filterVm),
           ),
         ],
       ),
-      body: GoogleMap(
-        initialCameraPosition: const CameraPosition(target: LatLng(52.23, 21.01), zoom: 12),
-        mapType: MapType.hybrid,
-        polygons: releveVm.filteredReleves.map((releve) => Polygon(
-          polygonId: PolygonId(releve.id),
-          points: releve.points,
-          fillColor: _getColorForType(releve.type).withOpacity(0.4),
-          strokeColor: _getColorForType(releve.type),
-          strokeWidth: 2,
-          consumeTapEvents: true,
-          onTap: () {
-            Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => ReleveDetailsScreen(releve: releve))
-            );
-          },
-        )).toSet(),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.green,
-        onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ReleveMapScreen())
-        ),
-        child: const Icon(Icons.add, size: 30, color: Colors.white),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextFormField(
+              initialValue: filterVm.areaSearchQuery,
+              onChanged: (v) => filterVm.setAreaSearchQuery(v),
+              decoration: InputDecoration(
+                labelText: "Szukaj po nazwie",
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    filterVm.clearAreaSearchQuery();
+                  },
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: GoogleMap(
+              initialCameraPosition: const CameraPosition(
+                target: LatLng(52.0, 19.0), // Centrum mapy
+                zoom: 6,
+              ),
+              // Usunięto onMapCreated, ponieważ nie używamy kontrolera
+              polygons: _buildPolygons(filteredReleves),
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  Set<Polygon> _buildPolygons(List<Releve> releves) {
+    return releves.map((r) {
+      return Polygon(
+        polygonId: PolygonId(r.id),
+        points: r.points,
+        strokeWidth: 2,
+        strokeColor: _getColorForType(r.type),
+        fillColor: _getColorForType(r.type).withValues(alpha: 0.3),
+        consumeTapEvents: true,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              // NAPRAWIONE: Przekazujemy releve: r zamiast releveId: r.id
+              builder: (ctx) => ReleveDetailsScreen(releve: r),
+            ),
+          );
+        },
+      );
+    }).toSet();
   }
 
   Color _getColorForType(String type) {
     switch (type) {
-      case "Zespół": return Colors.blue;
-      case "Związek": return Colors.purple;
-      case "Rząd": return Colors.orange;
       case "Klasa": return Colors.red;
+      case "Rząd": return Colors.orange;
+      case "Związek": return Colors.purple;
+      case "Zespół": return Colors.blue;
       default: return Colors.green;
     }
   }
 
-  void _showTypeFilterDialog(BuildContext context, ReleveViewModel vm) {
-    final searchController = TextEditingController(text: vm.areaSearchQuery);
+  void _showFilterDialog(BuildContext context, ReleveViewModel releveVm, SearchFilterViewModel filterVm) {
+    final ranks = ["Klasa", "Rząd", "Związek", "Zespół"];
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setStateDialog) => AlertDialog(
-          title: const Text("Filtruj obszary"),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: SingleChildScrollView(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text("Filtruj Obszary"),
+            content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: searchController,
-                    decoration: InputDecoration(
-                      labelText: "Szukaj po nazwie",
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: searchController.text.isNotEmpty
-                          ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          searchController.clear();
-                          vm.clearAreaSearchQuery();
-                          setStateDialog(() {});
-                        },
-                      )
-                          : null,
+                children: ranks.map((rank) {
+                  final uniqueNames = releveVm.allReleves
+                      .where((r) => r.type == rank)
+                      .map((r) => r.commonName)
+                      .toSet()
+                      .toList();
+
+                  return ExpansionTile(
+                    title: Row(
+                      children: [
+                        Checkbox(
+                          value: filterVm.selectedReleveTypes.contains(rank),
+                          onChanged: (val) {
+                            filterVm.toggleReleveTypeFilter(rank);
+                            setDialogState(() {});
+                          },
+                        ),
+                        Text(rank, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      ],
                     ),
-                    onChanged: (v) {
-                      vm.setAreaSearchQuery(v);
-                      setStateDialog(() {});
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  const Text("Wybierz typy i konkretne płaty:",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                  const Divider(),
-
-                  ...["Zespół", "Związek", "Rząd", "Klasa"].map((rank) {
-                    final names = vm.getUniqueNamesForRank(rank);
-                    return ExpansionTile(
-                      leading: Checkbox(
-                        value: vm.selectedReleveTypes.contains(rank),
-                        onChanged: (val) {
-                          vm.toggleReleveTypeFilter(rank);
-                          setStateDialog(() {});
-                        },
-                      ),
-                      title: Text(rank),
-                      children: names.isEmpty
-                          ? [const Padding(padding: EdgeInsets.all(8), child: Text("Brak zapisanych nazw"))]
-                          : names.map((name) => CheckboxListTile(
-                        dense: true,
+                    children: uniqueNames.map((name) {
+                      return CheckboxListTile(
                         title: Text(name),
-                        value: vm.isNameSelected(rank, name),
+                        value: filterVm.isNameSelected(rank, name),
                         onChanged: (val) {
-                          vm.toggleNameSelection(rank, name);
-                          setStateDialog(() {});
+                          filterVm.toggleNameSelection(rank, name);
+                          setDialogState(() {});
                         },
-                      )).toList(),
-                    );
-                  }).toList(),
-                ],
+                      );
+                    }).toList(),
+                  );
+                }).toList(),
               ),
             ),
-          ),
-          actions: [
-            TextButton(
+            actions: [
+              TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text("OK")
-            )
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showEditDeleteDialog(BuildContext context, Releve releve, ReleveViewModel vm) {
-    final commonNameController = TextEditingController(text: releve.commonName);
-    final phytoNameController = TextEditingController(text: releve.phytosociologicalName);
-    String currentType = releve.type;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setStateDialog) => AlertDialog(
-          title: Text("Edytuj: ${releve.commonName}"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: commonNameController, decoration: const InputDecoration(labelText: "Nazwa zwyczajowa")),
-              TextField(controller: phytoNameController, decoration: const InputDecoration(labelText: "Nazwa fitosocjologiczna")),
-              DropdownButtonFormField<String>(
-                value: currentType,
-                items: ["Zespół", "Związek", "Rząd", "Klasa"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-                onChanged: (v) => setStateDialog(() => currentType = v!),
-              ),
+                child: const Text("ZAMKNIJ"),
+              )
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                vm.deleteReleve(releve.id);
-                Navigator.pop(ctx);
-              },
-              child: const Text("USUŃ", style: TextStyle(color: Colors.red)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                vm.updateReleve(releve.id, commonNameController.text, phytoNameController.text, currentType);
-                Navigator.pop(ctx);
-              },
-              child: const Text("ZAPISZ ZMIANY"),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
