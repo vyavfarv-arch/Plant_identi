@@ -162,6 +162,7 @@ class ObservationViewModel extends ChangeNotifier {
 
   void reset() {
     _currentPhotoPaths = [];
+    _currentPosition = null;
     notifyListeners();
   }
 

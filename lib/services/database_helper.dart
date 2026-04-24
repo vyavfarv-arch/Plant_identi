@@ -21,9 +21,9 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'planticator.db');
     return await openDatabase(
       path,
-      version: 2, // Wersja 3 zawiera kolumnę 'coverage' i tabelę 'plant_knowledge'
+      version: 3, // ZMIANA: Podbito do wersji 3
       onCreate: _onCreate,
-      onUpgrade: _onUpgrade, // Prawidłowo podpięta funkcja aktualizacji
+      onUpgrade: _onUpgrade, // Poprawnie podpięta migracja
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
     );
   }
@@ -44,13 +44,14 @@ class DatabaseHelper {
       )
     ''');
 
-    // Tabela Obserwacji - tutaj coverage jest już w onCreate dla nowych użytkowników
+    // Tabela Obserwacji - KOMPLETNA LISTA KOLUMN
     await db.execute('''
       CREATE TABLE observations (
         id TEXT PRIMARY KEY,
         releveId TEXT,
         localName TEXT,
         latinName TEXT,
+        polishName TEXT,
         family TEXT,
         genus TEXT,
         species TEXT,
@@ -62,6 +63,13 @@ class DatabaseHelper {
         vitality TEXT,
         sociability TEXT,
         certainty TEXT,
+        idDoubts TEXT,
+        keyMorphologicalTraits TEXT,
+        confusingSpecies TEXT,
+        characteristicFeature TEXT,
+        plantUsage TEXT,
+        cultivation TEXT,
+        phytosociologicalStatus TEXT,
         observationDate TEXT,
         photoPathsJson TEXT,
         characteristicsJson TEXT,
@@ -89,14 +97,28 @@ class DatabaseHelper {
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 3) {
-      // Próba dodania kolumny coverage dla starych baz (v1 lub v2)
-      try {
-        await db.execute('ALTER TABLE observations ADD COLUMN coverage TEXT');
-      } catch (e) {
-        // Ignorujemy jeśli kolumna już istnieje
+      // Lista kolumn, których brakowało w poprzednich wersjach (v1 i v2)
+      final List<String> missingColumns = [
+        'coverage',
+        'polishName',
+        'idDoubts',
+        'keyMorphologicalTraits',
+        'confusingSpecies',
+        'characteristicFeature',
+        'plantUsage',
+        'cultivation',
+        'phytosociologicalStatus'
+      ];
+
+      for (String column in missingColumns) {
+        try {
+          await db.execute('ALTER TABLE observations ADD COLUMN $column TEXT');
+        } catch (e) {
+          // Ignoruj błąd, jeśli kolumna już jakimś cudem istnieje
+        }
       }
 
-      // Próba utworzenia tabeli wiedzy
+      // Upewnij się, że tabela wiedzy istnieje
       await db.execute('''
         CREATE TABLE IF NOT EXISTS plant_knowledge (
           latinName TEXT PRIMARY KEY,
@@ -113,7 +135,7 @@ class DatabaseHelper {
     }
   }
 
-  // --- METODY DLA OBSZARÓW ---
+  // --- METODY CRUD (pozostają bez zmian) ---
 
   Future<void> insertReleve(Releve releve) async {
     final db = await database;
@@ -131,12 +153,10 @@ class DatabaseHelper {
     await db.delete('releves', where: 'id = ?', whereArgs: [id]);
   }
 
-  // --- METODY DLA OBSERWACJI ---
-
   Future<void> insertObservation(PlantObservation obs, {String? releveId}) async {
     final db = await database;
     final map = obs.toMap();
-    map['releveId'] = releveId; // Powiązanie z obszarem
+    map['releveId'] = releveId;
     await db.insert('observations', map, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
@@ -145,12 +165,9 @@ class DatabaseHelper {
     final List<Map<String, dynamic>> maps = await db.query('observations');
     return List.generate(maps.length, (i) => PlantObservation.fromMap(maps[i]));
   }
+
   Future<void> deleteObservation(String id) async {
     final db = await database;
-    await db.delete(
-      'observations',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await db.delete('observations', where: 'id = ?', whereArgs: [id]);
   }
 }
