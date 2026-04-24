@@ -21,14 +21,15 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'planticator.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2, // Wersja 3 zawiera kolumnę 'coverage' i tabelę 'plant_knowledge'
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade, // Prawidłowo podpięta funkcja aktualizacji
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
     );
   }
 
   Future _onCreate(Database db, int version) async {
-    // Tabela Obszarów (Releves) z hierarchią
+    // Tabela Obszarów
     await db.execute('''
       CREATE TABLE releves (
         id TEXT PRIMARY KEY,
@@ -43,7 +44,7 @@ class DatabaseHelper {
       )
     ''');
 
-    // Tabela Obserwacji (Observations) powiązana z obszarem
+    // Tabela Obserwacji - tutaj coverage jest już w onCreate dla nowych użytkowników
     await db.execute('''
       CREATE TABLE observations (
         id TEXT PRIMARY KEY,
@@ -57,6 +58,7 @@ class DatabaseHelper {
         biologicalType TEXT,
         phytosociologicalLayer TEXT,
         abundance TEXT,
+        coverage TEXT,
         vitality TEXT,
         sociability TEXT,
         certainty TEXT,
@@ -69,6 +71,46 @@ class DatabaseHelper {
         FOREIGN KEY (releveId) REFERENCES releves (id) ON DELETE CASCADE
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE plant_knowledge (
+        latinName TEXT PRIMARY KEY,
+        polishName TEXT,
+        associatedSyntaxaJson TEXT,
+        preferredSubstratesJson TEXT,
+        preferredMoistureMin REAL,
+        preferredMoistureMax REAL,
+        floweringStartMonth INTEGER,
+        floweringEndMonth INTEGER,
+        properties TEXT
+      )
+    ''');
+  }
+
+  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 3) {
+      // Próba dodania kolumny coverage dla starych baz (v1 lub v2)
+      try {
+        await db.execute('ALTER TABLE observations ADD COLUMN coverage TEXT');
+      } catch (e) {
+        // Ignorujemy jeśli kolumna już istnieje
+      }
+
+      // Próba utworzenia tabeli wiedzy
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS plant_knowledge (
+          latinName TEXT PRIMARY KEY,
+          polishName TEXT,
+          associatedSyntaxaJson TEXT,
+          preferredSubstratesJson TEXT,
+          preferredMoistureMin REAL,
+          preferredMoistureMax REAL,
+          floweringStartMonth INTEGER,
+          floweringEndMonth INTEGER,
+          properties TEXT
+        )
+      ''');
+    }
   }
 
   // --- METODY DLA OBSZARÓW ---
