@@ -41,7 +41,7 @@ class PlantCardView {
               _sectionHeader("2. Dane fitosocjologiczne"),
               _infoItem(Icons.layers, "Warstwa", obs.phytosociologicalLayer ?? "-"),
               _infoItem(Icons.analytics, "Ilościowość", obs.abundance ?? "-"),
-              _infoItem(Icons.people_alt, "Towarzyskość", obs.sociability ?? "-"),
+              _infoItem(Icons.people_alt, "Towarzyskość", obs.areaPurity ?? "-"),
               _infoItem(Icons.favorite, "Żywotność", obs.vitality ?? "-"),
               _sectionHeader("3. Cechy charakterystyczne i pewność"),
               _infoItem(Icons.verified, "Stopień pewności", obs.certainty ?? "-"),

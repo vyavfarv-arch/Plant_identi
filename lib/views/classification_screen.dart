@@ -14,17 +14,17 @@ class ClassificationScreen extends StatefulWidget {
 class _ClassificationScreenState extends State<ClassificationScreen> {
   final TextEditingController _familyController = TextEditingController();
   String? _selectedType;
-  String? _selectedLayer;
   String? _selectedAbundance;
   String? _selectedVitality;
-  String? _selectedSociability;
+  String? _selectedPurity;
 
-  final List<String> _types = ["Drzewo", "Krzew", "Krzewinka", "Zielne", "Grzyb", "Mszaki"];
-  final Map<String, String> _layerDescriptions = {
-    "A": "Warstwa drzew (>7m)",
-    "B": "Warstwa krzewów (0.5-7m)",
-    "C": "Warstwa runa (rośliny zielne)",
-    "D": "Warstwa mszysta (mchy, porosty)"
+  final List<String> _types = ["Drzewo", "Krzew", "Zielne", "Grzyb", "Mszaki"];
+
+  final Map<String, String> _purityDescriptions = {
+    "4": "Obszar Dziki ",
+    "3": "Czysty ( 500m od dróg)",
+    "2": "Średni (pobliża pól uprawnych)",
+    "1": "Zanieczyszczony (miejski, przy drogach)"
   };
 
   final Map<String, String> _abundanceDescriptions = {
@@ -33,24 +33,15 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
     "3": "25-50% pokrycia",
     "2": "5-25% pokrycia",
     "1": "<5%, licznie ",
-    "+": "<5%, nielicznie",
-    "r": "pojedynczo"
-  };
-
-  final Map<String, String> _sociabilityDescriptions = {
-    "1": "Pojedynczo",
-    "2": "Kępkowo / grupowo",
-    "3": "W małych płatach",
-    "4": "W dużych płatach / łanowo",
-    "5": "Tworzy gęste zbiorowisko"
+    "0": "nielicznie"
   };
 
 
   final Map<String, String> _vitalityDescriptions = {
-    "1": "Bardzo dobra",
-    "2": "Dobra",
-    "3": "Słaba",
-    "4": "Zamierająca",
+    "4": "Bardzo dobra",
+    "3": "Dobra",
+    "2": "Słaba",
+    "1": "Zamierająca",
   };
 
   @override
@@ -98,21 +89,16 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
             ),
             const SizedBox(height: 20),
 
-            // POPRAWKA: Przekazujemy mapę do nowej wersji _buildDropdown
+
             _buildDetailedDropdown(
-                "Warstwa fitosocjologiczna",
-                _layerDescriptions,
-                    (v) => setState(() => _selectedLayer = v)
+                "Czystość obszaru",
+                _purityDescriptions,
+                    (v) => setState(() => _selectedPurity = v)
             ),
             _buildDetailedDropdown(
                 "Ilościowość",
                 _abundanceDescriptions,
                     (v) => setState(() => _selectedAbundance = v)
-            ),
-            _buildDetailedDropdown(
-                "Towarzyskość",
-                _sociabilityDescriptions,
-                    (v) => setState(() => _selectedSociability = v)
             ),
             _buildDetailedDropdown(
                 "Żywotność",
@@ -187,10 +173,9 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
       characteristics: {},
       biologicalType: _selectedType,
       family: _familyController.text,
-      phytosociologicalLayer: _selectedLayer,
+      areaPurity: _selectedPurity,
       abundance: _selectedAbundance,
       vitality: _selectedVitality,
-      sociability: _selectedSociability,
     );
 
     Navigator.push(

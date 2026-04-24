@@ -5,6 +5,7 @@ import '../viewmodels/releve_view_model.dart';
 import '../viewmodels/search_filter_view_model.dart';
 import '../models/releve.dart';
 import 'releve_details_screen.dart';
+import 'releve_map_screen.dart'; // Import ekranu rysowania obszarów
 
 class ReleveListMapScreen extends StatefulWidget {
   const ReleveListMapScreen({super.key});
@@ -14,13 +15,12 @@ class ReleveListMapScreen extends StatefulWidget {
 }
 
 class _ReleveListMapScreenState extends State<ReleveListMapScreen> {
-  // Usunięto nieużywaną zmienną _mapController
-
   @override
   Widget build(BuildContext context) {
     final releveVm = context.watch<ReleveViewModel>();
     final filterVm = context.watch<SearchFilterViewModel>();
 
+    // Filtrowanie obszarów na podstawie stanu z SearchFilterViewModel
     final filteredReleves = releveVm.allReleves.where((r) {
       final matchesType = filterVm.selectedReleveTypes.contains(r.type);
       final matchesSearch = filterVm.areaSearchQuery.isEmpty ||
@@ -53,26 +53,40 @@ class _ReleveListMapScreenState extends State<ReleveListMapScreen> {
               decoration: InputDecoration(
                 labelText: "Szukaj po nazwie",
                 border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: filterVm.areaSearchQuery.isNotEmpty
+                    ? IconButton(
                   icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    filterVm.clearAreaSearchQuery();
-                  },
-                ),
+                  onPressed: () => filterVm.clearAreaSearchQuery(),
+                )
+                    : null,
               ),
             ),
           ),
           Expanded(
             child: GoogleMap(
               initialCameraPosition: const CameraPosition(
-                target: LatLng(52.0, 19.0), // Centrum mapy
+                target: LatLng(52.0, 19.0), // Centrum Polski
                 zoom: 6,
               ),
-              // Usunięto onMapCreated, ponieważ nie używamy kontrolera
+              mapType: MapType.satellite, // ZMIANA: Mapa satelitarna
               polygons: _buildPolygons(filteredReleves),
+              myLocationEnabled: true,
             ),
           ),
         ],
+      ),
+      // PRZYCISK DODAWANIA OBSZARU
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ReleveMapScreen()),
+          );
+        },
+        backgroundColor: Colors.green,
+        icon: const Icon(Icons.add_location_alt, color: Colors.white),
+        label: const Text("DODAJ OBSZAR", style: TextStyle(color: Colors.white)),
       ),
     );
   }
@@ -82,15 +96,14 @@ class _ReleveListMapScreenState extends State<ReleveListMapScreen> {
       return Polygon(
         polygonId: PolygonId(r.id),
         points: r.points,
-        strokeWidth: 2,
+        strokeWidth: 3,
         strokeColor: _getColorForType(r.type),
-        fillColor: _getColorForType(r.type).withValues(alpha: 0.3),
+        fillColor: _getColorForType(r.type).withValues(alpha: 0.35),
         consumeTapEvents: true,
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              // NAPRAWIONE: Przekazujemy releve: r zamiast releveId: r.id
               builder: (ctx) => ReleveDetailsScreen(releve: r),
             ),
           );
@@ -118,41 +131,44 @@ class _ReleveListMapScreenState extends State<ReleveListMapScreen> {
         builder: (context, setDialogState) {
           return AlertDialog(
             title: const Text("Filtruj Obszary"),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: ranks.map((rank) {
-                  final uniqueNames = releveVm.allReleves
-                      .where((r) => r.type == rank)
-                      .map((r) => r.commonName)
-                      .toSet()
-                      .toList();
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: ranks.map((rank) {
+                    final uniqueNames = releveVm.allReleves
+                        .where((r) => r.type == rank)
+                        .map((r) => r.commonName)
+                        .toSet()
+                        .toList();
 
-                  return ExpansionTile(
-                    title: Row(
-                      children: [
-                        Checkbox(
-                          value: filterVm.selectedReleveTypes.contains(rank),
+                    return ExpansionTile(
+                      title: Row(
+                        children: [
+                          Checkbox(
+                            value: filterVm.selectedReleveTypes.contains(rank),
+                            onChanged: (val) {
+                              filterVm.toggleReleveTypeFilter(rank);
+                              setDialogState(() {});
+                            },
+                          ),
+                          Text(rank, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      children: uniqueNames.map((name) {
+                        return CheckboxListTile(
+                          title: Text(name),
+                          value: filterVm.isNameSelected(rank, name),
                           onChanged: (val) {
-                            filterVm.toggleReleveTypeFilter(rank);
+                            filterVm.toggleNameSelection(rank, name);
                             setDialogState(() {});
                           },
-                        ),
-                        Text(rank, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    children: uniqueNames.map((name) {
-                      return CheckboxListTile(
-                        title: Text(name),
-                        value: filterVm.isNameSelected(rank, name),
-                        onChanged: (val) {
-                          filterVm.toggleNameSelection(rank, name);
-                          setDialogState(() {});
-                        },
-                      );
-                    }).toList(),
-                  );
-                }).toList(),
+                        );
+                      }).toList(),
+                    );
+                  }).toList(),
+                ),
               ),
             ),
             actions: [

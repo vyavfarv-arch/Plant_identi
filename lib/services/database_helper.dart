@@ -21,9 +21,9 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'planticator.db');
     return await openDatabase(
       path,
-      version: 3, // ZMIANA: Podbito do wersji 3
+      version: 4, // ZMIANA: Wersja 4 dla modułu zielarskiego
       onCreate: _onCreate,
-      onUpgrade: _onUpgrade, // Poprawnie podpięta migracja
+      onUpgrade: _onUpgrade,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
     );
   }
@@ -57,11 +57,11 @@ class DatabaseHelper {
         species TEXT,
         subspecies TEXT,
         biologicalType TEXT,
-        phytosociologicalLayer TEXT,
+        areaPurity TEXT, 
         abundance TEXT,
         coverage TEXT,
         vitality TEXT,
-        sociability TEXT,
+        -- sociability USUNIĘTE
         certainty TEXT,
         idDoubts TEXT,
         keyMorphologicalTraits TEXT,
@@ -96,42 +96,15 @@ class DatabaseHelper {
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 3) {
-      // Lista kolumn, których brakowało w poprzednich wersjach (v1 i v2)
-      final List<String> missingColumns = [
-        'coverage',
-        'polishName',
-        'idDoubts',
-        'keyMorphologicalTraits',
-        'confusingSpecies',
-        'characteristicFeature',
-        'plantUsage',
-        'cultivation',
-        'phytosociologicalStatus'
-      ];
+    if (oldVersion < 4) {
+      try {
+        // Dodajemy nową kolumnę dla czystości
+        await db.execute('ALTER TABLE observations ADD COLUMN areaPurity TEXT');
+        // Uwaga: SQLite nie wspiera łatwego usuwania kolumn w starych wersjach,
+        // więc kolumna sociability zostanie w bazie pusta, ale nie będziemy jej używać.
+      } catch (e) {
 
-      for (String column in missingColumns) {
-        try {
-          await db.execute('ALTER TABLE observations ADD COLUMN $column TEXT');
-        } catch (e) {
-          // Ignoruj błąd, jeśli kolumna już jakimś cudem istnieje
-        }
       }
-
-      // Upewnij się, że tabela wiedzy istnieje
-      await db.execute('''
-        CREATE TABLE IF NOT EXISTS plant_knowledge (
-          latinName TEXT PRIMARY KEY,
-          polishName TEXT,
-          associatedSyntaxaJson TEXT,
-          preferredSubstratesJson TEXT,
-          preferredMoistureMin REAL,
-          preferredMoistureMax REAL,
-          floweringStartMonth INTEGER,
-          floweringEndMonth INTEGER,
-          properties TEXT
-        )
-      ''');
     }
   }
 

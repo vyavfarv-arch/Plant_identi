@@ -224,11 +224,10 @@ class _FormScreenState extends State<FormScreen> {
       characteristics: Map.from(_selectedValues),
       biologicalType: widget.observation.biologicalType,
       family: widget.observation.family,
-      phytosociologicalLayer: widget.observation.phytosociologicalLayer,
       abundance: widget.observation.abundance,
       coverage: widget.observation.coverage,
       vitality: widget.observation.vitality,
-      sociability: widget.observation.sociability,
+      areaPurity: widget.observation.areaPurity,
       observationDate: now,
     );
 
@@ -246,8 +245,9 @@ class _FormScreenState extends State<FormScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(ctx); // Zamyka dialog
-              Navigator.pop(context); // Wraca do ekranu głównego/listy
+              context.read<ObservationViewModel>().reset();
+              Navigator.pop(ctx);
+              Navigator.of(context).popUntil((route) => route.isFirst);
             },
             child: const Text("OK"),
           ),

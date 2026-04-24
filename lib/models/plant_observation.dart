@@ -9,11 +9,11 @@ class PlantObservation {
   final Map<String, List<String>> characteristics;
 
   String? biologicalType;
+  String? areaPurity;
   String? phytosociologicalLayer;
   String? abundance;
   String? coverage;
   String? vitality;
-  String? sociability;
   DateTime? observationDate;
   String? family;
   String? genus;
@@ -39,11 +39,11 @@ class PlantObservation {
     required this.timestamp,
     required this.characteristics,
     this.biologicalType,
+    this.areaPurity,
     this.phytosociologicalLayer,
     this.abundance,
     this.coverage,
     this.vitality,
-    this.sociability,
     this.observationDate,
     this.family,
     this.genus,
@@ -81,7 +81,7 @@ class PlantObservation {
       'abundance': abundance,
       'coverage': coverage,
       'vitality': vitality,
-      'sociability': sociability,
+      'areaPurity':areaPurity,
       'observationDate': observationDate?.toIso8601String(),
       'family': family,
       'genus': genus,
@@ -130,7 +130,7 @@ class PlantObservation {
       abundance: map['abundance'],
       coverage: map['coverage'],
       vitality: map['vitality'],
-      sociability: map['sociability'],
+      areaPurity : map ['areaPurity'],
       observationDate: map['observationDate'] != null
           ? DateTime.parse(map['observationDate'])
           : null,

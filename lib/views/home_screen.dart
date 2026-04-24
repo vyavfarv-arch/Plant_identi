@@ -3,9 +3,9 @@ import 'camera_screen.dart';
 import 'description_grid_screen.dart';
 import 'browse_plants_screen.dart';
 import 'map_screen.dart';
-import 'releve_map_screen.dart';
 import 'releve_list_map_screen.dart';
 import "area_managment_screen.dart";
+import "search_plants_screen.dart";
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -13,81 +13,114 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Plantifikator')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Icon(Icons.eco, size: 80, color: Colors.green),
-              const SizedBox(height: 40),
-
-              _buildMenuButton(context,
-                  title: 'Dodaj roślinę',
-                  icon: Icons.add_a_photo,
-                  color: Colors.green,
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CameraScreen()))
+      appBar: AppBar(
+        title: const Text('Plantifikator'),
+        elevation: 0,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            const Icon(Icons.eco, size: 60, color: Colors.green),
+            const SizedBox(height: 30),
+            Expanded(
+              child: GridView.count(
+                crossAxisCount: 3, // Siatka 3 kolumny
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                children: [
+                  _buildGridButton(
+                    context,
+                    title: 'Dodaj roślinę',
+                    icon: Icons.add_a_photo,
+                    color: Colors.green,
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CameraScreen())),
+                  ),
+                  _buildGridButton(
+                    context,
+                    title: 'Opisz rośliny',
+                    icon: Icons.edit_note,
+                    color: Colors.teal,
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DescriptionGridScreen())),
+                  ),
+                  _buildGridButton(
+                    context,
+                    title: 'Magazyn',
+                    icon: Icons.library_books,
+                    color: Colors.blue,
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BrowsePlantsScreen())),
+                  ),
+                  _buildGridButton(
+                    context,
+                    title: 'Mapa roślin',
+                    icon: Icons.map,
+                    color: Colors.orange,
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MapScreen())),
+                  ),
+                  _buildGridButton(
+                    context,
+                    title: 'Obszary',
+                    icon: Icons.layers,
+                    color: Colors.indigo,
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReleveListMapScreen())),
+                  ),
+                  _buildGridButton(
+                    context,
+                    title: 'Szukaj roślin',
+                    icon: Icons.search_rounded,
+                    color: Colors.deepOrange,
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchPlantsScreen())),
+                  ),
+                  _buildGridButton(
+                    context,
+                    title: 'Struktura',
+                    icon: Icons.account_tree,
+                    color: Colors.blueGrey,
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AreaManagementScreen())),
+                  ),
+                  // Tutaj możesz łatwo dodawać kolejne przyciski
+                ],
               ),
-              const SizedBox(height: 20),
-
-              _buildMenuButton(context,
-                  title: 'Opisz Spotkane Rośliny',
-                  icon: Icons.edit_note,
-                  color: Colors.teal,
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DescriptionGridScreen()))
-              ),
-              const SizedBox(height: 20),
-
-              _buildMenuButton(context,
-                  title: 'Magazyn roślin',
-                  icon: Icons.library_books,
-                  color: Colors.blue,
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BrowsePlantsScreen()))
-              ),
-              const SizedBox(height: 20),
-
-              _buildMenuButton(context,
-                  title: 'Pokaż mapę roślin',
-                  icon: Icons.map,
-                  color: Colors.orange,
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MapScreen()))
-              ),
-              const SizedBox(height: 20),
-
-              _buildMenuButton(context,
-                  title: 'Wyświetl obszary',
-                  icon: Icons.layers,
-                  color: Colors.indigo,
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReleveListMapScreen()))
-              ),
-              const SizedBox(height: 20),
-              _buildMenuButton(context,
-                  title: 'Zarządzaj strukturą obszarów',
-                  icon: Icons.account_tree,
-                  color: Colors.blueGrey,
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AreaManagementScreen()))
-              ),
-
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildMenuButton(BuildContext context, {required String title, required IconData icon, required Color color, required VoidCallback onPressed}) {
-    return ElevatedButton.icon(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 15),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  Widget _buildGridButton(BuildContext context, {
+    required String title,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed
+  }) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(15),
+      child: Container(
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: color.withOpacity(0.5), width: 1),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 32, color: color),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: color.withOpacity(0.9),
+              ),
+            ),
+          ],
+        ),
       ),
-      onPressed: onPressed,
-      icon: Icon(icon),
-      label: Text(title),
     );
   }
 }
