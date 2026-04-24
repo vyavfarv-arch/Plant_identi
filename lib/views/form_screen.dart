@@ -212,7 +212,7 @@ class _FormScreenState extends State<FormScreen> {
     );
   }
 
-  void _zapiszFinalnie() {
+  void _zapiszFinalnie() async { // KLUCZOWE: Dodano async
     final now = DateTime.now();
 
     final finalObs = PlantObservation(
@@ -223,7 +223,7 @@ class _FormScreenState extends State<FormScreen> {
       timestamp: widget.observation.timestamp,
       characteristics: Map.from(_selectedValues),
       biologicalType: widget.observation.biologicalType,
-      family: widget.observation.family, // ZACHOWANIE RODZINY
+      family: widget.observation.family,
       phytosociologicalLayer: widget.observation.phytosociologicalLayer,
       abundance: widget.observation.abundance,
       coverage: widget.observation.coverage,
@@ -232,27 +232,27 @@ class _FormScreenState extends State<FormScreen> {
       observationDate: now,
     );
 
+    // Zapisujemy TYLKO RAZ z await
+    await context.read<ObservationViewModel>().addObservation(finalObs);
 
-    context.read<ObservationViewModel>().addObservation(finalObs);
+    if (!mounted) return;
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) =>
-          AlertDialog(
-            title: const Text("Zapisano!"),
-            content: const Text(
-                "Dane terenowe zapisane. Przejdź do 'Opisz spotkane rośliny'."),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  context.read<ObservationViewModel>().reset();
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                },
-                child: const Text("OK"),
-              )
-            ],
+      builder: (ctx) => AlertDialog(
+        title: const Text("Zapisano!"),
+        content: const Text("Roślina została dodana do listy oczekujących na opis."),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx); // Zamyka dialog
+              Navigator.pop(context); // Wraca do ekranu głównego/listy
+            },
+            child: const Text("OK"),
           ),
+        ],
+      ),
     );
   }
 }

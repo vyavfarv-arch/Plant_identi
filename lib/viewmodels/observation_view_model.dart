@@ -86,7 +86,7 @@ class ObservationViewModel extends ChangeNotifier {
   }
 
   Future<void> addObservation(PlantObservation obs) async {
-    await _db.insertObservation(obs); // Zapis pojedynczej rośliny
+    await _db.insertObservation(obs);
     await loadFromDisk();
   }
 

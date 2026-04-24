@@ -6,7 +6,6 @@ class PlantObservation {
   final double latitude;
   final double longitude;
   final DateTime timestamp;
-  // ZMIANA: Mapa przechowuje teraz listę tekstów zamiast pojedynczego tekstu
   final Map<String, List<String>> characteristics;
 
   String? biologicalType;
@@ -72,12 +71,11 @@ class PlantObservation {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'photoPaths': jsonEncode(photoPaths),
+      'photoPathsJson': jsonEncode(photoPaths),
       'latitude': latitude,
       'longitude': longitude,
       'timestamp': timestamp.toIso8601String(),
-      // Zapisujemy mapę list jako JSON
-      'characteristics': jsonEncode(characteristics),
+      'characteristicsJson': jsonEncode(characteristics),
       'biologicalType': biologicalType,
       'phytosociologicalLayer': phytosociologicalLayer,
       'abundance': abundance,
@@ -99,43 +97,48 @@ class PlantObservation {
       'characteristicFeature': characteristicFeature,
       'plantUsage': plantUsage,
       'cultivation': cultivation,
-      'phytosociologicalStatus': phytosociologicalStatus,
-      'photoPathsJson': jsonEncode(photoPaths),
-      'characteristicsJson': jsonEncode(characteristics),
-      'observationDate': observationDate?.toIso8601String(),
+      'phytosociologicalStatus': phytosociologicalStatus
     };
   }
 
   factory PlantObservation.fromMap(Map<String, dynamic> map) {
-    // Odczyt i konwersja mapy list
-    var rawChars = jsonDecode(map['characteristics'] ?? '{}');
+    // LOGIKA DEKODOWANIA CECH (Characteristics) - wstawiona bezpośrednio tutaj:
     Map<String, List<String>> decodedChars = {};
-    if (rawChars is Map) {
-      rawChars.forEach((key, value) {
-        decodedChars[key.toString()] = List<String>.from(value as List);
-      });
+    if (map['characteristicsJson'] != null) {
+      try {
+        final Map<String, dynamic> rawMap = jsonDecode(map['characteristicsJson']);
+        rawMap.forEach((key, value) {
+          decodedChars[key] = List<String>.from(value);
+        });
+      } catch (e) {
+        print("Błąd dekodowania characteristicsJson: $e");
+      }
     }
 
     return PlantObservation(
       id: map['id'] ?? '',
-      photoPaths: List<String>.from(jsonDecode(map['photoPaths'] ?? '[]')),
+      // Używamy photoPathsJson zgodnie z DatabaseHelper
+      photoPaths: map['photoPathsJson'] != null
+          ? List<String>.from(jsonDecode(map['photoPathsJson']))
+          : [],
       latitude: map['latitude']?.toDouble() ?? 0.0,
       longitude: map['longitude']?.toDouble() ?? 0.0,
       timestamp: DateTime.parse(map['timestamp']),
-      characteristics: decodedChars,
+      characteristics: decodedChars, // Podstawiamy przetworzoną mapę
       biologicalType: map['biologicalType'],
       phytosociologicalLayer: map['phytosociologicalLayer'],
       abundance: map['abundance'],
       coverage: map['coverage'],
       vitality: map['vitality'],
       sociability: map['sociability'],
-      observationDate: map['observationDate'] != null ? DateTime.parse(map['observationDate']) : null,
+      observationDate: map['observationDate'] != null
+          ? DateTime.parse(map['observationDate'])
+          : null,
       family: map['family'],
       genus: map['genus'],
       species: map['species'],
       subspecies: map['subspecies'],
       latinName: map['latinName'],
-      polishName: map['polishName'],
       localName: map['localName'],
       certainty: map['certainty'],
       idDoubts: map['idDoubts'],
