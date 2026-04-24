@@ -8,43 +8,48 @@ class SearchFilterViewModel extends ChangeNotifier {
   final List<String> _selectedPlantNames = []; // Do filtrów na mapie
   Releve? _filterArea; // Filtr roślin w konkretnym wielokącie
 
-  // --- FILTRY OBSZARÓW (RELEVE) ---
+  // --- FILTRY OBSZARÓW (RELEVES) ---
   String _areaSearchQuery = "";
   final List<String> _selectedReleveTypes = ["Zespół", "Związek", "Rząd", "Klasa"];
   final Map<String, Set<String>> _selectedSpecificNames = {};
 
-  // --- NOWE: MODUŁ ROŚLINY POSZUKIWANEJ (KONCEPTUALNIE) ---
+  // --- MODUŁ ROŚLINY POSZUKIWANEJ  ---
   String? _soughtPlantLatinName; // Łacińska nazwa rośliny, której szukamy
   bool _habitatMatchMode = false; // Czy tryb szukania siedlisk jest włączony
 
-  // Gettery
+  // --- GETTERY ---
   DateTimeRange? get filterDateRange => _filterDateRange;
   List<String> get selectedFamilies => _selectedFamilies;
   List<String> get selectedPlantNames => _selectedPlantNames;
   Releve? get filterArea => _filterArea;
+
   String get areaSearchQuery => _areaSearchQuery;
   List<String> get selectedReleveTypes => _selectedReleveTypes;
+
   String? get soughtPlantLatinName => _soughtPlantLatinName;
   bool get habitatMatchMode => _habitatMatchMode;
 
   // --- METODY ZARZĄDZANIA FILTRAMI ROŚLIN ---
-
   void setFilterDateRange(DateTimeRange? range) {
     _filterDateRange = range;
     notifyListeners();
   }
 
   void toggleFamilyFilter(String family) {
-    _selectedFamilies.contains(family)
-        ? _selectedFamilies.remove(family)
-        : _selectedFamilies.add(family);
+    if (_selectedFamilies.contains(family)) {
+      _selectedFamilies.remove(family);
+    } else {
+      _selectedFamilies.add(family);
+    }
     notifyListeners();
   }
 
   void togglePlantNameFilter(String name) {
-    _selectedPlantNames.contains(name)
-        ? _selectedPlantNames.remove(name)
-        : _selectedPlantNames.add(name);
+    if (_selectedPlantNames.contains(name)) {
+      _selectedPlantNames.remove(name);
+    } else {
+      _selectedPlantNames.add(name);
+    }
     notifyListeners();
   }
 
@@ -54,7 +59,6 @@ class SearchFilterViewModel extends ChangeNotifier {
   }
 
   // --- METODY ZARZĄDZANIA FILTRAMI OBSZARÓW ---
-
   void setAreaSearchQuery(String query) {
     _areaSearchQuery = query;
     notifyListeners();
@@ -66,13 +70,15 @@ class SearchFilterViewModel extends ChangeNotifier {
   }
 
   void toggleReleveTypeFilter(String type) {
-    _selectedReleveTypes.contains(type)
-        ? _selectedReleveTypes.remove(type)
-        : _selectedReleveTypes.add(type);
+    if (_selectedReleveTypes.contains(type)) {
+      _selectedReleveTypes.remove(type);
+    } else {
+      _selectedReleveTypes.add(type);
+    }
     notifyListeners();
   }
 
-  void toggleSpecificNameSelection(String rank, String name) {
+  void toggleNameSelection(String rank, String name) {
     _selectedSpecificNames.putIfAbsent(rank, () => {});
     if (_selectedSpecificNames[rank]!.contains(name)) {
       _selectedSpecificNames[rank]!.remove(name);
@@ -82,8 +88,9 @@ class SearchFilterViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool isNameSelected(String rank, String name) =>
-      _selectedSpecificNames[rank]?.contains(name) ?? false;
+  bool isNameSelected(String rank, String name) {
+    return _selectedSpecificNames[rank]?.contains(name) ?? false;
+  }
 
   Set<String>? getSelectedNamesForRank(String rank) => _selectedSpecificNames[rank];
 
@@ -97,7 +104,6 @@ class SearchFilterViewModel extends ChangeNotifier {
   }
 
   // --- RESET ---
-
   void resetAllFilters() {
     _filterDateRange = null;
     _selectedFamilies.clear();

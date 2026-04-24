@@ -41,6 +41,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
     _controllers['latinName'] = TextEditingController(text: obs.latinName);
     _controllers['species'] = TextEditingController(text: obs.species);
 
+
     _selectedStatus = obs.phytosociologicalStatus;
     _selectedCertainty = obs.certainty;
 

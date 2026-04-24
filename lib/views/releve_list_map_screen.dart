@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../models/releve.dart';
-import '../viewmodels/releve_view_model.dart'; // ZMIANA: Import właściwego VM
+import '../viewmodels/releve_view_model.dart';
+import '../viewmodels/search_filter_view_model.dart';
 import 'releve_map_screen.dart';
 import 'releve_details_screen.dart';
 
@@ -11,9 +12,21 @@ class ReleveListMapScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ZMIANA: Korzystamy z ReleveViewModel zamiast PlantsViewModel
     final releveVm = context.watch<ReleveViewModel>();
+    final filterVm = context.watch<SearchFilterViewModel>();
 
+    // Filtrowanie "w locie" na ekranie
+    final filteredReleves = releveVm.allReleves.where((r) {
+      final matchesType = filterVm.selectedReleveTypes.contains(r.type);
+      final matchesSearch = filterVm.areaSearchQuery.isEmpty ||
+          r.commonName.toLowerCase().contains(filterVm.areaSearchQuery.toLowerCase()) ||
+          r.phytosociologicalName.toLowerCase().contains(filterVm.areaSearchQuery.toLowerCase());
+
+      final specificNames = filterVm.getSelectedNamesForRank(r.type) ?? {};
+      final matchesSpecific = specificNames.isEmpty || specificNames.contains(r.commonName);
+
+      return matchesType && matchesSearch && matchesSpecific;
+    }).toList();
     return Scaffold(
       appBar: AppBar(
         title: const Text("Zapisane obszary"),
@@ -27,7 +40,6 @@ class ReleveListMapScreen extends StatelessWidget {
       body: GoogleMap(
         initialCameraPosition: const CameraPosition(target: LatLng(52.23, 21.01), zoom: 12),
         mapType: MapType.hybrid,
-        // ZMIANA: VM posiada własny getter filteredReleves uwzględniający nazwy i typy
         polygons: releveVm.filteredReleves.map((releve) => Polygon(
           polygonId: PolygonId(releve.id),
           points: releve.points,
@@ -144,7 +156,6 @@ class ReleveListMapScreen extends StatelessWidget {
   }
 
   void _showEditDeleteDialog(BuildContext context, Releve releve, ReleveViewModel vm) {
-    // ZMIANA: Obsługa dwóch nazw w edycji
     final commonNameController = TextEditingController(text: releve.commonName);
     final phytoNameController = TextEditingController(text: releve.phytosociologicalName);
     String currentType = releve.type;
@@ -176,7 +187,6 @@ class ReleveListMapScreen extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () {
-                // ZMIANA: Wywołanie aktualizacji z dwiema nazwami
                 vm.updateReleve(releve.id, commonNameController.text, phytoNameController.text, currentType);
                 Navigator.pop(ctx);
               },

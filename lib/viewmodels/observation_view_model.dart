@@ -10,7 +10,6 @@ import '../services/database_helper.dart';
 class ObservationViewModel extends ChangeNotifier {
   final CameraService _cameraService = CameraService();
   final LocationService _locationService = LocationService();
-  final StorageService _storage = StorageService();
   final DatabaseHelper _db = DatabaseHelper();
 
   // --- LOGIKA TWORZENIA NOWEJ OBSERWACJI ---
@@ -96,7 +95,7 @@ class ObservationViewModel extends ChangeNotifier {
     await loadFromDisk();
   }
 
-  void updateObservationDetailed({
+  Future<void> updateObservationDetailed({
     required String id,
     String? family,
     String? genus,
@@ -112,18 +111,18 @@ class ObservationViewModel extends ChangeNotifier {
     String? characteristic,
     String? usage,
     String? cultivation,
-  }) {
+  }) async {
     final index = _observations.indexWhere((o) => o.id == id);
     if (index != -1) {
       final old = _observations[index];
 
-      // NOWA LOGIKA: Jeśli roślina nie miała daty, a teraz nadajemy jej nazwę, ustawiamy datę na teraz
+      // Poprawna kalkulacja daty
       DateTime? finalDate = old.observationDate;
       if (finalDate == null && localName != null && localName.isNotEmpty) {
         finalDate = DateTime.now();
       }
 
-      _observations[index] = PlantObservation(
+      final updatedObs = PlantObservation(
         id: old.id,
         photoPaths: old.photoPaths,
         latitude: old.latitude,
@@ -136,7 +135,7 @@ class ObservationViewModel extends ChangeNotifier {
         coverage: old.coverage,
         vitality: old.vitality,
         sociability: old.sociability,
-        observationDate: finalDate, // Używamy wyliczonej daty
+        observationDate: finalDate,
         family: family,
         genus: genus,
         species: species,
@@ -152,10 +151,14 @@ class ObservationViewModel extends ChangeNotifier {
         plantUsage: usage,
         cultivation: cultivation,
       );
-      _storage.saveObservations(_observations);
+
+      _observations[index] = updatedObs;
+
+      // Zapisujemy TYLKO do SQLite
+      await _db.insertObservation(updatedObs);
       notifyListeners();
     }
-  }
+  } // Ten nawias zamyka metodę - musi tu być!
 
   void reset() {
     _currentPhotoPaths = [];

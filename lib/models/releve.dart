@@ -37,16 +37,26 @@ class Releve {
   }
 
   factory Releve.fromMap(Map<String, dynamic> map) {
-    var pointsData = jsonDecode(map['pointsJson'] ?? '[]') as List;
+    // Rozwiązanie crasha: bezpieczne dekodowanie pointsJson z SQLite
+    List<dynamic> pointsData = [];
+    if (map.containsKey('pointsJson') && map['pointsJson'] != null) {
+      pointsData = jsonDecode(map['pointsJson']);
+    } else if (map.containsKey('points')) {
+      pointsData = map['points'] as List; // Fallback dla starych danych z RAM
+    }
+
     return Releve(
       id: map['id'],
       commonName: map['commonName'] ?? '',
       phytosociologicalName: map['phytosociologicalName'] ?? '',
       type: map['type'],
-      points: (map['points'] as List).map((p) => LatLng(p['lat'], p['lng'])).toList(),
+      points: pointsData.map((p) => LatLng(p['lat'], p['lng'])).toList(),
       date: DateTime.parse(map['date']),
       parentId: map['parentId'],
-      habitat: map['habitat'] != null ? HabitatInfo.fromMap(map['habitat']) : null,
+      // Bezpieczne dekodowanie habitatu z JSON
+      habitat: map['habitatJson'] != null
+          ? HabitatInfo.fromMap(jsonDecode(map['habitatJson']))
+          : null,
     );
   }
 }
