@@ -37,11 +37,18 @@ class DescriptionGridScreen extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    image: DecorationImage(
+                    color: Colors.green.shade100, // Tło dla roślin bez zdjęcia
+                    image: obs.photoPaths.isNotEmpty
+                        ? DecorationImage(
                       image: FileImage(File(obs.photoPaths[0])),
                       fit: BoxFit.cover,
-                    ),
+                    )
+                        : null,
                   ),
+                  // Wyświetl ikonę, jeśli brak zdjęć
+                  child: obs.photoPaths.isEmpty
+                      ? const Icon(Icons.eco, color: Colors.green, size: 40)
+                      : null,
                 ),
               );
             },

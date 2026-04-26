@@ -181,7 +181,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
 
   Widget _buildCapturedPhotosPreview() {
     final photos = widget.observation.photoPaths;
-    if (photos.isEmpty) return const SizedBox.shrink();
+    if (photos.isEmpty) return const SizedBox.shrink(); // Jeśli roślina poszukiwana nie ma zdjęć, ten widget po prostu znika
 
     return Container(
       height: 120,
@@ -209,15 +209,6 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
     );
   }
 
-  void _showFullScreenImage(BuildContext context, String imagePath) {
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: InteractiveViewer(child: Image.file(File(imagePath))),
-      ),
-    );
-  }
 
   Widget _inputField(TextEditingController controller, String label, {bool isLong = false, String? hint}) {
     return Padding(
@@ -261,5 +252,16 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       prefSunlight: _prefSunlight,
     );
     Navigator.pop(context);
+  }
+  void _showFullScreenImage(BuildContext context, String imagePath) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: InteractiveViewer(
+          child: Image.file(File(imagePath)),
+        ),
+      ),
+    );
   }
 }

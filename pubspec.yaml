@@ -44,6 +44,5 @@ flutter:
 
   assets:
     - assets/grass.png
-    - assets/syntaxa.json
     - assets/ref/
     - assets/forest_model.json

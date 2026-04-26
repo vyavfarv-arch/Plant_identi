@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/observation_view_model.dart';
 import '../viewmodels/releve_view_model.dart';
-import '../services/spatial_service.dart';
-import '../services/ml_prediction_service.dart'; // DODANO: Import serwisu
-import '../models/releve.dart';                  // DODANO: Import modelu
+import '../services/ml_prediction_service.dart';
 import 'add_sought_plant_screen.dart';
 import '../models/plant_observation.dart';
+import 'results_map_screen.dart';
 
 class SearchPlantsScreen extends StatefulWidget {
   const SearchPlantsScreen({super.key});
@@ -96,14 +95,15 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
               itemBuilder: (context, index) {
                 final plant = filteredPlants[index];
 
-                // LOGIKA KOLORU IKONY
+// LOGIKA KOLORU IKONY
                 Color iconColor = Colors.grey;
-                if (plant.analyzedAreaIds.isNotEmpty) {
-                  // Jeśli liczba obszarów w bazie się zmieniła od ostatniej analizy -> POMARAŃCZOWY
+                // Jeśli ostatnia analiza została wykonana (liczba obszarów podczas analizy > 0)
+                if (plant.lastAnalysisAreaCount > 0) {
+                  // Jeśli dodano nowe obszary po analizie -> POMARAŃCZOWY
                   if (plant.lastAnalysisAreaCount != releveVm.allReleves.length) {
                     iconColor = Colors.orange;
                   } else {
-                    iconColor = Colors.green;
+                    iconColor = Colors.green; // Aktualne wyniki
                   }
                 }
 
@@ -187,29 +187,31 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
             Text("Podłoże: ${plant.prefSubstrate.isNotEmpty ? plant.prefSubstrate.join(', ') : 'Brak'}"),
 
             // Sekcja wyników ML
-            if (plant.analyzedAreaIds.isNotEmpty) ...[
+            if (plant.lastAnalysisAreaCount > 0) ...[
               const Divider(),
               const Text("Ostatnie wyniki analizy:", style: TextStyle(fontWeight: FontWeight.bold)),
               Text("Pasujących obszarów: ${plant.analyzedAreaIds.length}"),
               const SizedBox(height: 10),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  // Pobieramy obiekty Releve na podstawie zapisanych ID
-                  final matchingObjects = releveVm.allReleves
-                      .where((r) => plant.analyzedAreaIds.contains(r.id))
-                      .toList();
 
-                  Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => ResultsMapScreen(
-                          matchingAreas: matchingObjects,
-                          plantName: plant.displayName
-                      )
-                  ));
-                },
-                icon: const Icon(Icons.map_outlined),
-                label: const Text("POKAŻ WYNIKI NA MAPIE"),
-              ),
+              // Pokazuj przycisk z mapą TYLKO, gdy są jakiekolwiek pasujące obszary
+              if (plant.analyzedAreaIds.isNotEmpty)
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    final matchingObjects = releveVm.allReleves
+                        .where((r) => plant.analyzedAreaIds.contains(r.id))
+                        .toList();
+
+                    Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => ResultsMapScreen(
+                            matchingAreas: matchingObjects,
+                            plantName: plant.displayName
+                        )
+                    ));
+                  },
+                  icon: const Icon(Icons.map_outlined),
+                  label: const Text("POKAŻ WYNIKI NA MAPIE"),
+                ),
             ]
           ],
         ),
