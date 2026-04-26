@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
+import '../models/releve.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../viewmodels/search_filter_view_model.dart';
-import '../models/releve.dart';
+import '../services/location_service.dart';
+import 'releve_map_screen.dart';
 import 'releve_details_screen.dart';
-import 'releve_map_screen.dart'; // Import ekranu rysowania obszarów
 
 class ReleveListMapScreen extends StatefulWidget {
   const ReleveListMapScreen({super.key});
@@ -15,12 +16,23 @@ class ReleveListMapScreen extends StatefulWidget {
 }
 
 class _ReleveListMapScreenState extends State<ReleveListMapScreen> {
+  GoogleMapController? _mapController;
+  final LocationService _locationService = LocationService();
+
+  Future<void> _centerOnUser() async {
+    final pos = await _locationService.getCurrentLocation();
+    if (pos != null && mounted) {
+      _mapController?.animateCamera(
+        CameraUpdate.newLatLngZoom(LatLng(pos.latitude, pos.longitude), 12),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final releveVm = context.watch<ReleveViewModel>();
     final filterVm = context.watch<SearchFilterViewModel>();
 
-    // Filtrowanie obszarów na podstawie stanu z SearchFilterViewModel
     final filteredReleves = releveVm.allReleves.where((r) {
       final matchesType = filterVm.selectedReleveTypes.contains(r.type);
       final matchesSearch = filterVm.areaSearchQuery.isEmpty ||
@@ -35,11 +47,11 @@ class _ReleveListMapScreenState extends State<ReleveListMapScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Mapa Obszarów"),
+        title: const Text("Zapisane obszary"),
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
-            onPressed: () => _showFilterDialog(context, releveVm, filterVm),
+            onPressed: () => _showTypeFilterDialog(context, releveVm, filterVm),
           ),
         ],
       ),
@@ -65,18 +77,31 @@ class _ReleveListMapScreenState extends State<ReleveListMapScreen> {
           ),
           Expanded(
             child: GoogleMap(
-              initialCameraPosition: const CameraPosition(
-                target: LatLng(52.0, 19.0), // Centrum Polski
-                zoom: 6,
-              ),
-              mapType: MapType.satellite, // ZMIANA: Mapa satelitarna
-              polygons: _buildPolygons(filteredReleves),
+              initialCameraPosition: const CameraPosition(target: LatLng(52.0, 19.0), zoom: 6),
+              mapType: MapType.satellite,
               myLocationEnabled: true,
+              onMapCreated: (controller) {
+                _mapController = controller;
+                _centerOnUser();
+              },
+              polygons: filteredReleves.map((releve) => Polygon(
+                polygonId: PolygonId(releve.id),
+                points: releve.points,
+                fillColor: _getColorForType(releve.type).withOpacity(0.35),
+                strokeColor: _getColorForType(releve.type),
+                strokeWidth: 3,
+                consumeTapEvents: true,
+                onTap: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => ReleveDetailsScreen(releve: releve))
+                  );
+                },
+              )).toSet(),
             ),
           ),
         ],
       ),
-      // PRZYCISK DODAWANIA OBSZARU
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.push(
@@ -91,94 +116,69 @@ class _ReleveListMapScreenState extends State<ReleveListMapScreen> {
     );
   }
 
-  Set<Polygon> _buildPolygons(List<Releve> releves) {
-    return releves.map((r) {
-      return Polygon(
-        polygonId: PolygonId(r.id),
-        points: r.points,
-        strokeWidth: 3,
-        strokeColor: _getColorForType(r.type),
-        fillColor: _getColorForType(r.type).withValues(alpha: 0.35),
-        consumeTapEvents: true,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (ctx) => ReleveDetailsScreen(releve: r),
-            ),
-          );
-        },
-      );
-    }).toSet();
-  }
-
   Color _getColorForType(String type) {
     switch (type) {
-      case "Klasa": return Colors.red;
-      case "Rząd": return Colors.orange;
-      case "Związek": return Colors.purple;
       case "Zespół": return Colors.blue;
+      case "Związek": return Colors.purple;
+      case "Rząd": return Colors.orange;
+      case "Klasa": return Colors.red;
       default: return Colors.green;
     }
   }
 
-  void _showFilterDialog(BuildContext context, ReleveViewModel releveVm, SearchFilterViewModel filterVm) {
-    final ranks = ["Klasa", "Rząd", "Związek", "Zespół"];
-
+  void _showTypeFilterDialog(BuildContext context, ReleveViewModel vm, SearchFilterViewModel filterVm) {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            title: const Text("Filtruj Obszary"),
-            content: SizedBox(
-              width: double.maxFinite,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: ranks.map((rank) {
-                    final uniqueNames = releveVm.allReleves
-                        .where((r) => r.type == rank)
-                        .map((r) => r.commonName)
-                        .toSet()
-                        .toList();
+        builder: (context, setStateDialog) => AlertDialog(
+          title: const Text("Filtruj obszary"),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: ["Klasa", "Rząd", "Związek", "Zespół"].map((rank) {
+                  final uniqueNames = vm.allReleves
+                      .where((r) => r.type == rank)
+                      .map((r) => r.commonName)
+                      .toSet()
+                      .toList();
 
-                    return ExpansionTile(
-                      title: Row(
-                        children: [
-                          Checkbox(
-                            value: filterVm.selectedReleveTypes.contains(rank),
-                            onChanged: (val) {
-                              filterVm.toggleReleveTypeFilter(rank);
-                              setDialogState(() {});
-                            },
-                          ),
-                          Text(rank, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                      children: uniqueNames.map((name) {
-                        return CheckboxListTile(
-                          title: Text(name),
-                          value: filterVm.isNameSelected(rank, name),
+                  return ExpansionTile(
+                    title: Row(
+                      children: [
+                        Checkbox(
+                          value: filterVm.selectedReleveTypes.contains(rank),
                           onChanged: (val) {
-                            filterVm.toggleNameSelection(rank, name);
-                            setDialogState(() {});
+                            filterVm.toggleReleveTypeFilter(rank);
+                            setStateDialog(() {});
                           },
-                        );
-                      }).toList(),
-                    );
-                  }).toList(),
-                ),
+                        ),
+                        Text(rank, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    children: uniqueNames.map((name) {
+                      return CheckboxListTile(
+                        title: Text(name),
+                        value: filterVm.isNameSelected(rank, name),
+                        onChanged: (val) {
+                          filterVm.toggleNameSelection(rank, name);
+                          setStateDialog(() {});
+                        },
+                      );
+                    }).toList(),
+                  );
+                }).toList(),
               ),
             ),
-            actions: [
-              TextButton(
+          ),
+          actions: [
+            TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text("ZAMKNIJ"),
-              )
-            ],
-          );
-        },
+                child: const Text("ZAMKNIJ")
+            )
+          ],
+        ),
       ),
     );
   }
