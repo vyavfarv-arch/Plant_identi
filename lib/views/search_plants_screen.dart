@@ -219,10 +219,4 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
       ),
     );
   }
-
-  void _showResultsOnMap(List<String> matchingIds, List<Releve> allReleves) {
-    final results = allReleves.where((r) => matchingIds.contains(r.id)).toList();
-    // Tu wywołaj swoją mapę z wynikami
-    debugPrint("Przechodzę do mapy z ${results.length} wynikami");
-  }
 }
