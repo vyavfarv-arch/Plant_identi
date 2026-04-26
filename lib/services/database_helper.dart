@@ -96,13 +96,14 @@ class DatabaseHelper {
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 7) {
-      try {
-        await db.execute('ALTER TABLE observations ADD COLUMN isSought INTEGER DEFAULT 0');
-      } catch (e) { print("Błąd migracji v7: $e"); }
+      if (oldVersion < 8) {
+        try {
+          await db.execute('ALTER TABLE observations ADD COLUMN analyzedAreaIdsJson TEXT');
+          await db.execute('ALTER TABLE observations ADD COLUMN lastAnalysisAreaCount INTEGER DEFAULT 0');
+        } catch (e) { print("v8 error: $e"); }
+      }
     }
-    // ... poprzednie migracje ...
-  }
+
 
   // --- METODY CRUD  ---
 

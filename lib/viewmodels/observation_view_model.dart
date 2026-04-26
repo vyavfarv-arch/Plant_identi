@@ -153,6 +153,27 @@ class ObservationViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+  Future<void> saveAnalysisResults(String plantId, List<String> areaIds, int totalAreaCount) async {
+    final index = _observations.indexWhere((o) => o.id == plantId);
+    if (index != -1) {
+      final old = _observations[index];
+      final updated = PlantObservation(
+        // Kopiujemy wszystkie pola...
+        id: old.id, photoPaths: old.photoPaths, latitude: old.latitude,
+        longitude: old.longitude, timestamp: old.timestamp, characteristics: old.characteristics,
+        localName: old.localName, latinName: old.latinName, isSought: old.isSought,
+        prefPhMin: old.prefPhMin, prefPhMax: old.prefPhMax, prefSubstrate: old.prefSubstrate,
+        prefMoisture: old.prefMoisture, prefSunlight: old.prefSunlight,
+        // ...i ustawiamy nowe wyniki analizy
+        analyzedAreaIds: areaIds,
+        lastAnalysisAreaCount: totalAreaCount,
+      );
+
+      _observations[index] = updated;
+      await _db.insertObservation(updated); // Nadpisuje rekord w SQLite
+      notifyListeners();
+    }
+  }
   void reset() {
     _currentPhotoPaths = [];
     _currentPosition = null;

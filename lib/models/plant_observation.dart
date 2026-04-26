@@ -9,6 +9,8 @@ class PlantObservation {
   final DateTime timestamp;
   final Map<String, List<String>> characteristics;
   final bool isSought;
+  final List<String> analyzedAreaIds;
+  final int lastAnalysisAreaCount;
 
 
   String? biologicalType;
@@ -45,6 +47,8 @@ class PlantObservation {
     required this.timestamp,
     required this.characteristics,
     this.isSought = false,
+    this.analyzedAreaIds = const [],
+    this.lastAnalysisAreaCount = 0,
     this.biologicalType,
     this.areaPurity,
     this.abundance,
@@ -94,6 +98,8 @@ class PlantObservation {
       'family': family,
       'subspecies': subspecies,
       'latinName': latinName,
+      'analyzedAreaIdsJson': jsonEncode(analyzedAreaIds),
+      'lastAnalysisAreaCount': lastAnalysisAreaCount,
       'polishName': polishName,
       'localName': localName,
       'certainty': certainty,
@@ -148,6 +154,10 @@ class PlantObservation {
       subspecies: map['subspecies'],
       latinName: map['latinName'],
       polishName: map['polishName'],
+      analyzedAreaIds: map['analyzedAreaIdsJson'] != null
+          ? List<String>.from(jsonDecode(map['analyzedAreaIdsJson']))
+          : [],
+      lastAnalysisAreaCount: map['lastAnalysisAreaCount'] ?? 0,
       localName: map['localName'],
       certainty: map['certainty'],
       idDoubts: map['idDoubts'],

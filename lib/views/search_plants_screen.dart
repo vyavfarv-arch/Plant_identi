@@ -95,13 +95,23 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
               itemCount: filteredPlants.length,
               itemBuilder: (context, index) {
                 final plant = filteredPlants[index];
-                final bool isAnalyzed = _analysisResults.containsKey(plant.id);
+
+                // LOGIKA KOLORU IKONY
+                Color iconColor = Colors.grey;
+                if (plant.analyzedAreaIds.isNotEmpty) {
+                  // Jeśli liczba obszarów w bazie się zmieniła od ostatniej analizy -> POMARAŃCZOWY
+                  if (plant.lastAnalysisAreaCount != releveVm.allReleves.length) {
+                    iconColor = Colors.orange;
+                  } else {
+                    iconColor = Colors.green;
+                  }
+                }
 
                 return RadioListTile<String>(
                   title: Text(plant.displayName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(plant.isSought ? "TAG: POSZUKIWANA" : "W MAGAZYNIE"),
+                  subtitle: Text(plant.isSought ? "POSZUKIWANA" : "W MAGAZYNIE"),
                   secondary: IconButton(
-                    icon: Icon(Icons.info_outline, color: isAnalyzed ? Colors.green : Colors.grey),
+                    icon: Icon(Icons.info_outline, color: iconColor),
                     onPressed: () => _showPlantEcoDetails(context, plant, obsVm, releveVm),
                   ),
                   value: plant.id,
@@ -112,31 +122,35 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
             ),
           ),
           if (_selectedPlantId != null)
-            _buildActionFooter(obsVm.allObservations.firstWhere((p) => p.id == _selectedPlantId), releveVm.allReleves),
+            _buildActionFooter(obsVm.allObservations.firstWhere((p) => p.id == _selectedPlantId), releveVm),
         ],
       ),
     );
   }
 
-  Widget _buildActionFooter(PlantObservation plant, List<Releve> allReleves) {
+  Widget _buildActionFooter(PlantObservation plant, ReleveViewModel releveVm) {
     return Container(
       padding: const EdgeInsets.all(16),
       color: Colors.teal.shade50,
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
-          onPressed: () {
-            final results = _mlService.getMatchingAreas(plant, allReleves);
-            setState(() {
-              _analysisResults[plant.id] = results;
-            });
+          onPressed: () async {
+            final results = _mlService.getMatchingAreas(plant, releveVm.allReleves);
+
+            // ZAPISANIE WYNIKÓW NA STAŁE W BAZIE
+            await context.read<ObservationViewModel>().saveAnalysisResults(
+                plant.id,
+                results,
+                releveVm.allReleves.length
+            );
+
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Znaleziono ${results.length} pasujących obszarów!")),
+              SnackBar(content: Text("Analiza zakończona. Znaleziono ${results.length} obszarów.")),
             );
           },
           icon: const Icon(Icons.psychology),
-          label: const Text("WYSZUKAJ OBSZARY"),
+          label: const Text("URUCHOM ANALIZĘ ML"),
         ),
       ),
     );
@@ -173,21 +187,28 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
             Text("Podłoże: ${plant.prefSubstrate.isNotEmpty ? plant.prefSubstrate.join(', ') : 'Brak'}"),
 
             // Sekcja wyników ML
-            if (results != null) ...[
-              const Divider(height: 30),
-              Text("Wynik analizy: ${results.length} obszarów",
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+            if (plant.analyzedAreaIds.isNotEmpty) ...[
+              const Divider(),
+              const Text("Ostatnie wyniki analizy:", style: TextStyle(fontWeight: FontWeight.bold)),
+              Text("Pasujących obszarów: ${plant.analyzedAreaIds.length}"),
               const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    _showResultsOnMap(results, releveVm.allReleves);
-                  },
-                  icon: const Icon(Icons.map),
-                  label: const Text("POKAŻ NA MAPIE"),
-                ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  // Pobieramy obiekty Releve na podstawie zapisanych ID
+                  final matchingObjects = releveVm.allReleves
+                      .where((r) => plant.analyzedAreaIds.contains(r.id))
+                      .toList();
+
+                  Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => ResultsMapScreen(
+                          matchingAreas: matchingObjects,
+                          plantName: plant.displayName
+                      )
+                  ));
+                },
+                icon: const Icon(Icons.map_outlined),
+                label: const Text("POKAŻ WYNIKI NA MAPIE"),
               ),
             ]
           ],

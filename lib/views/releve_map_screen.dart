@@ -4,8 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../services/location_service.dart';
-import 'habitat_details_screen.dart'; // Nowy ekran
-
+import 'habitat_details_screen.dart';
 class ReleveMapScreen extends StatefulWidget {
   const ReleveMapScreen({super.key});
 
