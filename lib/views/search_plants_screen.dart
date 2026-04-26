@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/observation_view_model.dart';
 import '../viewmodels/releve_view_model.dart';
-import '../models/plant_observation.dart';
-import '../models/releve.dart';
-import '../models/habitat_info.dart';
 import '../services/spatial_service.dart';
 
 class SearchPlantsScreen extends StatelessWidget {

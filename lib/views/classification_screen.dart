@@ -150,16 +150,6 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
       ),
     );
   }
-  Widget _buildDropdown(String label, List<String> options, Function(String?) onChanged, {String? hint}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: DropdownButtonFormField<String>(
-        decoration: InputDecoration(labelText: label, border: const OutlineInputBorder(), hintText: hint),
-        items: options.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-        onChanged: onChanged,
-      ),
-    );
-  }
 
   void _navigateToDetailedForm() {
     final obsVm = context.read<ObservationViewModel>();

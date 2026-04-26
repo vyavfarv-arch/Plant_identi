@@ -4,7 +4,6 @@ import 'package:camera/camera.dart';
 import '../models/plant_observation.dart';
 import '../services/camera_service.dart';
 import '../services/location_service.dart';
-import '../services/storage_service.dart';
 import '../services/database_helper.dart';
 
 class ObservationViewModel extends ChangeNotifier {

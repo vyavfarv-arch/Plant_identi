@@ -47,7 +47,7 @@ class PlantCardView {
               _infoItem(Icons.favorite, "Żywotność", obs.vitality ?? "-"),
 
               _sectionHeader("3. Preferencje środowiskowe (ML Data)"),
-              _infoItem(Icons.science, "Zakres pH", "${obs.prefPhMin?.toStringAsFixed(1)} - ${obs.prefPhPhMax?.toStringAsFixed(1)}"),
+              _infoItem(Icons.science, "Zakres pH", "${obs.prefPhMin?.toStringAsFixed(1) ?? '?'} - ${obs.prefPhMax?.toStringAsFixed(1) ?? '?'}"),
               _infoItem(Icons.landscape, "Podłoże", obs.prefSubstrate ?? "-"),
               _infoItem(Icons.water_drop, "Wilgotność", _translateMoisture(obs.prefMoisture)),
               _infoItem(Icons.wb_sunny, "Nasłonecznienie", _translateSun(obs.prefSunlight)),

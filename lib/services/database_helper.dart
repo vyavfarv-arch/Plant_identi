@@ -1,6 +1,5 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'dart:convert';
 import '../models/releve.dart';
 import '../models/plant_observation.dart';
 
@@ -104,12 +103,11 @@ class DatabaseHelper {
       for (var col in newCols) {
         try { await db.execute('ALTER TABLE observations ADD COLUMN $col REAL'); } catch(e){}
       }
-      // SQLite nie wspiera łatwego usuwania kolumn (genus, species),
-      // zostaną w bazie ale model ich nie będzie używał.
+
     }
   }
 
-  // --- METODY CRUD (pozostają bez zmian) ---
+  // --- METODY CRUD  ---
 
   Future<void> insertReleve(Releve releve) async {
     final db = await database;

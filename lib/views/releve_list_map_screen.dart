@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
-import '../models/releve.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../viewmodels/search_filter_view_model.dart';
 import '../services/location_service.dart';

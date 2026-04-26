@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart'; // Dodano dla LatLng
 import '../models/releve.dart';
-import '../viewmodels/releve_view_model.dart'; // ZMIANA: Nowy ViewModel dla obszarów
-import '../viewmodels/observation_view_model.dart'; // ZMIANA: Nowy ViewModel dla roślin
-import '../services/spatial_service.dart'; // ZMIANA: Nowy serwis do analizy punktów
+import '../viewmodels/releve_view_model.dart';
+import '../viewmodels/observation_view_model.dart';
+import '../services/spatial_service.dart';
 import 'plant_card_view.dart';
 import 'habitat_form_screen.dart';
 

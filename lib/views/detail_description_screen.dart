@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/plant_observation.dart';
 import '../viewmodels/observation_view_model.dart';
-import '../models/description_schema.dart';
 import 'dart:io';
 
 class DetailDescriptionScreen extends StatefulWidget {
@@ -13,11 +12,12 @@ class DetailDescriptionScreen extends StatefulWidget {
   @override
   State<DetailDescriptionScreen> createState() => _DetailDescriptionScreenState();
 }
+
 class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
   final Map<String, TextEditingController> _controllers = {};
   String? _selectedCertainty;
 
-  // Dane preferencji
+  // Dane preferencji środowiskowych
   double _prefPhMin = 5.5;
   double _prefPhMax = 7.5;
   String? _prefSubstrate;
@@ -60,15 +60,20 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
         children: [
           _buildCapturedPhotosPreview(),
           _buildNamingSection(),
-          _buildEnvironmentalSection(), // NOWA SEKCJA
+          _buildEnvironmentalSection(),
           _buildCertaintySection(),
           _buildUsageSection(),
           const SizedBox(height: 30),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 15)
+            ),
             onPressed: _saveAndGoBack,
-            child: const Text("ZAPISZ DO MAGAZYNU"),
+            child: const Text("ZAPISZ DO MAGAZYNU", style: TextStyle(fontWeight: FontWeight.bold)),
           ),
+          const SizedBox(height: 50),
         ],
       ),
     );
@@ -94,7 +99,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
           padding: const EdgeInsets.all(10),
           child: Column(
             children: [
-              const Text("Przedział pH gleby:"),
+              Text("Przedział pH gleby: ${_prefPhMin.toStringAsFixed(1)} - ${_prefPhMax.toStringAsFixed(1)}"),
               RangeSlider(
                 values: RangeValues(_prefPhMin, _prefPhMax),
                 min: 3.0, max: 9.0,
@@ -132,6 +137,16 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
     );
   }
 
+  Widget _buildUsageSection() {
+    return ExpansionTile(
+      title: const Text("Wykorzystanie i Hodowla"),
+      children: [
+        _inputField(_controllers['usage']!, "Zastosowanie", isLong: true),
+        _inputField(_controllers['cultivation']!, "Hodowla", isLong: true),
+      ],
+    );
+  }
+
   Widget _buildSlider(String title, double value, int divisions, List<String> labels, Function(double) onChanged) {
     return Column(
       children: [
@@ -139,6 +154,61 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
         Text(title),
         Slider(value: value, min: 0, max: divisions.toDouble(), divisions: divisions, label: labels[value.round()], onChanged: onChanged),
       ],
+    );
+  }
+
+  Widget _buildCapturedPhotosPreview() {
+    final photos = widget.observation.photoPaths;
+    if (photos.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      height: 120,
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: photos.length,
+        itemBuilder: (context, index) {
+          final path = photos[index];
+          return GestureDetector(
+            onTap: () => _showFullScreenImage(context, path),
+            child: Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  File(path),
+                  width: 100, height: 100, fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showFullScreenImage(BuildContext context, String imagePath) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: InteractiveViewer(child: Image.file(File(imagePath))),
+      ),
+    );
+  }
+
+  Widget _inputField(TextEditingController controller, String label, {bool isLong = false, String? hint}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 10),
+      child: TextField(
+        controller: controller,
+        maxLines: isLong ? null : 1,
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          border: const OutlineInputBorder(),
+        ),
+      ),
     );
   }
 
@@ -164,71 +234,5 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       prefSunlight: _prefSunlight,
     );
     Navigator.pop(context);
-  }
-  Widget _buildCapturedPhotosPreview() {
-    final photos = widget.observation.photoPaths;
-    if (photos.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      height: 120,
-      margin: const EdgeInsets.only(bottom: 10),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: photos.length,
-        itemBuilder: (context, index) {
-          final path = photos[index];
-          return GestureDetector(
-            onLongPress: () => _showFullScreenImage(context, path),
-            child: Padding(
-              padding: const EdgeInsets.only(right: 10),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.file(
-                  File(path),
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showFullScreenImage(BuildContext context, String imagePath) {
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: InteractiveViewer(child: Image.file(File(imagePath))),
-      ),
-    );
-  }
-
-  Widget _buildUsageSection() {
-    return ExpansionTile(
-      title: const Text("Wykorzystanie i Hodowla"),
-      children: [
-        _inputField(_controllers['usage']!, "Zastosowanie", isLong: true),
-        _inputField(_controllers['cultivation']!, "Hodowla", isLong: true),
-      ],
-    );
-  }
-
-  Widget _inputField(TextEditingController controller, String label, {bool isLong = false, String? hint}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 10),
-      child: TextField(
-        controller: controller,
-        maxLines: isLong ? null : 1,
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-          border: const OutlineInputBorder(),
-        ),
-      ),
-    );
   }
 }
