@@ -67,7 +67,6 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
           _buildCapturedPhotosPreview(),
           _buildNamingSection(),
           _buildEnvironmentalSection(),
-          _buildCertaintySection(),
           _buildUsageSection(),
           const SizedBox(height: 30),
           ElevatedButton(
@@ -87,27 +86,44 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
 
   Widget _buildNamingSection() {
     return ExpansionTile(
-      title: const Text("Taksonomia", style: TextStyle(fontWeight: FontWeight.bold)),
+      title: const Text("Taksonomia i Pewność", style: TextStyle(fontWeight: FontWeight.bold)),
       children: [
-        _inputField(_controllers['localName']!, "Nazwa Główna (np. Mniszek)"),
+        _inputField(_controllers['localName']!, "Nazwa zwyczajowa (np. Mniszek)"),
         _inputField(_controllers['latinName']!, "Nazwa Łacińska"),
         _inputField(_controllers['family']!, "Rodzina"),
         _inputField(_controllers['subspecies']!, "Odmiana/Podgatunek"),
+        const Divider(),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: DropdownButtonFormField<String>(
+            value: _selectedCertainty,
+            items: ['Wysoka', 'Średnia', 'Niska'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+            onChanged: (v) => setState(() => _selectedCertainty = v),
+            decoration: const InputDecoration(labelText: "Stopień pewności identyfikacji", border: OutlineInputBorder()),
+          ),
+        ),
+        _inputField(_controllers['idDoubts']!, "Wątpliwości/Uwagi", isLong: true),
       ],
     );
   }
 
-// Wewnątrz _buildEnvironmentalSection() zamień stary Dropdown na to:
   Widget _buildEnvironmentalSection() {
     return ExpansionTile(
-      title: const Text("Preferencje środowiskowe ", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+      title: const Text("Preferencje środowiskowe ", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
       children: [
         Padding(
           padding: const EdgeInsets.all(10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ... pH RangeSlider ...
+              Text("Przedział pH gleby: ${_prefPhMin.toStringAsFixed(1)} - ${_prefPhMax.toStringAsFixed(1)}"),
+              RangeSlider(
+                values: RangeValues(_prefPhMin, _prefPhMax),
+                min: 3.0, max: 9.0,
+                divisions: 60,
+                labels: RangeLabels(_prefPhMin.toStringAsFixed(1), _prefPhMax.toStringAsFixed(1)),
+                onChanged: (v) => setState(() { _prefPhMin = v.start; _prefPhMax = v.end; }),
+              ),
               const SizedBox(height: 15),
               const Text("Preferowane typy gleby:", style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
@@ -133,27 +149,11 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
                   );
                 }).toList(),
               ),
-              const Divider(height: 30),
               _buildSlider("Wilgotność:", _prefMoisture, 3, ["Sucho", "Świeżo", "Wilgotno", "Mokro"], (v) => setState(() => _prefMoisture = v)),
               _buildSlider("Nasłonecznienie:", _prefSunlight, 4, ["Pełne słońce", "Przewaga słońca", "Półcień", "Przewaga cienia", "Cień"], (v) => setState(() => _prefSunlight = v)),
             ],
           ),
         )
-      ],
-    );
-  }
-
-  Widget _buildCertaintySection() {
-    return ExpansionTile(
-      title: const Text("Pewność identyfikacji"),
-      children: [
-        DropdownButtonFormField<String>(
-          value: _selectedCertainty,
-          items: ['Wysoka', 'Średnia', 'Niska'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-          onChanged: (v) => setState(() => _selectedCertainty = v),
-          decoration: const InputDecoration(labelText: "Stopień pewności"),
-        ),
-        _inputField(_controllers['idDoubts']!, "Wątpliwości/Uwagi", isLong: true),
       ],
     );
   }
@@ -172,8 +172,9 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
     return Column(
       children: [
         const SizedBox(height: 10),
-        Text(title),
+        Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         Slider(value: value, min: 0, max: divisions.toDouble(), divisions: divisions, label: labels[value.round()], onChanged: onChanged),
+        Text(labels[value.round()], style: const TextStyle(color: Colors.blue)),
       ],
     );
   }
@@ -234,7 +235,12 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
   }
 
   void _saveAndGoBack() {
-    if (_controllers['localName']!.text.isEmpty) return;
+    if (_controllers['localName']!.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Nazwa główna jest wymagana!")),
+      );
+      return;
+    }
     context.read<ObservationViewModel>().updateObservationDetailed(
       id: widget.observation.id,
       family: _controllers['family']!.text,

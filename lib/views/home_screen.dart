@@ -6,6 +6,7 @@ import 'map_screen.dart';
 import 'releve_list_map_screen.dart';
 import "area_managment_screen.dart";
 import "search_plants_screen.dart";
+import '../services/data_export_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -78,6 +79,24 @@ class HomeScreen extends StatelessWidget {
                     icon: Icons.account_tree,
                     color: Colors.blueGrey,
                     onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AreaManagementScreen())),
+                  ),
+                  _buildGridButton(
+                    context,
+                    title: 'Eksport ML',
+                    icon: Icons.import_export,
+                    color: Colors.brown,
+                    onPressed: () async {
+                      // Pokaż loader
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (ctx) => const Center(child: CircularProgressIndicator()),
+                      );
+
+                      await DataExportService().exportDataForML();
+
+                      if (context.mounted) Navigator.pop(context); // Zamknij loader
+                    },
                   ),
                   // Tutaj możesz łatwo dodawać kolejne przyciski
                 ],
