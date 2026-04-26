@@ -21,7 +21,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'planticator.db');
     return await openDatabase(
       path,
-      version: 4, // ZMIANA: Wersja 4 dla modułu zielarskiego
+      version: 5, // ZMIANA: Wersja 4 dla modułu zielarskiego
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
@@ -53,15 +53,12 @@ class DatabaseHelper {
         latinName TEXT,
         polishName TEXT,
         family TEXT,
-        genus TEXT,
-        species TEXT,
         subspecies TEXT,
         biologicalType TEXT,
-        areaPurity TEXT, 
+        areaPurity TEXT,
         abundance TEXT,
         coverage TEXT,
         vitality TEXT,
-        -- sociability USUNIĘTE
         certainty TEXT,
         idDoubts TEXT,
         keyMorphologicalTraits TEXT,
@@ -69,13 +66,17 @@ class DatabaseHelper {
         characteristicFeature TEXT,
         plantUsage TEXT,
         cultivation TEXT,
-        phytosociologicalStatus TEXT,
         observationDate TEXT,
         photoPathsJson TEXT,
         characteristicsJson TEXT,
         latitude REAL,
         longitude REAL,
         timestamp TEXT,
+        prefPhMin REAL,
+        prefPhMax REAL,
+        prefSubstrate TEXT,
+        prefMoisture REAL,
+        prefSunlight REAL,
         FOREIGN KEY (releveId) REFERENCES releves (id) ON DELETE CASCADE
       )
     ''');
@@ -96,15 +97,15 @@ class DatabaseHelper {
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 4) {
-      try {
-        // Dodajemy nową kolumnę dla czystości
-        await db.execute('ALTER TABLE observations ADD COLUMN areaPurity TEXT');
-        // Uwaga: SQLite nie wspiera łatwego usuwania kolumn w starych wersjach,
-        // więc kolumna sociability zostanie w bazie pusta, ale nie będziemy jej używać.
-      } catch (e) {
-
+    if (oldVersion < 5) {
+      final List<String> newCols = [
+        'prefPhMin', 'prefPhMax', 'prefSubstrate', 'prefMoisture', 'prefSunlight'
+      ];
+      for (var col in newCols) {
+        try { await db.execute('ALTER TABLE observations ADD COLUMN $col REAL'); } catch(e){}
       }
+      // SQLite nie wspiera łatwego usuwania kolumn (genus, species),
+      // zostaną w bazie ale model ich nie będzie używał.
     }
   }
 

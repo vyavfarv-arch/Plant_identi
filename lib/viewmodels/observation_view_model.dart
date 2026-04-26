@@ -98,12 +98,9 @@ class ObservationViewModel extends ChangeNotifier {
   Future<void> updateObservationDetailed({
     required String id,
     String? family,
-    String? genus,
-    String? species,
     String? subspecies,
     String? localName,
     String? latinName,
-    String? phytosociologicalStatus,
     String? certainty,
     String? doubts,
     String? keyTraits,
@@ -111,16 +108,15 @@ class ObservationViewModel extends ChangeNotifier {
     String? characteristic,
     String? usage,
     String? cultivation,
+    double? prefPhMin,
+    double? prefPhMax,
+    String? prefSubstrate,
+    double? prefMoisture,
+    double? prefSunlight,
   }) async {
     final index = _observations.indexWhere((o) => o.id == id);
     if (index != -1) {
       final old = _observations[index];
-
-      // Poprawna kalkulacja daty
-      DateTime? finalDate = old.observationDate;
-      if (finalDate == null && localName != null && localName.isNotEmpty) {
-        finalDate = DateTime.now();
-      }
 
       final updatedObs = PlantObservation(
         id: old.id,
@@ -130,18 +126,15 @@ class ObservationViewModel extends ChangeNotifier {
         timestamp: old.timestamp,
         characteristics: old.characteristics,
         biologicalType: old.biologicalType,
+        areaPurity: old.areaPurity,
         abundance: old.abundance,
         coverage: old.coverage,
         vitality: old.vitality,
-        areaPurity: old.areaPurity,
-        observationDate: finalDate,
+        observationDate: old.observationDate ?? DateTime.now(),
         family: family,
-        genus: genus,
-        species: species,
         subspecies: subspecies,
         localName: localName,
         latinName: latinName,
-        phytosociologicalStatus: phytosociologicalStatus,
         certainty: certainty,
         idDoubts: doubts,
         keyMorphologicalTraits: keyTraits,
@@ -149,16 +142,18 @@ class ObservationViewModel extends ChangeNotifier {
         characteristicFeature: characteristic,
         plantUsage: usage,
         cultivation: cultivation,
+        prefPhMin: prefPhMin,
+        prefPhMax: prefPhMax,
+        prefSubstrate: prefSubstrate,
+        prefMoisture: prefMoisture,
+        prefSunlight: prefSunlight,
       );
 
       _observations[index] = updatedObs;
-
-      // Zapisujemy TYLKO do SQLite
       await _db.insertObservation(updatedObs);
       notifyListeners();
     }
-  } // Ten nawias zamyka metodę - musi tu być!
-
+  }
   void reset() {
     _currentPhotoPaths = [];
     _currentPosition = null;

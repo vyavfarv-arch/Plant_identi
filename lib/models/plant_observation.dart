@@ -1,3 +1,4 @@
+// lib/models/plant_observation.dart
 import 'dart:convert';
 
 class PlantObservation {
@@ -10,14 +11,11 @@ class PlantObservation {
 
   String? biologicalType;
   String? areaPurity;
-  String? phytosociologicalLayer;
   String? abundance;
   String? coverage;
   String? vitality;
   DateTime? observationDate;
   String? family;
-  String? genus;
-  String? species;
   String? subspecies;
   String? latinName;
   String? polishName;
@@ -29,7 +27,13 @@ class PlantObservation {
   String? characteristicFeature;
   String? plantUsage;
   String? cultivation;
-  String? phytosociologicalStatus;
+
+  // NOWE: Preferencje środowiskowe (dla modelu Random Forest)
+  double? prefPhMin;
+  double? prefPhMax;
+  String? prefSubstrate;
+  double? prefMoisture;
+  double? prefSunlight;
 
   PlantObservation({
     required this.id,
@@ -40,14 +44,11 @@ class PlantObservation {
     required this.characteristics,
     this.biologicalType,
     this.areaPurity,
-    this.phytosociologicalLayer,
     this.abundance,
     this.coverage,
     this.vitality,
     this.observationDate,
     this.family,
-    this.genus,
-    this.species,
     this.subspecies,
     this.latinName,
     this.polishName,
@@ -59,7 +60,11 @@ class PlantObservation {
     this.characteristicFeature,
     this.plantUsage,
     this.cultivation,
-    this.phytosociologicalStatus,
+    this.prefPhMin,
+    this.prefPhMax,
+    this.prefSubstrate,
+    this.prefMoisture,
+    this.prefSunlight,
   });
 
   String get displayName => (localName != null && localName!.isNotEmpty)
@@ -77,15 +82,12 @@ class PlantObservation {
       'timestamp': timestamp.toIso8601String(),
       'characteristicsJson': jsonEncode(characteristics),
       'biologicalType': biologicalType,
-      'phytosociologicalLayer': phytosociologicalLayer,
+      'areaPurity': areaPurity,
       'abundance': abundance,
       'coverage': coverage,
       'vitality': vitality,
-      'areaPurity':areaPurity,
       'observationDate': observationDate?.toIso8601String(),
       'family': family,
-      'genus': genus,
-      'species': species,
       'subspecies': subspecies,
       'latinName': latinName,
       'polishName': polishName,
@@ -97,12 +99,15 @@ class PlantObservation {
       'characteristicFeature': characteristicFeature,
       'plantUsage': plantUsage,
       'cultivation': cultivation,
-      'phytosociologicalStatus': phytosociologicalStatus
+      'prefPhMin': prefPhMin,
+      'prefPhMax': prefPhMax,
+      'prefSubstrate': prefSubstrate,
+      'prefMoisture': prefMoisture,
+      'prefSunlight': prefSunlight,
     };
   }
 
   factory PlantObservation.fromMap(Map<String, dynamic> map) {
-    // LOGIKA DEKODOWANIA CECH (Characteristics) - wstawiona bezpośrednio tutaj:
     Map<String, List<String>> decodedChars = {};
     if (map['characteristicsJson'] != null) {
       try {
@@ -110,35 +115,26 @@ class PlantObservation {
         rawMap.forEach((key, value) {
           decodedChars[key] = List<String>.from(value);
         });
-      } catch (e) {
-        print("Błąd dekodowania characteristicsJson: $e");
-      }
+      } catch (e) { print("Błąd dekodowania: $e"); }
     }
 
     return PlantObservation(
       id: map['id'] ?? '',
-      // Używamy photoPathsJson zgodnie z DatabaseHelper
-      photoPaths: map['photoPathsJson'] != null
-          ? List<String>.from(jsonDecode(map['photoPathsJson']))
-          : [],
+      photoPaths: map['photoPathsJson'] != null ? List<String>.from(jsonDecode(map['photoPathsJson'])) : [],
       latitude: map['latitude']?.toDouble() ?? 0.0,
       longitude: map['longitude']?.toDouble() ?? 0.0,
       timestamp: DateTime.parse(map['timestamp']),
-      characteristics: decodedChars, // Podstawiamy przetworzoną mapę
+      characteristics: decodedChars,
       biologicalType: map['biologicalType'],
-      phytosociologicalLayer: map['phytosociologicalLayer'],
+      areaPurity: map['areaPurity'],
       abundance: map['abundance'],
       coverage: map['coverage'],
       vitality: map['vitality'],
-      areaPurity : map ['areaPurity'],
-      observationDate: map['observationDate'] != null
-          ? DateTime.parse(map['observationDate'])
-          : null,
+      observationDate: map['observationDate'] != null ? DateTime.parse(map['observationDate']) : null,
       family: map['family'],
-      genus: map['genus'],
-      species: map['species'],
       subspecies: map['subspecies'],
       latinName: map['latinName'],
+      polishName: map['polishName'],
       localName: map['localName'],
       certainty: map['certainty'],
       idDoubts: map['idDoubts'],
@@ -147,7 +143,11 @@ class PlantObservation {
       characteristicFeature: map['characteristicFeature'],
       plantUsage: map['plantUsage'],
       cultivation: map['cultivation'],
-      phytosociologicalStatus: map['phytosociologicalStatus'],
+      prefPhMin: map['prefPhMin']?.toDouble(),
+      prefPhMax: map['prefPhMax']?.toDouble(),
+      prefSubstrate: map['prefSubstrate'],
+      prefMoisture: map['prefMoisture']?.toDouble(),
+      prefSunlight: map['prefSunlight']?.toDouble(),
     );
   }
 }
