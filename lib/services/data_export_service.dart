@@ -1,7 +1,7 @@
 // lib/services/data_export_service.dart
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart'; // Dodaj do pubspec.yaml: share_plus: ^7.2.1
+import 'package:share_plus/share_plus.dart';
 import 'database_helper.dart';
 
 class DataExportService {

@@ -32,7 +32,7 @@ dependencies:
   timezone: ^0.9.2
   flutter_local_notifications: ^17.0.0
   cupertino_icons: ^1.0.8
-  share_plus: ^7.2.1
+  share_plus: ^10.1.0
 
 dev_dependencies:
   flutter_test:
@@ -46,3 +46,4 @@ flutter:
     - assets/grass.png
     - assets/syntaxa.json
     - assets/ref/
+    - assets/forest_model.json
