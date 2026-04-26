@@ -16,13 +16,16 @@ class BrowsePlantsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Pobieramy dostęp do nowych modeli
     final obsVm = context.watch<ObservationViewModel>();
     final filterVm = context.watch<SearchFilterViewModel>();
     final releveVm = context.read<ReleveViewModel>();
 
-    // Ręczne filtrowanie listy obserwacji na podstawie stanu z filterVm
+    // Ręczne filtrowanie listy obserwacji
     final plants = obsVm.completeObservations.where((obs) {
+
+      // KLUCZOWA POPRAWKA: Nie wyświetlaj roślin poszukiwanych w Magazynie
+      if (obs.isSought) return false;
+
       // Filtr daty
       if (filterVm.filterDateRange != null) {
         final date = obs.observationDate ?? obs.timestamp;
@@ -39,7 +42,7 @@ class BrowsePlantsScreen extends StatelessWidget {
         }
       }
 
-      // Filtr obszaru przy użyciu SpatialService
+      // Filtr obszaru
       if (filterVm.filterArea != null) {
         if (!SpatialService.isPointInPolygon(
             LatLng(obs.latitude, obs.longitude), filterVm.filterArea!.points)) {
@@ -54,7 +57,6 @@ class BrowsePlantsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Magazyn Roślin'),
         actions: [
-          // Filtr daty - korzysta z SearchFilterViewModel
           IconButton(
             icon: const Icon(Icons.date_range),
             onPressed: () async {
@@ -67,7 +69,6 @@ class BrowsePlantsScreen extends StatelessWidget {
               filterVm.setFilterDateRange(picked);
             },
           ),
-          // Filtr obszaru
           IconButton(
             icon: Icon(
                 Icons.layers,
@@ -75,12 +76,10 @@ class BrowsePlantsScreen extends StatelessWidget {
             ),
             onPressed: () => _showAreaFilterDialog(context, releveVm, filterVm),
           ),
-          // Reset filtrów
           IconButton(
             icon: const Icon(Icons.filter_alt_off),
             onPressed: () => filterVm.resetAllFilters(),
           ),
-          // Filtr rodzin
           IconButton(
             icon: Icon(Icons.account_tree_outlined,
                 color: filterVm.selectedFamilies.isNotEmpty ? Colors.orange : null),
@@ -102,9 +101,21 @@ class BrowsePlantsScreen extends StatelessWidget {
 
           return ListView(
             children: grouped.entries.map((entry) {
+              // Zabezpieczenie pobierania zdjęcia (NAPRAWA BŁĘDU Bad state: No element)
+              final firstObsWithPhoto = entry.value.firstWhere(
+                      (o) => o.photoPaths.isNotEmpty,
+                  orElse: () => entry.value.first
+              );
+
               return ExpansionTile(
                 leading: CircleAvatar(
-                  backgroundImage: FileImage(File(entry.value.first.photoPaths.first)),
+                  backgroundColor: Colors.green.shade100,
+                  backgroundImage: firstObsWithPhoto.photoPaths.isNotEmpty
+                      ? FileImage(File(firstObsWithPhoto.photoPaths.first))
+                      : null,
+                  child: firstObsWithPhoto.photoPaths.isEmpty
+                      ? const Icon(Icons.eco, color: Colors.green)
+                      : null,
                 ),
                 title: Text("${entry.key} (${entry.value.length})"),
                 children: entry.value

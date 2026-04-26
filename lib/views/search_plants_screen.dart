@@ -3,114 +3,159 @@ import 'package:provider/provider.dart';
 import '../viewmodels/observation_view_model.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../services/spatial_service.dart';
+import 'add_sought_plant_screen.dart';
+import '../models/plant_observation.dart';
 
-class SearchPlantsScreen extends StatelessWidget {
+class SearchPlantsScreen extends StatefulWidget {
   const SearchPlantsScreen({super.key});
+
+  @override
+  State<SearchPlantsScreen> createState() => _SearchPlantsScreenState();
+}
+
+class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
+  String? _selectedPlantId;
+  String _searchQuery = "";
+  String _filterType = "Wszystkie"; // Opcje: Wszystkie, Magazyn, Poszukiwane
 
   @override
   Widget build(BuildContext context) {
     final obsVm = context.watch<ObservationViewModel>();
     final releveVm = context.read<ReleveViewModel>();
 
-    // Pobieramy unikalne nazwy opisanych roślin z magazynu
-    final List<String> uniquePlants = obsVm.uniquePlantNames;
+    // FILTRACJA LISTY
+    final List<PlantObservation> filteredPlants = obsVm.allObservations.where((p) {
+      final name = p.displayName.toLowerCase();
+      final matchesSearch = name.contains(_searchQuery.toLowerCase());
+
+      bool matchesFilter = true;
+      if (_filterType == "Magazyn") matchesFilter = !p.isSought;
+      if (_filterType == "Poszukiwane") matchesFilter = p.isSought;
+
+      return matchesSearch && matchesFilter && (p.localName != null);
+    }).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Baza Gatunków")),
-      body: uniquePlants.isEmpty
-          ? const Center(child: Text("Magazyn jest pusty. Opisz najpierw rośliny!"))
-          : ListView.builder(
-        itemCount: uniquePlants.length,
-        itemBuilder: (context, index) {
-          final plantName = uniquePlants[index];
-          return ListTile(
-            leading: const Icon(Icons.eco, color: Colors.green),
-            title: Text(plantName, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: const Text("Przytrzymaj, aby zobaczyć ekologię gatunku"),
-            onTap: () {
-              // Tutaj w przyszłości podepniemy tryb "Poszukiwania" (Step 6/7)
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Wybrano: $plantName do poszukiwań")),
-              );
+      appBar: AppBar(
+        title: const Text("Baza i Poszukiwania"),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (v) {
+              if (v == 'add') Navigator.push(context, MaterialPageRoute(builder: (_) => const AddSoughtPlantScreen()));
             },
-            onLongPress: () => _showPlantEcoDetails(context, plantName, obsVm, releveVm),
-          );
-        },
+            itemBuilder: (ctx) => [const PopupMenuItem(value: 'add', child: Text("Dodaj szukaną roślinę"))],
+          )
+        ],
+      ),
+      body: Column(
+        children: [
+          // PASEK WYSZUKIWANIA I FILTRY
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                TextField(
+                  decoration: const InputDecoration(
+                    hintText: "Szukaj rośliny...",
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (v) => setState(() => _searchQuery = v),
+                ),
+                const SizedBox(height: 8),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: ["Wszystkie", "Magazyn", "Poszukiwane"].map((type) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: ChoiceChip(
+                          label: Text(type),
+                          selected: _filterType == type,
+                          onSelected: (val) => setState(() => _filterType = type),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // LISTA
+          Expanded(
+            child: filteredPlants.isEmpty
+                ? const Center(child: Text("Nie znaleziono roślin."))
+                : ListView.builder(
+              itemCount: filteredPlants.length,
+              itemBuilder: (context, index) {
+                final plant = filteredPlants[index];
+                return RadioListTile<String>(
+                  title: Text(plant.displayName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(plant.isSought ? "TAG: POSZUKIWANA" : "W MAGAZYNIE"),
+                  secondary: IconButton(
+                    icon: const Icon(Icons.info_outline),
+                    onPressed: () => _showPlantEcoDetails(context, plant, obsVm, releveVm),
+                  ),
+                  value: plant.id,
+                  groupValue: _selectedPlantId,
+                  onChanged: (v) => setState(() => _selectedPlantId = v),
+                );
+              },
+            ),
+          ),
+          if (_selectedPlantId != null)
+            _buildActionFooter(filteredPlants.firstWhere((p) => p.id == _selectedPlantId)),
+        ],
       ),
     );
   }
 
-  void _showPlantEcoDetails(BuildContext context, String plantName, ObservationViewModel obsVm, ReleveViewModel releveVm) {
-    // 1. Znajdź wszystkie obserwacje tego gatunku
-    final speciesObs = obsVm.completeObservations.where((o) => o.displayName == plantName).toList();
+  Widget _buildActionFooter(PlantObservation plant) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: Colors.teal.shade50,
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+          onPressed: () => print("Analiza ML dla ${plant.displayName}"),
+          icon: const Icon(Icons.psychology),
+          label: const Text("WYSZUKAJ OBSZARY"),
+        ),
+      ),
+    );
+  }
 
-    // 2. Agreguj dane z siedlisk (releves), w których te rośliny rosną
-    final Set<String> substrates = {};
-    final Set<double> moistureValues = {};
-    final List<double> phValues = [];
-    final Set<String> litterLayers = {};
-    final Set<String> observedInReleves = {};
-
-    String cultivation = "";
-    String usage = "";
-
-    for (var obs in speciesObs) {
-      // Wyciągnij opis hodowli i wykorzystania (jeśli są uzupełnione)
-      if (cultivation.isEmpty && obs.cultivation != null && obs.cultivation!.isNotEmpty) {
-        cultivation = obs.cultivation!;
-      }
-      if (usage.isEmpty && obs.plantUsage != null && obs.plantUsage!.isNotEmpty) {
-        usage = obs.plantUsage!;
-      }
-
-      // Sprawdź, w jakich obszarach na mapie znajduje się ta konkretna obserwacja
-      final areas = SpatialService.getAreasForPlant(releveVm.allReleves, obs);
-      for (var area in areas) {
-        observedInReleves.add("${area.type}: ${area.commonName}");
-        if (area.habitat != null) {
-          substrates.addAll(area.habitat!.substrateType);
-          moistureValues.add(area.habitat!.moisture);
-          if (area.habitat!.ph != null) phValues.add(area.habitat!.ph!);
-          litterLayers.addAll(area.habitat!.litterLayer);
-        }
-      }
-    }
-
-    // Oblicz średnie pH
-    final double? avgPh = phValues.isEmpty ? null : phValues.reduce((a, b) => a + b) / phValues.length;
-
-    // Wyświetl Dialog z zagregowanymi danymi
+  void _showPlantEcoDetails(BuildContext context, PlantObservation plant, ObservationViewModel obsVm, ReleveViewModel releveVm) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Column(
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Icon(Icons.analytics_outlined, color: Colors.teal, size: 40),
-            const SizedBox(height: 10),
-            Text(plantName, textAlign: TextAlign.center),
+            Expanded(child: Text(plant.displayName)),
+            IconButton(
+              icon: const Icon(Icons.delete_forever, color: Colors.red),
+              onPressed: () {
+                obsVm.deleteObservation(plant.id);
+                Navigator.pop(ctx);
+                setState(() => _selectedPlantId = null);
+              },
+            )
           ],
         ),
         content: SingleChildScrollView(
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("WYSTĘPOWANIE (Siedlisko):", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.teal)),
+              const Text("Charakterystyka siedliska:", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
               const Divider(),
-              _ecoInfo("Typ podłoża", substrates.isNotEmpty ? substrates.join(", ") : "brak danych"),
-              _ecoInfo("Wilgotność", _translateMoisture(moistureValues)),
-              _ecoInfo("Średnie pH", avgPh != null ? avgPh.toStringAsFixed(1) : "brak danych"),
-              _ecoInfo("Ściółka", litterLayers.isNotEmpty ? litterLayers.join(", ") : "brak danych"),
-              const SizedBox(height: 20),
-              const Text("HODOWLA I WYKORZYSTANIE:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.teal)),
-              const Divider(),
-              _ecoInfo("Hodowla", cultivation.isNotEmpty ? cultivation : "brak opisu"),
-              _ecoInfo("Wykorzystanie", usage.isNotEmpty ? usage : "brak opisu"),
-              const SizedBox(height: 20),
-              const Text("LOKALIZACJA W PŁATACH:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.teal)),
-              const Divider(),
-              Text(observedInReleves.isNotEmpty ? observedInReleves.join("\n") : "Roślina zaobserwowana poza zapisanymi obszarami.",
-                style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
-              ),
+              Text("pH: ${plant.prefPhMin?.toStringAsFixed(1) ?? '?' } - ${plant.prefPhMax?.toStringAsFixed(1) ?? '?' }"),
+              Text("Podłoże: ${plant.prefSubstrate.isNotEmpty ? plant.prefSubstrate.join(", ") : "brak" }"),
+              Text("Wilgotność: ${_translateSingleMoisture(plant.prefMoisture)}"),
+              const SizedBox(height: 10),
+              if (plant.isSought) const Text("Status: POSZUKIWANA", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
             ],
           ),
         ),
@@ -119,24 +164,8 @@ class SearchPlantsScreen extends StatelessWidget {
     );
   }
 
-  Widget _ecoInfo(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: RichText(
-        text: TextSpan(
-          style: const TextStyle(color: Colors.black, fontSize: 13),
-          children: [
-            TextSpan(text: "$label: ", style: const TextStyle(fontWeight: FontWeight.bold)),
-            TextSpan(text: value),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _translateMoisture(Set<double> values) {
-    if (values.isEmpty) return "brak danych";
-    const labels = ["Sucho", "Świeżo", "Wilgotno", "Mokro"];
-    return values.map((v) => labels[v.round()]).join(", ");
+  String _translateSingleMoisture(double? v) {
+    if (v == null) return "brak danych";
+    return ["Sucho", "Świeżo", "Wilgotno", "Mokro"][v.round()];
   }
 }

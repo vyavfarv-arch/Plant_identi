@@ -8,6 +8,8 @@ class PlantObservation {
   final double longitude;
   final DateTime timestamp;
   final Map<String, List<String>> characteristics;
+  final bool isSought;
+
 
   String? biologicalType;
   String? areaPurity;
@@ -42,6 +44,7 @@ class PlantObservation {
     required this.longitude,
     required this.timestamp,
     required this.characteristics,
+    this.isSought = false,
     this.biologicalType,
     this.areaPurity,
     this.abundance,
@@ -82,6 +85,7 @@ class PlantObservation {
       'timestamp': timestamp.toIso8601String(),
       'characteristicsJson': jsonEncode(characteristics),
       'biologicalType': biologicalType,
+      'isSought': isSought ? 1 : 0,
       'areaPurity': areaPurity,
       'abundance': abundance,
       'coverage': coverage,
@@ -108,6 +112,7 @@ class PlantObservation {
   }
 
   factory PlantObservation.fromMap(Map<String, dynamic> map) {
+    // Dekodowanie cech morfologicznych
     Map<String, List<String>> decodedChars = {};
     if (map['characteristicsJson'] != null) {
       try {
@@ -115,7 +120,15 @@ class PlantObservation {
         rawMap.forEach((key, value) {
           decodedChars[key] = List<String>.from(value);
         });
-      } catch (e) { print("Błąd dekodowania: $e"); }
+      } catch (e) { print("Błąd dekodowania cech: $e"); }
+    }
+
+    // NOWE: Dekodowanie listy preferowanych podłoży
+    List<String> decodedSubstrates = [];
+    if (map['prefSubstrateJson'] != null) {
+      try {
+        decodedSubstrates = List<String>.from(jsonDecode(map['prefSubstrateJson']));
+      } catch (e) { print("Błąd dekodowania podłoży: $e"); }
     }
 
     return PlantObservation(
@@ -143,11 +156,12 @@ class PlantObservation {
       characteristicFeature: map['characteristicFeature'],
       plantUsage: map['plantUsage'],
       cultivation: map['cultivation'],
+
+      // ML FIELDS
+      isSought: map['isSought'] == 1, // Konwersja SQLite int -> bool
       prefPhMin: map['prefPhMin']?.toDouble(),
       prefPhMax: map['prefPhMax']?.toDouble(),
-      prefSubstrate: map['prefSubstrateJson'] != null
-          ? List<String>.from(jsonDecode(map['prefSubstrateJson']))
-          : [],
+      prefSubstrate: decodedSubstrates,
       prefMoisture: map['prefMoisture']?.toDouble(),
       prefSunlight: map['prefSunlight']?.toDouble(),
     );
