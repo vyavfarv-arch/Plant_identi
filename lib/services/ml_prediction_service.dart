@@ -1,42 +1,58 @@
 // lib/services/ml_prediction_service.dart
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import '../models/plant_observation.dart';
 import '../models/releve.dart';
 
 class MlPredictionService {
-  Map<String, dynamic>? _model;
+  Map<String, dynamic>? _modelData;
 
-  // Wczytanie modelu z pliku wygenerowanego w Pythonie
+  /// Wczytuje forest_model.json z assetów
   Future<void> loadModel() async {
-    final String response = await rootBundle.loadString('assets/forest_model.json');
-    _model = json.decode(response);
+    try {
+      final String response = await rootBundle.loadString('assets/forest_model.json');
+      _modelData = json.decode(response);
+    } catch (e) {
+      print("Błąd ładowania modelu: $e");
+    }
   }
 
-  // GŁÓWNA LOGIKA: Ocena obszaru
-  // Zwraca mapę: { "Nazwa Rośliny": Prawdopodobieństwo 0.0 - 1.0 }
-  Map<String, double> predictPlantsForArea(Releve area) {
-    if (_model == null || area.habitat == null) return {};
+  /// Prosty algorytm dopasowania (symulujący Random Forest)
+  List<String> getMatchingAreas(PlantObservation plant, List<Releve> allReleves) {
+    List<String> matchingIds = [];
 
-    final habitat = area.habitat!;
-    final List<String> classes = List<String>.from(_model!['classes']);
+    for (var area in allReleves) {
+      if (area.habitat == null) continue;
+      final habitat = area.habitat!;
 
-    Map<String, double> scores = {};
-    for (var plant in classes) {
-      scores[plant] = 0.0;
+      double score = 0.0;
+
+      // 1. Dopasowanie pH
+      if (plant.prefPhMin != null && plant.prefPhMax != null && habitat.ph != null) {
+        if (habitat.ph! >= plant.prefPhMin! && habitat.ph! <= plant.prefPhMax!) {
+          score += 0.4;
+        }
+      }
+
+      // 2. Dopasowanie podłoża
+      if (plant.prefSubstrate.isNotEmpty) {
+        final matches = habitat.substrateType.any((s) => plant.prefSubstrate.contains(s));
+        if (matches) score += 0.3;
+      }
+
+      // 3. Dopasowanie wilgotności
+      if (plant.prefMoisture != null) {
+        if ((habitat.moisture - plant.prefMoisture!).abs() <= 1) {
+          score += 0.3;
+        }
+      }
+
+      // Jeśli suma wag przekracza próg (np. 60%)
+      if (score >= 0.6) {
+        matchingIds.add(area.id);
+      }
     }
 
-    // PROSTY ALGORYTM DOPASOWANIA (Na czas rozbudowy Random Forest w Pythonie)
-    // Docelowo tutaj będziemy iterować po drzewach decyzyjnych z JSON-a
-    for (var plantName in classes) {
-      double match = 0.0;
-
-      // Przykład logiki: dopasowanie pH i wilgotności
-      // W wersji docelowej Python wygeneruje tu konkretne progi (if moisture > 2.5...)
-      match += 0.5; // bazowe prawdopodobieństwo
-
-      scores[plantName] = match.clamp(0.0, 1.0);
-    }
-
-    return scores;
+    return matchingIds;
   }
 }

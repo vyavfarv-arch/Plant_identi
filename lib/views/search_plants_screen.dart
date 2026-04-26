@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../viewmodels/observation_view_model.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../services/spatial_service.dart';
+import '../services/ml_prediction_service.dart'; // DODANO: Import serwisu
+import '../models/releve.dart';                  // DODANO: Import modelu
 import 'add_sought_plant_screen.dart';
 import '../models/plant_observation.dart';
 
@@ -16,14 +18,22 @@ class SearchPlantsScreen extends StatefulWidget {
 class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
   String? _selectedPlantId;
   String _searchQuery = "";
-  String _filterType = "Wszystkie"; // Opcje: Wszystkie, Magazyn, Poszukiwane
+  String _filterType = "Wszystkie";
+
+  final Map<String, List<String>> _analysisResults = {};
+  final MlPredictionService _mlService = MlPredictionService();
+
+  @override
+  void initState() {
+    super.initState();
+    _mlService.loadModel();
+  }
 
   @override
   Widget build(BuildContext context) {
     final obsVm = context.watch<ObservationViewModel>();
     final releveVm = context.read<ReleveViewModel>();
 
-    // FILTRACJA LISTY
     final List<PlantObservation> filteredPlants = obsVm.allObservations.where((p) {
       final name = p.displayName.toLowerCase();
       final matchesSearch = name.contains(_searchQuery.toLowerCase());
@@ -49,7 +59,6 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
       ),
       body: Column(
         children: [
-          // PASEK WYSZUKIWANIA I FILTRY
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
@@ -81,19 +90,18 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
               ],
             ),
           ),
-          // LISTA
           Expanded(
-            child: filteredPlants.isEmpty
-                ? const Center(child: Text("Nie znaleziono roślin."))
-                : ListView.builder(
+            child: ListView.builder(
               itemCount: filteredPlants.length,
               itemBuilder: (context, index) {
                 final plant = filteredPlants[index];
+                final bool isAnalyzed = _analysisResults.containsKey(plant.id);
+
                 return RadioListTile<String>(
                   title: Text(plant.displayName, style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text(plant.isSought ? "TAG: POSZUKIWANA" : "W MAGAZYNIE"),
                   secondary: IconButton(
-                    icon: const Icon(Icons.info_outline),
+                    icon: Icon(Icons.info_outline, color: isAnalyzed ? Colors.green : Colors.grey),
                     onPressed: () => _showPlantEcoDetails(context, plant, obsVm, releveVm),
                   ),
                   value: plant.id,
@@ -104,13 +112,13 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
             ),
           ),
           if (_selectedPlantId != null)
-            _buildActionFooter(filteredPlants.firstWhere((p) => p.id == _selectedPlantId)),
+            _buildActionFooter(obsVm.allObservations.firstWhere((p) => p.id == _selectedPlantId), releveVm.allReleves),
         ],
       ),
     );
   }
 
-  Widget _buildActionFooter(PlantObservation plant) {
+  Widget _buildActionFooter(PlantObservation plant, List<Releve> allReleves) {
     return Container(
       padding: const EdgeInsets.all(16),
       color: Colors.teal.shade50,
@@ -118,7 +126,15 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
         width: double.infinity,
         child: ElevatedButton.icon(
           style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
-          onPressed: () => print("Analiza ML dla ${plant.displayName}"),
+          onPressed: () {
+            final results = _mlService.getMatchingAreas(plant, allReleves);
+            setState(() {
+              _analysisResults[plant.id] = results;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Znaleziono ${results.length} pasujących obszarów!")),
+            );
+          },
           icon: const Icon(Icons.psychology),
           label: const Text("WYSZUKAJ OBSZARY"),
         ),
@@ -127,6 +143,9 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
   }
 
   void _showPlantEcoDetails(BuildContext context, PlantObservation plant, ObservationViewModel obsVm, ReleveViewModel releveVm) {
+    // DODANO: Pobranie wyników analizy dla tego konkretnego ID
+    final results = _analysisResults[plant.id];
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -141,31 +160,48 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
                 Navigator.pop(ctx);
                 setState(() => _selectedPlantId = null);
               },
-            )
+            ),
           ],
         ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("Charakterystyka siedliska:", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
-              const Divider(),
-              Text("pH: ${plant.prefPhMin?.toStringAsFixed(1) ?? '?' } - ${plant.prefPhMax?.toStringAsFixed(1) ?? '?' }"),
-              Text("Podłoże: ${plant.prefSubstrate.isNotEmpty ? plant.prefSubstrate.join(", ") : "brak" }"),
-              Text("Wilgotność: ${_translateSingleMoisture(plant.prefMoisture)}"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Ekologia i siedlisko:", style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text("pH: ${plant.prefPhMin?.toStringAsFixed(1) ?? '?'} - ${plant.prefPhMax?.toStringAsFixed(1) ?? '?'}"),
+            Text("Podłoże: ${plant.prefSubstrate.isNotEmpty ? plant.prefSubstrate.join(', ') : 'Brak'}"),
+
+            // Sekcja wyników ML
+            if (results != null) ...[
+              const Divider(height: 30),
+              Text("Wynik analizy: ${results.length} obszarów",
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
               const SizedBox(height: 10),
-              if (plant.isSought) const Text("Status: POSZUKIWANA", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
-            ],
-          ),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _showResultsOnMap(results, releveVm.allReleves);
+                  },
+                  icon: const Icon(Icons.map),
+                  label: const Text("POKAŻ NA MAPIE"),
+                ),
+              ),
+            ]
+          ],
         ),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("ZAMKNIJ"))],
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("ZAMKNIJ")),
+        ],
       ),
     );
   }
 
-  String _translateSingleMoisture(double? v) {
-    if (v == null) return "brak danych";
-    return ["Sucho", "Świeżo", "Wilgotno", "Mokro"][v.round()];
+  void _showResultsOnMap(List<String> matchingIds, List<Releve> allReleves) {
+    final results = allReleves.where((r) => matchingIds.contains(r.id)).toList();
+    // Tu wywołaj swoją mapę z wynikami
+    debugPrint("Przechodzę do mapy z ${results.length} wynikami");
   }
 }
