@@ -31,7 +31,7 @@ class PlantObservation {
   // NOWE: Preferencje środowiskowe (dla modelu Random Forest)
   double? prefPhMin;
   double? prefPhMax;
-  String? prefSubstrate;
+  List<String> prefSubstrate;
   double? prefMoisture;
   double? prefSunlight;
 
@@ -62,7 +62,7 @@ class PlantObservation {
     this.cultivation,
     this.prefPhMin,
     this.prefPhMax,
-    this.prefSubstrate,
+    this.prefSubstrate = const [],
     this.prefMoisture,
     this.prefSunlight,
   });
@@ -101,7 +101,7 @@ class PlantObservation {
       'cultivation': cultivation,
       'prefPhMin': prefPhMin,
       'prefPhMax': prefPhMax,
-      'prefSubstrate': prefSubstrate,
+      'prefSubstrateJson': jsonEncode(prefSubstrate),
       'prefMoisture': prefMoisture,
       'prefSunlight': prefSunlight,
     };
@@ -145,7 +145,9 @@ class PlantObservation {
       cultivation: map['cultivation'],
       prefPhMin: map['prefPhMin']?.toDouble(),
       prefPhMax: map['prefPhMax']?.toDouble(),
-      prefSubstrate: map['prefSubstrate'],
+      prefSubstrate: map['prefSubstrateJson'] != null
+          ? List<String>.from(jsonDecode(map['prefSubstrateJson']))
+          : [],
       prefMoisture: map['prefMoisture']?.toDouble(),
       prefSunlight: map['prefSunlight']?.toDouble(),
     );

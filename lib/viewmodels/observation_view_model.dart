@@ -109,9 +109,9 @@ class ObservationViewModel extends ChangeNotifier {
     String? cultivation,
     double? prefPhMin,
     double? prefPhMax,
-    String? prefSubstrate,
     double? prefMoisture,
     double? prefSunlight,
+    List<String>? prefSubstrate,
   }) async {
     final index = _observations.indexWhere((o) => o.id == id);
     if (index != -1) {
@@ -143,7 +143,7 @@ class ObservationViewModel extends ChangeNotifier {
         cultivation: cultivation,
         prefPhMin: prefPhMin,
         prefPhMax: prefPhMax,
-        prefSubstrate: prefSubstrate,
+        prefSubstrate: prefSubstrate ?? old.prefSubstrate,
         prefMoisture: prefMoisture,
         prefSunlight: prefSunlight,
       );

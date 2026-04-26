@@ -20,9 +20,14 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
   // Dane preferencji środowiskowych
   double _prefPhMin = 5.5;
   double _prefPhMax = 7.5;
-  String? _prefSubstrate;
+  final List<String> _prefSubstrateList = [];
   double _prefMoisture = 1.0;
   double _prefSunlight = 2.0;
+
+  final List<String> _substrateOptions = [
+    "Gliniasta", "Piaskowa", "Żwirowa", "Torfowa",
+    "Kamienista", "Próchnicza", "Wapienna", "Krzemianowa"
+  ];
 
   @override
   void initState() {
@@ -46,7 +51,8 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
     _selectedCertainty = obs.certainty;
     _prefPhMin = obs.prefPhMin ?? 5.5;
     _prefPhMax = obs.prefPhMax ?? 7.5;
-    _prefSubstrate = obs.prefSubstrate;
+    _prefSubstrateList.clear();
+    _prefSubstrateList.addAll(obs.prefSubstrate);
     _prefMoisture = obs.prefMoisture ?? 1.0;
     _prefSunlight = obs.prefSunlight ?? 2.0;
   }
@@ -91,28 +97,43 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
     );
   }
 
+// Wewnątrz _buildEnvironmentalSection() zamień stary Dropdown na to:
   Widget _buildEnvironmentalSection() {
     return ExpansionTile(
-      title: const Text("Preferencje środowiskowe", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
+      title: const Text("Preferencje środowiskowe ", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
       children: [
         Padding(
           padding: const EdgeInsets.all(10),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Przedział pH gleby: ${_prefPhMin.toStringAsFixed(1)} - ${_prefPhMax.toStringAsFixed(1)}"),
-              RangeSlider(
-                values: RangeValues(_prefPhMin, _prefPhMax),
-                min: 3.0, max: 9.0,
-                divisions: 60,
-                labels: RangeLabels(_prefPhMin.toStringAsFixed(1), _prefPhMax.toStringAsFixed(1)),
-                onChanged: (v) => setState(() { _prefPhMin = v.start; _prefPhMax = v.end; }),
+              // ... pH RangeSlider ...
+              const SizedBox(height: 15),
+              const Text("Preferowane typy gleby:", style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: _substrateOptions.map((substrate) {
+                  final isSelected = _prefSubstrateList.contains(substrate);
+                  return FilterChip(
+                    label: Text(substrate, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : Colors.black)),
+                    selected: isSelected,
+                    selectedColor: Colors.teal,
+                    checkmarkColor: Colors.white,
+                    onSelected: (bool selected) {
+                      setState(() {
+                        if (selected) {
+                          _prefSubstrateList.add(substrate);
+                        } else {
+                          _prefSubstrateList.remove(substrate);
+                        }
+                      });
+                    },
+                  );
+                }).toList(),
               ),
-              DropdownButtonFormField<String>(
-                value: _prefSubstrate,
-                decoration: const InputDecoration(labelText: "Preferowane podłoże"),
-                items: ["Piasek", "Glina", "Torf", "Kamienie"].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                onChanged: (v) => setState(() => _prefSubstrate = v),
-              ),
+              const Divider(height: 30),
               _buildSlider("Wilgotność:", _prefMoisture, 3, ["Sucho", "Świeżo", "Wilgotno", "Mokro"], (v) => setState(() => _prefMoisture = v)),
               _buildSlider("Nasłonecznienie:", _prefSunlight, 4, ["Pełne słońce", "Przewaga słońca", "Półcień", "Przewaga cienia", "Cień"], (v) => setState(() => _prefSunlight = v)),
             ],
@@ -229,7 +250,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       cultivation: _controllers['cultivation']!.text,
       prefPhMin: _prefPhMin,
       prefPhMax: _prefPhMax,
-      prefSubstrate: _prefSubstrate,
+      prefSubstrate: _prefSubstrateList,
       prefMoisture: _prefMoisture,
       prefSunlight: _prefSunlight,
     );

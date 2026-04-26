@@ -20,7 +20,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'planticator.db');
     return await openDatabase(
       path,
-      version: 5, // ZMIANA: Wersja 4 dla modułu zielarskiego
+      version: 6, // ZMIANA: Wersja 4 dla modułu zielarskiego
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
@@ -96,15 +96,13 @@ class DatabaseHelper {
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 5) {
-      final List<String> newCols = [
-        'prefPhMin', 'prefPhMax', 'prefSubstrate', 'prefMoisture', 'prefSunlight'
-      ];
-      for (var col in newCols) {
-        try { await db.execute('ALTER TABLE observations ADD COLUMN $col REAL'); } catch(e){}
-      }
-
+    if (oldVersion < 6) {
+      try {
+        // Dodajemy nową kolumnę dla JSON, stara prefSubstrate może zostać zignorowana
+        await db.execute('ALTER TABLE observations ADD COLUMN prefSubstrateJson TEXT');
+      } catch (e) {}
     }
+    // ... poprzednie migracje ...
   }
 
   // --- METODY CRUD  ---
