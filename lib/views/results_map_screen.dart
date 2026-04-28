@@ -15,8 +15,10 @@ class ResultsMapScreen extends StatelessWidget {
       appBar: AppBar(title: Text("Wyniki dla: $plantName")),
       body: GoogleMap(
         initialCameraPosition: CameraPosition(
-          target: matchingAreas.isNotEmpty ? matchingAreas.first.points.first : const LatLng(52, 20),
-          zoom: 12,
+          target: (matchingAreas.isNotEmpty && matchingAreas.first.points.isNotEmpty)
+              ? matchingAreas.first.points.first
+              : const LatLng(52, 20),
+          zoom: 10,
         ),
         mapType: MapType.satellite,
         polygons: matchingAreas.map((area) => Polygon(

@@ -23,7 +23,16 @@ class AreaManagementScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAreaTile(BuildContext context, Releve area, ReleveViewModel vm, [int depth = 0]) {
+  Widget _buildAreaTile(BuildContext context, Releve area, ReleveViewModel vm, [int depth = 0, Set<String>? visitedIds]) {
+    final currentVisited = visitedIds ?? <String>{};
+
+    // Zabezpieczenie 1: Maksymalna głębokość rekurencji
+    if (depth > 10) return const SizedBox.shrink();
+
+    // Zabezpieczenie 2: Wykrywanie cykli (czy już tu byliśmy?)
+    if (currentVisited.contains(area.id)) return const SizedBox.shrink();
+    currentVisited.add(area.id);
+
     final children = vm.getChildren(area.id);
 
     return Column(
@@ -31,7 +40,6 @@ class AreaManagementScreen extends StatelessWidget {
         ListTile(
           contentPadding: EdgeInsets.only(left: 16.0 * (depth + 1)),
           leading: Icon(_getIcon(area.type), color: _getColor(area.type)),
-          // ZMIANA: area.name -> area.commonName
           title: Text(area.commonName),
           subtitle: Text("${area.type}: ${area.phytosociologicalName}"),
           trailing: IconButton(
@@ -40,7 +48,7 @@ class AreaManagementScreen extends StatelessWidget {
           ),
         ),
         if (children.isNotEmpty)
-          ...children.map((child) => _buildAreaTile(context, child, vm, depth + 1)).toList(),
+          ...children.map((child) => _buildAreaTile(context, child, vm, depth + 1, Set.from(currentVisited))).toList(),
       ],
     );
   }

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../viewmodels/observation_view_model.dart';
 import '../models/plant_observation.dart';
 import 'form_screen.dart';
+import 'package:uuid/uuid.dart';
 
 class ClassificationScreen extends StatefulWidget {
   const ClassificationScreen({super.key});
@@ -155,7 +156,7 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
     final obsVm = context.read<ObservationViewModel>();
 
     final newObs = PlantObservation(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: const Uuid().v4(),
       photoPaths: List.from(obsVm.currentPhotoPaths),
       latitude: obsVm.currentPosition?.latitude ?? 0.0,
       longitude: obsVm.currentPosition?.longitude ?? 0.0,

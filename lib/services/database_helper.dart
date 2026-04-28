@@ -20,7 +20,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'planticator.db');
     return await openDatabase(
       path,
-      version: 7,
+      version: 9,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
@@ -28,7 +28,6 @@ class DatabaseHelper {
   }
 
   Future _onCreate(Database db, int version) async {
-    // Tabela Obszarów
     await db.execute('''
       CREATE TABLE releves (
         id TEXT PRIMARY KEY,
@@ -43,7 +42,7 @@ class DatabaseHelper {
       )
     ''');
 
-    // Tabela Obserwacji - KOMPLETNA LISTA KOLUMN
+    // Pełen schemat bez żadnych komentarzowych skrótów
     await db.execute('''
       CREATE TABLE observations (
         id TEXT PRIMARY KEY,
@@ -73,9 +72,14 @@ class DatabaseHelper {
         timestamp TEXT,
         prefPhMin REAL,
         prefPhMax REAL,
-        prefSubstrate TEXT,
+        prefSubstrateJson TEXT,
         prefMoisture REAL,
         prefSunlight REAL,
+        isSought INTEGER DEFAULT 0,
+        isPotential INTEGER DEFAULT 0,
+        predictionProbability REAL,
+        analyzedAreaIdsJson TEXT,
+        lastAnalysisAreaCount INTEGER DEFAULT 0,
         FOREIGN KEY (releveId) REFERENCES releves (id) ON DELETE CASCADE
       )
     ''');
@@ -96,16 +100,24 @@ class DatabaseHelper {
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-      if (oldVersion < 8) {
-        try {
-          await db.execute('ALTER TABLE observations ADD COLUMN analyzedAreaIdsJson TEXT');
-          await db.execute('ALTER TABLE observations ADD COLUMN lastAnalysisAreaCount INTEGER DEFAULT 0');
-        } catch (e) { print("v8 error: $e"); }
+    if (oldVersion < 8) {
+      try {
+        await db.execute('ALTER TABLE observations ADD COLUMN analyzedAreaIdsJson TEXT');
+        await db.execute('ALTER TABLE observations ADD COLUMN lastAnalysisAreaCount INTEGER DEFAULT 0');
+        await db.execute('ALTER TABLE observations ADD COLUMN isSought INTEGER DEFAULT 0');
+      } catch (e) {
+        print("Błąd podczas aktualizacji v8: $e");
       }
     }
-
-
-  // --- METODY CRUD  ---
+    if (oldVersion < 9) {
+      try {
+        await db.execute('ALTER TABLE observations ADD COLUMN isPotential INTEGER DEFAULT 0');
+        await db.execute('ALTER TABLE observations ADD COLUMN predictionProbability REAL');
+      } catch (e) {
+        print("Błąd podczas aktualizacji v9: $e");
+      }
+    }
+  }
 
   Future<void> insertReleve(Releve releve) async {
     final db = await database;
@@ -126,7 +138,9 @@ class DatabaseHelper {
   Future<void> insertObservation(PlantObservation obs, {String? releveId}) async {
     final db = await database;
     final map = obs.toMap();
-    map['releveId'] = releveId;
+    if (releveId != null) {
+      map['releveId'] = releveId;
+    }
     await db.insert('observations', map, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 

@@ -121,6 +121,7 @@ class ObservationViewModel extends ChangeNotifier {
         id: old.id,
         photoPaths: old.photoPaths,
         latitude: old.latitude,
+        releveId: old.releveId,
         longitude: old.longitude,
         timestamp: old.timestamp,
         characteristics: old.characteristics,
@@ -160,6 +161,7 @@ class ObservationViewModel extends ChangeNotifier {
       final updated = PlantObservation(
         id: old.id,
         photoPaths: old.photoPaths,
+        releveId: old.releveId,
         latitude: old.latitude,
         longitude: old.longitude,
         timestamp: old.timestamp,

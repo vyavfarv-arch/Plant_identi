@@ -28,15 +28,30 @@ class PhytosociologyService {
   List<String> _getAllDiagnosticSpecies(Syntaxon s) {
     List<String> all = List.from(s.characteristicSpecies);
     String? currentParentId = s.parentId;
+    Set<String> visitedIds = {s.id};
 
     while (currentParentId != null) {
-      final parent = _syntaxaDatabase.firstWhere((element) => element.id == currentParentId);
+
+      if (visitedIds.contains(currentParentId)) {
+        print("UWAGA: Wykryto cykl w hierarchii syntaksonów dla ID: $currentParentId");
+        break; // Przerywamy pętlę
+      }
+      visitedIds.add(currentParentId);
+
+      final parentIndex = _syntaxaDatabase.indexWhere((element) => element.id == currentParentId);
+
+      if (parentIndex == -1) {
+        print("UWAGA: Brakujący rodzic w bazie syntaksonów o ID: $currentParentId");
+        break; // Przerywamy pętlę, ratując aplikację przed crashem
+      }
+
+      final parent = _syntaxaDatabase[parentIndex];
       all.addAll(parent.characteristicSpecies);
       currentParentId = parent.parentId;
     }
+
     return all.map((e) => e.toLowerCase()).toList();
   }
-
   Map<String, dynamic> calculateBestFit(List<PlantObservation> observations) {
     if (observations.isEmpty || !_isLoaded) return {'syntaxonId': null, 'warning': null};
 

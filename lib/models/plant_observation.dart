@@ -1,8 +1,8 @@
-// lib/models/plant_observation.dart
 import 'dart:convert';
 
 class PlantObservation {
   final String id;
+  final String? releveId;
   final List<String> photoPaths;
   final double latitude;
   final double longitude;
@@ -11,7 +11,8 @@ class PlantObservation {
   final bool isSought;
   final List<String> analyzedAreaIds;
   final int lastAnalysisAreaCount;
-
+  final bool isPotential;
+  final double? predictionProbability;
 
   String? biologicalType;
   String? areaPurity;
@@ -32,7 +33,6 @@ class PlantObservation {
   String? plantUsage;
   String? cultivation;
 
-  // NOWE: Preferencje środowiskowe (dla modelu Random Forest)
   double? prefPhMin;
   double? prefPhMax;
   List<String> prefSubstrate;
@@ -41,12 +41,15 @@ class PlantObservation {
 
   PlantObservation({
     required this.id,
+    this.releveId,
     required this.photoPaths,
     required this.latitude,
     required this.longitude,
     required this.timestamp,
     required this.characteristics,
     this.isSought = false,
+    this.isPotential = false,
+    this.predictionProbability,
     this.analyzedAreaIds = const [],
     this.lastAnalysisAreaCount = 0,
     this.biologicalType,
@@ -83,6 +86,7 @@ class PlantObservation {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'releveId': releveId,
       'photoPathsJson': jsonEncode(photoPaths),
       'latitude': latitude,
       'longitude': longitude,
@@ -90,6 +94,8 @@ class PlantObservation {
       'characteristicsJson': jsonEncode(characteristics),
       'biologicalType': biologicalType,
       'isSought': isSought ? 1 : 0,
+      'isPotential': isPotential ? 1 : 0,
+      'predictionProbability': predictionProbability,
       'areaPurity': areaPurity,
       'abundance': abundance,
       'coverage': coverage,
@@ -118,7 +124,6 @@ class PlantObservation {
   }
 
   factory PlantObservation.fromMap(Map<String, dynamic> map) {
-    // Dekodowanie cech morfologicznych
     Map<String, List<String>> decodedChars = {};
     if (map['characteristicsJson'] != null) {
       try {
@@ -129,7 +134,6 @@ class PlantObservation {
       } catch (e) { print("Błąd dekodowania cech: $e"); }
     }
 
-    // NOWE: Dekodowanie listy preferowanych podłoży
     List<String> decodedSubstrates = [];
     if (map['prefSubstrateJson'] != null) {
       try {
@@ -139,6 +143,7 @@ class PlantObservation {
 
     return PlantObservation(
       id: map['id'] ?? '',
+      releveId: map['releveId'],
       photoPaths: map['photoPathsJson'] != null ? List<String>.from(jsonDecode(map['photoPathsJson'])) : [],
       latitude: map['latitude']?.toDouble() ?? 0.0,
       longitude: map['longitude']?.toDouble() ?? 0.0,
@@ -154,6 +159,8 @@ class PlantObservation {
       subspecies: map['subspecies'],
       latinName: map['latinName'],
       polishName: map['polishName'],
+      isPotential: map['isPotential'] == 1,
+      predictionProbability: map['predictionProbability']?.toDouble(),
       analyzedAreaIds: map['analyzedAreaIdsJson'] != null
           ? List<String>.from(jsonDecode(map['analyzedAreaIdsJson']))
           : [],
@@ -166,9 +173,7 @@ class PlantObservation {
       characteristicFeature: map['characteristicFeature'],
       plantUsage: map['plantUsage'],
       cultivation: map['cultivation'],
-
-      // ML FIELDS
-      isSought: map['isSought'] == 1, // Konwersja SQLite int -> bool
+      isSought: map['isSought'] == 1,
       prefPhMin: map['prefPhMin']?.toDouble(),
       prefPhMax: map['prefPhMax']?.toDouble(),
       prefSubstrate: decodedSubstrates,
