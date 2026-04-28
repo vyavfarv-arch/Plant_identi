@@ -10,8 +10,6 @@ class ReleveViewModel extends ChangeNotifier {
 
   List<Releve> get allReleves => _releves;
 
-  // --- OPERACJE BAZODANOWE (CRUD) ---
-
   Future<void> loadFromDisk() async {
     _releves = await _db.getReleves();
     notifyListeners();
@@ -40,6 +38,7 @@ class ReleveViewModel extends ChangeNotifier {
         date: old.date,
         parentId: old.parentId,
         habitat: old.habitat,
+        mlPredictions: old.mlPredictions, // Zachowujemy wyniki ML!
       );
       await _db.insertReleve(updated);
       await loadFromDisk();
@@ -64,7 +63,15 @@ class ReleveViewModel extends ChangeNotifier {
     }
   }
 
-  // --- LOGIKA HIERARCHII ---
+  // NOWE: Trwały zapis predykcji ML w płacie
+  Future<void> updateRelevePredictions(String releveId, Map<String, double> predictions) async {
+    final index = _releves.indexWhere((r) => r.id == releveId);
+    if (index != -1) {
+      _releves[index].mlPredictions = predictions;
+      await _db.insertReleve(_releves[index]);
+      notifyListeners();
+    }
+  }
 
   List<Releve> getChildren(String parentId) {
     return _releves.where((r) => r.parentId == parentId).toList();
@@ -77,7 +84,7 @@ class ReleveViewModel extends ChangeNotifier {
     if (childIdx == -1 || parentIdx == -1) return false;
     return parentIdx < childIdx;
   }
-  /// Zwraca obiekt obszaru nadrzędnego na podstawie jego ID
+
   Releve? getParentArea(String? parentId) {
     if (parentId == null) return null;
     try {
@@ -87,11 +94,8 @@ class ReleveViewModel extends ChangeNotifier {
     }
   }
 
-  /// Zwraca listę obszarów, które mogą zostać ustawione jako rodzic dla danego dziecka
   List<Releve> getPotentialParents(Releve child) {
     return _releves.where((r) {
-      // Potencjalny rodzic nie może być tym samym obszarem
-      // i musi znajdować się wyżej w hierarchii
       return r.id != child.id && isValidParent(child.type, r.type);
     }).toList();
   }

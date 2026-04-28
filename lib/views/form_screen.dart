@@ -1,3 +1,4 @@
+// lib/views/form_screen.dart
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
@@ -18,35 +19,22 @@ class _FormScreenState extends State<FormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final schema = SchemaGenerator.getForType(
-        widget.observation.biologicalType ?? "Zielne");
+    final schema = SchemaGenerator.getForType(widget.observation.tempBiologicalType ?? "Zielne");
 
     return Scaffold(
-      appBar: AppBar(title: Text('Opis: ${widget.observation.biologicalType}')),
+      appBar: AppBar(title: Text('Opis: ${widget.observation.tempBiologicalType ?? ""}')),
       body: Column(
         children: [
-          // Podgląd zrobionych zdjęć pobierany z ObservationViewModel
           Consumer<ObservationViewModel>(
             builder: (context, obsVm, child) {
               if (obsVm.currentPhotoPaths.isEmpty) return const SizedBox.shrink();
               return Container(
-                height: 120,
-                color: Colors.black.withOpacity(0.05),
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                height: 120, color: Colors.black.withOpacity(0.05), padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
                 child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: obsVm.currentPhotoPaths.length,
+                  scrollDirection: Axis.horizontal, itemCount: obsVm.currentPhotoPaths.length,
                   itemBuilder: (ctx, i) => Padding(
                     padding: const EdgeInsets.only(right: 10),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.file(
-                        File(obsVm.currentPhotoPaths[i]),
-                        width: 100,
-                        height: 100,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                    child: ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(File(obsVm.currentPhotoPaths[i]), width: 100, height: 100, fit: BoxFit.cover)),
                   ),
                 ),
               );
@@ -59,21 +47,17 @@ class _FormScreenState extends State<FormScreen> {
               itemBuilder: (context, index) {
                 final category = schema[index];
                 return ExpansionTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Colors.green,
-                    child: Text(category.number,
-                        style: const TextStyle(color: Colors.white)),
-                  ),
-                  title: Text(category.title,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  children: category.subCategories.entries.map((sub) {
-                    return _buildSubCategorySection(category, sub.key, sub.value);
-                  }).toList(),
+                  leading: CircleAvatar(backgroundColor: Colors.green, child: Text(category.number, style: const TextStyle(color: Colors.white))),
+                  title: Text(category.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  children: category.subCategories.entries.map((sub) => _buildSubCategorySection(category, sub.key, sub.value)).toList(),
                 );
               },
             ),
           ),
-          _buildSaveButton(),
+          Container(
+            padding: const EdgeInsets.all(16), width: double.infinity,
+            child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.green), onPressed: _zapiszFinalnie, child: const Text("ZAPISZ OBSERWACJĘ TERENOWĄ", style: TextStyle(color: Colors.white))),
+          ),
         ],
       ),
     );
@@ -88,29 +72,18 @@ class _FormScreenState extends State<FormScreen> {
           Text(subTitle, style: TextStyle(color: Colors.grey.shade700, fontSize: 14, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           Wrap(
-            spacing: 10,
-            runSpacing: 10,
+            spacing: 10, runSpacing: 10,
             children: options.map((opt) {
               final isSelected = _selectedValues[subTitle]?.contains(opt) ?? false;
               final hasImage = category.referenceImages?.containsKey(opt) ?? false;
               final imagePath = hasImage ? category.referenceImages![opt]! : "";
 
               return GestureDetector(
-                onLongPress: () {
-                  if (hasImage) {
-                    _showImagePreview(context, imagePath, opt);
-                  }
-                },
+                onLongPress: () { if (hasImage) _showImagePreview(context, imagePath, opt); },
                 onTap: () {
                   setState(() {
-                    if (_selectedValues[subTitle] == null) {
-                      _selectedValues[subTitle] = [];
-                    }
-                    if (isSelected) {
-                      _selectedValues[subTitle]!.remove(opt);
-                    } else {
-                      _selectedValues[subTitle]!.add(opt);
-                    }
+                    if (_selectedValues[subTitle] == null) _selectedValues[subTitle] = [];
+                    if (isSelected) _selectedValues[subTitle]!.remove(opt); else _selectedValues[subTitle]!.add(opt);
                   });
                 },
                 child: Column(
@@ -118,42 +91,14 @@ class _FormScreenState extends State<FormScreen> {
                   children: [
                     if (hasImage)
                       Container(
-                        width: 80, height: 60,
-                        margin: const EdgeInsets.only(bottom: 4),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                              color: isSelected ? Colors.green : Colors.transparent,
-                              width: 3
-                          ),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(2),
-                          child: Image.asset(
-                            imagePath,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              color: Colors.grey.shade300,
-                              child: const Icon(Icons.broken_image, color: Colors.grey, size: 30),
-                            ),
-                          ),
-                        ),
+                        width: 80, height: 60, margin: const EdgeInsets.only(bottom: 4),
+                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(4), border: Border.all(color: isSelected ? Colors.green : Colors.transparent, width: 3)),
+                        child: ClipRRect(borderRadius: BorderRadius.circular(2), child: Image.asset(imagePath, fit: BoxFit.cover, errorBuilder: (c, e, s) => Container(color: Colors.grey.shade300, child: const Icon(Icons.broken_image, color: Colors.grey, size: 30)))),
                       ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isSelected ? Colors.green : Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                            color: isSelected ? Colors.green : Colors.grey.shade400
-                        ),
-                      ),
-                      child: Text(opt,
-                          style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.black87,
-                              fontSize: 12
-                          )
-                      ),
+                      decoration: BoxDecoration(color: isSelected ? Colors.green : Colors.grey.shade200, borderRadius: BorderRadius.circular(8), border: Border.all(color: isSelected ? Colors.green : Colors.grey.shade400)),
+                      child: Text(opt, style: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontSize: 12)),
                     ),
                   ],
                 ),
@@ -169,52 +114,20 @@ class _FormScreenState extends State<FormScreen> {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)), clipBehavior: Clip.antiAlias,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppBar(
-              title: Text(title, style: const TextStyle(fontSize: 16)),
-              automaticallyImplyLeading: false,
-              actions: [
-                IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx))
-              ],
-            ),
-            Image.asset(
-              imagePath,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => const Padding(
-                padding: EdgeInsets.all(40.0),
-                child: Text("Brak pliku w folderze assets/ref/", textAlign: TextAlign.center),
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Text("Zdjęcie poglądowe", style: TextStyle(color: Colors.grey)),
-            )
+            AppBar(title: Text(title, style: const TextStyle(fontSize: 16)), automaticallyImplyLeading: false, actions: [IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx))]),
+            Image.asset(imagePath, fit: BoxFit.contain, errorBuilder: (c, e, s) => const Padding(padding: EdgeInsets.all(40.0), child: Text("Brak pliku w folderze assets/ref/", textAlign: TextAlign.center))),
+            const Padding(padding: EdgeInsets.all(8.0), child: Text("Zdjęcie poglądowe", style: TextStyle(color: Colors.grey)))
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSaveButton() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      width: double.infinity,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-        onPressed: _zapiszFinalnie,
-        child: const Text("ZAPISZ OBSERWACJĘ TERENOWĄ",
-            style: TextStyle(color: Colors.white)),
-      ),
-    );
-  }
-
-  void _zapiszFinalnie() async { // KLUCZOWE: Dodano async
-    final now = DateTime.now();
-
+  void _zapiszFinalnie() async {
     final finalObs = PlantObservation(
       id: widget.observation.id,
       photoPaths: widget.observation.photoPaths,
@@ -222,23 +135,20 @@ class _FormScreenState extends State<FormScreen> {
       longitude: widget.observation.longitude,
       timestamp: widget.observation.timestamp,
       characteristics: Map.from(_selectedValues),
-      biologicalType: widget.observation.biologicalType,
-      family: widget.observation.family,
+      tempBiologicalType: widget.observation.tempBiologicalType,
+      localName: widget.observation.localName,
       abundance: widget.observation.abundance,
       coverage: widget.observation.coverage,
       vitality: widget.observation.vitality,
       areaPurity: widget.observation.areaPurity,
-      observationDate: now,
+      // observationDate ustawiamy na null, żeby wpadło do "Niekompletne/Opisz"
     );
 
-    // Zapisujemy TYLKO RAZ z await
     await context.read<ObservationViewModel>().addObservation(finalObs);
 
     if (!mounted) return;
-
     showDialog(
-      context: context,
-      barrierDismissible: false,
+      context: context, barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         title: const Text("Zapisano!"),
         content: const Text("Roślina została dodana do listy oczekujących na opis."),

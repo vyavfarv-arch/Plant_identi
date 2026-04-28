@@ -2,19 +2,18 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:camera/camera.dart';
+import 'package:uuid/uuid.dart';
 import '../models/plant_observation.dart';
 import '../models/plant_species.dart';
 import '../services/camera_service.dart';
 import '../services/location_service.dart';
 import '../services/database_helper.dart';
-import 'package:uuid/uuid.dart';
 
 class ObservationViewModel extends ChangeNotifier {
   final CameraService _cameraService = CameraService();
   final LocationService _locationService = LocationService();
   final DatabaseHelper _db = DatabaseHelper();
 
-  // --- STANY APARATU ---
   List<String> _currentPhotoPaths = [];
   Position? _currentPosition;
   bool _isInitializing = false;
@@ -25,7 +24,6 @@ class ObservationViewModel extends ChangeNotifier {
   CameraController? get controller => _cameraService.controller;
   Position? get currentPosition => _currentPosition;
 
-  // --- DANE ---
   List<PlantObservation> _observations = [];
   List<PlantSpecies> _speciesDictionary = [];
 
@@ -35,10 +33,26 @@ class ObservationViewModel extends ChangeNotifier {
   List<PlantObservation> get incompleteObservations => _observations.where((obs) => !obs.isComplete).toList();
   List<PlantObservation> get completeObservations => _observations.where((obs) => obs.isComplete).toList();
 
+  PlantSpecies? getSpeciesById(String? speciesId) {
+    if (speciesId == null) return null;
+    try {
+      return _speciesDictionary.firstWhere((s) => s.speciesID == speciesId);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  List<String> get uniquePlantNames {
+    return _speciesDictionary.map((s) => s.polishName.isNotEmpty ? s.polishName : s.latinName).toSet().toList();
+  }
+
+  List<String> get uniqueFamilies {
+    return _speciesDictionary.map((s) => s.family).where((f) => f.isNotEmpty).toSet().toList();
+  }
+
   Future<void> loadFromDisk() async {
     _observations = await _db.getObservations();
-    // Zostanie aktywowane w Fazie 2:
-    // _speciesDictionary = await _db.getSpeciesDictionary();
+    _speciesDictionary = await _db.getSpecies();
     notifyListeners();
   }
 
@@ -83,7 +97,6 @@ class ObservationViewModel extends ChangeNotifier {
     await loadFromDisk();
   }
 
-  // GŁÓWNA METODA ZAPISU - ZAPISUJE GATUNEK I OKAZ W TYM SAMYM CZASIE
   Future<void> updateObservationDetailed({
     required String id,
     required String localName,
@@ -103,15 +116,20 @@ class ObservationViewModel extends ChangeNotifier {
     double? prefMoisture,
     double? prefSunlight,
     List<String>? prefSubstrate,
-    Map<String, List<int>>? harvestSeasons, // Kalendarz zielarski
+    Map<String, List<int>>? harvestSeasons,
   }) async {
 
-    // 1. Generujemy unikalny klucz dla Gatunku (Ghost_Plant)
-    final String newSpeciesId = const Uuid().v4();
+    // 1. Zabezpieczenie przed duplikatami - pobieramy starą obserwację
+    final index = _observations.indexWhere((o) => o.id == id);
+    if (index == -1) return; // Jeśli nie ma takiej rośliny, przerwij
+    final old = _observations[index];
 
-    // 2. Tworzymy obiekt słownikowy Gatunku
+    // 2. NAPRAWA DUPLIKATÓW: Używamy starego ID gatunku. Nowe generujemy tylko przy 1. zapisie!
+    final String targetSpeciesId = old.speciesId ?? const Uuid().v4();
+
+    // 3. Tworzymy obiekt słownikowy Gatunku (z nadpisaniem starego)
     final species = PlantSpecies(
-      speciesID: newSpeciesId, // NOWE: Przypisanie wygenerowanego ID
+      speciesID: targetSpeciesId,
       latinName: latinName,
       polishName: localName,
       family: family,
@@ -125,54 +143,41 @@ class ObservationViewModel extends ChangeNotifier {
       prefSunlight: prefSunlight,
       harvestSeasons: harvestSeasons ?? {},
     );
-    // TODO w FAZIE 2: Zapis do tabeli gatunków w DB
-    // await _db.insertSpecies(species);
+    await _db.insertSpecies(species); // Zapis (nadpisuje istniejący gatunek)
 
-    // 3. Aktualizujemy konkretny OKAZ i łączymy go z nowym gatunkiem
-    final index = _observations.indexWhere((o) => o.id == id);
-    if (index != -1) {
-      final old = _observations[index];
+    // 4. Aktualizujemy konkretny OKAZ
+    final updatedObs = PlantObservation(
+      id: old.id,
+      releveId: old.releveId,
+      speciesId: targetSpeciesId, // PRZYPIĘCIE!
+      localName: localName,
+      subspecies: subspecies,
+      tempBiologicalType: old.tempBiologicalType,
+      photoPaths: old.photoPaths,
+      latitude: old.latitude,
+      longitude: old.longitude,
+      timestamp: old.timestamp,
+      characteristics: old.characteristics,
+      observationDate: old.observationDate ?? DateTime.now(),
+      areaPurity: old.areaPurity,
+      abundance: old.abundance,
+      coverage: old.coverage,
+      vitality: old.vitality,
+      certainty: certainty,
+      idDoubts: doubts,
+      keyMorphologicalTraits: keyTraits,
+      confusingSpecies: confusing,
+      characteristicFeature: characteristic,
+    );
 
-      final updatedObs = PlantObservation(
-        id: old.id,
-        releveId: old.releveId,
-        speciesId: newSpeciesId, // NOWE: Przypięcie klucza obcego do okazu!
-        localName: localName,
-        subspecies: subspecies,
-        tempBiologicalType: old.tempBiologicalType,
-        photoPaths: old.photoPaths,
-        latitude: old.latitude,
-        longitude: old.longitude,
-        timestamp: old.timestamp,
-        characteristics: old.characteristics,
-        observationDate: old.observationDate ?? DateTime.now(),
-        areaPurity: old.areaPurity,
-        abundance: old.abundance,
-        coverage: old.coverage,
-        vitality: old.vitality,
-        certainty: certainty,
-        idDoubts: doubts,
-        keyMorphologicalTraits: keyTraits,
-        confusingSpecies: confusing,
-        characteristicFeature: characteristic,
-      );
-
-      _observations[index] = updatedObs;
-      // Wkrótce (Faza 2) będzie to zapisywać się we właściwych tabelach :)
-      await _db.insertObservation(updatedObs);
-      notifyListeners();
-    }
+    _observations[index] = updatedObs;
+    await _db.insertObservation(updatedObs);
+    await loadFromDisk();
   }
 
   void reset() {
     _currentPhotoPaths = [];
     _currentPosition = null;
     notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _cameraService.dispose();
-    super.dispose();
   }
 }

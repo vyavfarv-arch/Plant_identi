@@ -1,8 +1,10 @@
+// lib/views/add_sought_plant_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
-import '../models/plant_observation.dart';
-import '../viewmodels/observation_view_model.dart';
+import '../models/sought_plant.dart';
+import '../services/database_helper.dart';
+import '../viewmodels/search_filter_view_model.dart';
 
 class AddSoughtPlantScreen extends StatefulWidget {
   const AddSoughtPlantScreen({super.key});
@@ -37,15 +39,9 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
           children: [
             const Text("Dane podstawowe", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 10),
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: "Nazwa polska", border: OutlineInputBorder()),
-            ),
+            TextField(controller: _nameController, decoration: const InputDecoration(labelText: "Nazwa polska", border: OutlineInputBorder())),
             const SizedBox(height: 10),
-            TextField(
-              controller: _latinController,
-              decoration: const InputDecoration(labelText: "Nazwa łacińska", border: OutlineInputBorder()),
-            ),
+            TextField(controller: _latinController, decoration: const InputDecoration(labelText: "Nazwa łacińska", border: OutlineInputBorder())),
             const SizedBox(height: 20),
             const Divider(),
             const Text("Ekologia (pod ML)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
@@ -53,8 +49,7 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
             Text("Przedział pH gleby: ${_prefPhMin.toStringAsFixed(1)} - ${_prefPhMax.toStringAsFixed(1)}"),
             RangeSlider(
               values: RangeValues(_prefPhMin, _prefPhMax),
-              min: 3.0, max: 9.0,
-              divisions: 60,
+              min: 3.0, max: 9.0, divisions: 60,
               labels: RangeLabels(_prefPhMin.toStringAsFixed(1), _prefPhMax.toStringAsFixed(1)),
               onChanged: (v) => setState(() { _prefPhMin = v.start; _prefPhMax = v.end; }),
             ),
@@ -62,24 +57,13 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
             const Text("Preferowane typy gleby:", style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Wrap(
-              spacing: 8,
-              runSpacing: 4,
+              spacing: 8, runSpacing: 4,
               children: _substrateOptions.map((substrate) {
                 final isSelected = _prefSubstrateList.contains(substrate);
                 return FilterChip(
                   label: Text(substrate, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : Colors.black)),
-                  selected: isSelected,
-                  selectedColor: Colors.teal,
-                  checkmarkColor: Colors.white,
-                  onSelected: (bool selected) {
-                    setState(() {
-                      if (selected) {
-                        _prefSubstrateList.add(substrate);
-                      } else {
-                        _prefSubstrateList.remove(substrate);
-                      }
-                    });
-                  },
+                  selected: isSelected, selectedColor: Colors.teal, checkmarkColor: Colors.white,
+                  onSelected: (bool selected) => setState(() { selected ? _prefSubstrateList.add(substrate) : _prefSubstrateList.remove(substrate); }),
                 );
               }).toList(),
             ),
@@ -87,8 +71,7 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
             _buildSlider("Nasłonecznienie:", _prefSunlight, 4, ["Pełne słońce", "Przewaga słońca", "Półcień", "Przewaga cienia", "Cień"], (v) => setState(() => _prefSunlight = v)),
             const SizedBox(height: 30),
             SizedBox(
-              width: double.infinity,
-              height: 50,
+              width: double.infinity, height: 50,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
                 onPressed: _saveSoughtPlant,
@@ -113,28 +96,27 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
     );
   }
 
-  void _saveSoughtPlant() {
+  void _saveSoughtPlant() async {
     if (_nameController.text.isEmpty) return;
 
-    final soughtObs = PlantObservation(
+    final soughtPlant = SoughtPlant(
       id: const Uuid().v4(),
-      photoPaths: [],
-      latitude: 0,
-      longitude: 0,
-      timestamp: DateTime.now(),
-      characteristics: {},
-      localName: _nameController.text,
+      polishName: _nameController.text,
       latinName: _latinController.text,
-      isSought: true,
       prefPhMin: _prefPhMin,
       prefPhMax: _prefPhMax,
       prefSubstrate: _prefSubstrateList,
       prefMoisture: _prefMoisture,
       prefSunlight: _prefSunlight,
-      observationDate: DateTime.now(),
     );
 
-    context.read<ObservationViewModel>().addObservation(soughtObs);
-    Navigator.pop(context);
+    // Wykorzystujemy nową tabelę z DatabaseHelper
+    await DatabaseHelper().insertSoughtPlant(soughtPlant);
+
+    if (mounted) {
+      // Odświeżamy ViewModel, żeby pojawiła się na liście wyszukiwania!
+      context.read<SearchFilterViewModel>().loadSoughtPlants();
+      Navigator.pop(context);
+    }
   }
 }

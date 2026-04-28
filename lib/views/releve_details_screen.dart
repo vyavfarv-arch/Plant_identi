@@ -1,13 +1,12 @@
 // lib/views/releve_details_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:uuid/uuid.dart';
 import '../models/releve.dart';
-import '../models/plant_observation.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../viewmodels/observation_view_model.dart';
-import '../services/spatial_service.dart';
+import '../viewmodels/search_filter_view_model.dart';
 import '../services/ml_prediction_service.dart';
+import '../services/spatial_service.dart';
 import 'plant_card_view.dart';
 import 'habitat_form_screen.dart';
 
@@ -26,16 +25,29 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
   Widget build(BuildContext context) {
     final releveVm = context.watch<ReleveViewModel>();
     final obsVm = context.watch<ObservationViewModel>();
+    final filterVm = context.watch<SearchFilterViewModel>();
 
     final currentReleve = releveVm.allReleves.firstWhere(
             (r) => r.id == widget.releve.id,
         orElse: () => widget.releve
     );
 
-    // Podział na rośliny zaobserwowane (rzeczywiste) i przewidziane (potencjalne)
-    final allPlantsInArea = obsVm.allObservations.where((o) => o.releveId == currentReleve.id).toList();
-    final actualPlants = allPlantsInArea.where((o) => !o.isPotential).toList();
-    final potentialPlants = allPlantsInArea.where((o) => o.isPotential).toList();
+    final actualPlants = SpatialService.getPlantsInArea(obsVm.completeObservations, currentReleve);
+
+    final knownNames = <String>{};
+    for (var s in obsVm.speciesDictionary) {
+      if (s.latinName.isNotEmpty) knownNames.add(s.latinName.toLowerCase());
+      if (s.polishName.isNotEmpty) knownNames.add(s.polishName.toLowerCase());
+    }
+    for (var s in filterVm.soughtPlants) {
+      if (s.latinName.isNotEmpty) knownNames.add(s.latinName.toLowerCase());
+      if (s.polishName.isNotEmpty) knownNames.add(s.polishName.toLowerCase());
+    }
+
+    final potentialPlants = currentReleve.mlPredictions.entries.where((e) {
+      if (e.value < 0.6) return false;
+      return knownNames.contains(e.key.toLowerCase()); // Akceptuj tylko, jeśli znamy ten gatunek!
+    }).toList();
 
     final parentArea = releveVm.getParentArea(currentReleve.parentId);
     final childrenAreas = releveVm.getChildren(currentReleve.id);
@@ -45,42 +57,52 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
         title: Text("${currentReleve.type}: ${currentReleve.commonName}"),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (val) {
+              if (val == 'delete') _confirmDelete(context, releveVm, currentReleve);
+            },
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(value: 'delete', child: Text('Usuń obszar', style: TextStyle(color: Colors.red))),
+            ],
+          ),
+        ],
       ),
       body: ListView(
         children: [
-          _buildHierarchySection(context, releveVm, parentArea, childrenAreas, currentReleve),
+          _buildHierarchySection(context, releveVm, parentArea, childrenAreas, currentReleve, obsVm, filterVm),
           const Divider(),
 
-          // SEKCJA 1: GATUNKI W PŁACIE (RZECZYWISTE)
           _buildSectionHeader("Gatunki w płacie (${actualPlants.length}):", Colors.grey[100]!),
-          ...actualPlants.map((plant) => _buildPlantTile(plant)),
-
           if (actualPlants.isEmpty)
-            const Padding(padding: EdgeInsets.all(20), child: Center(child: Text("Brak zaobserwowanych roślin."))),
+            const Padding(padding: EdgeInsets.all(20), child: Center(child: Text("Brak zaobserwowanych roślin.")))
+          else
+            ...actualPlants.map((plant) => ListTile(
+              leading: const Icon(Icons.eco, color: Colors.green),
+              title: Text(plant.displayName),
+              subtitle: Text(obsVm.getSpeciesById(plant.speciesId)?.latinName ?? "Brak nazwy łacińskiej"),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => PlantCardView.show(context, plant),
+            )).toList(),
 
-          // SEKCJA 2: GATUNKI POTENCJALNE (ML)
           if (potentialPlants.isNotEmpty) ...[
             _buildSectionHeader("Przewidywane gatunki (Potencjalne):", Colors.purple.shade50),
-            ...potentialPlants.map((plant) => _buildPlantTile(plant, isPotential: true)),
+            ...potentialPlants.map((entry) => ListTile(
+              leading: const Icon(Icons.auto_awesome, color: Colors.purple),
+              title: Text(entry.key),
+              subtitle: Text("Prawdopodobieństwo: ${(entry.value * 100).toStringAsFixed(0)}%"),
+            )).toList(),
           ],
 
           const SizedBox(height: 30),
 
-          // PRZYCISK NA SAMYM DOLE
           if (currentReleve.habitat != null)
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.purple,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
-                ),
-                onPressed: _isAnalyzing ? null : () => _runMLAnalysis(currentReleve, obsVm),
-                icon: _isAnalyzing
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Icon(Icons.auto_awesome),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.purple, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                onPressed: _isAnalyzing ? null : () => _runMLAnalysis(currentReleve, releveVm, obsVm, filterVm),
+                icon: _isAnalyzing ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.psychology),
                 label: Text(_isAnalyzing ? "ANALIZOWANIE..." : "OKREŚL ROŚLINY POTENCJALNE"),
               ),
             ),
@@ -91,26 +113,10 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
   }
 
   Widget _buildSectionHeader(String title, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: color,
-      child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-    );
+    return Container(padding: const EdgeInsets.all(16), color: color, child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)));
   }
 
-  Widget _buildPlantTile(PlantObservation plant, {bool isPotential = false}) {
-    return ListTile(
-      leading: Icon(Icons.eco, color: isPotential ? Colors.purple : Colors.green),
-      title: Text(plant.displayName),
-      subtitle: Text(isPotential
-          ? "Prawdopodobieństwo: ${(plant.predictionProbability! * 100).toStringAsFixed(0)}%"
-          : (plant.latinName ?? "Brak nazwy łacińskiej")),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => PlantCardView.show(context, plant),
-    );
-  }
-
-  void _runMLAnalysis(Releve area, ObservationViewModel obsVm) async {
+  void _runMLAnalysis(Releve area, ReleveViewModel releveVm, ObservationViewModel obsVm, SearchFilterViewModel filterVm) async {
     setState(() => _isAnalyzing = true);
 
     try {
@@ -118,89 +124,53 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
       await mlService.loadModel();
       final predictions = mlService.getPlantsForArea(area);
 
-      int addedCount = 0;
+      await releveVm.updateRelevePredictions(area.id, predictions);
 
-      for (var entry in predictions.entries) {
-        double prob = entry.value;
-
-        // Zapisujemy tylko te powyżej 60%
-        if (prob >= 0.6) {
-          // Sprawdź czy już nie ma takiej rośliny potencjalnej w tym płacie
-          bool exists = obsVm.allObservations.any((o) =>
-          o.releveId == area.id &&
-              o.isPotential &&
-              (o.latinName == entry.key || o.localName == entry.key)
-          );
-
-          if (!exists) {
-            final potPlant = PlantObservation(
-              id: const Uuid().v4(),
-              releveId: area.id,
-              isPotential: true,
-              predictionProbability: prob,
-              latinName: entry.key, // Przypisujemy nazwę przewidzianą przez model
-              photoPaths: [],
-              latitude: area.points.isNotEmpty ? area.points.first.latitude : 0.0,
-              longitude: area.points.isNotEmpty ? area.points.first.longitude : 0.0,
-              timestamp: DateTime.now(),
-              characteristics: {},
-            );
-            await obsVm.addObservation(potPlant);
-            addedCount++;
-          }
-        }
+      // Obliczanie znanych gatunków do wyświetlenia na pop-upie
+      final knownNames = <String>{};
+      for (var s in obsVm.speciesDictionary) {
+        if (s.latinName.isNotEmpty) knownNames.add(s.latinName.toLowerCase());
+        if (s.polishName.isNotEmpty) knownNames.add(s.polishName.toLowerCase());
       }
+      for (var s in filterVm.soughtPlants) {
+        if (s.latinName.isNotEmpty) knownNames.add(s.latinName.toLowerCase());
+        if (s.polishName.isNotEmpty) knownNames.add(s.polishName.toLowerCase());
+      }
+
+      int addedCount = predictions.entries.where((e) => e.value >= 0.6 && knownNames.contains(e.key.toLowerCase())).length;
 
       if (mounted) {
         if (addedCount > 0) {
-          // Sukces - znaleziono i dodano rośliny
-          ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Analiza zakończona. Dodano $addedCount nowych gatunków potencjalnych."))
-          );
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Analiza zakończona. Znaleziono $addedCount potencjalnych gatunków z Twojej bazy.")));
         } else {
-          // Porażka
           showDialog(
             context: context,
             builder: (ctx) => AlertDialog(
               title: const Text("Brak wyników", style: TextStyle(color: Colors.orange)),
-              content: const Text("Model nie znalazł żadnych roślin z prawdopodobieństwem powyżej 60% dla tego specyficznego siedliska."),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))
-              ],
+              content: const Text("Model ML nie znalazł w tym siedlisku żadnych roślin, które znajdują się w Twoim magazynie lub na liście poszukiwanych."),
+              actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))],
             ),
           );
         }
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Wystąpił błąd: $e"))
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Wystąpił błąd: $e")));
     } finally {
-      if (mounted) {
-        setState(() => _isAnalyzing = false);
-      }
+      if (mounted) setState(() => _isAnalyzing = false);
     }
   }
 
-  Widget _buildHierarchySection(BuildContext context, ReleveViewModel vm, Releve? parent, List<Releve> children, Releve currentReleve) {
-    String parentTitle = currentReleve.type == "Klasa"
-        ? "Klasa (Jednostka nadrzędna)"
-        : (parent != null ? "Nadrzędny: ${parent.commonName}" : "Brak obszaru nadrzędnego");
+  Widget _buildHierarchySection(BuildContext context, ReleveViewModel vm, Releve? parent, List<Releve> children, Releve currentReleve, ObservationViewModel obsVm, SearchFilterViewModel filterVm) {
+    String parentTitle = currentReleve.type == "Klasa" ? "Klasa (Jednostka nadrzędna)" : (parent != null ? "Nadrzędny: ${parent.commonName}" : "Brak obszaru nadrzędnego");
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Column(
         children: [
           ListTile(
-            dense: true,
-            visualDensity: const VisualDensity(vertical: -4),
+            dense: true, visualDensity: const VisualDensity(vertical: -4), contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
             title: Text(parentTitle, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-            subtitle: Text(
-                currentReleve.type == "Klasa" ? "Status: Syntakson główny" : (parent?.type ?? "Kliknij, aby przypisać"),
-                style: const TextStyle(fontSize: 11)
-            ),
+            subtitle: Text(currentReleve.type == "Klasa" ? "Status: Syntakson główny" : (parent?.type ?? "Kliknij, aby przypisać"), style: const TextStyle(fontSize: 11)),
             onTap: currentReleve.type == "Klasa" ? null : () => _showAssignParentDialog(context, currentReleve, vm),
           ),
           ListTile(
@@ -215,8 +185,7 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
               leading: const Icon(Icons.arrow_downward, color: Colors.blueGrey),
               title: Text("Obszary podległe (${children.length})"),
               children: children.map((c) => ListTile(
-                title: Text(c.commonName),
-                subtitle: Text("${c.type}: ${c.phytosociologicalName}"),
+                title: Text(c.commonName), subtitle: Text("${c.type}: ${c.phytosociologicalName}"),
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReleveDetailsScreen(releve: c))),
               )).toList(),
             ),
@@ -239,14 +208,28 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
             shrinkWrap: true,
             children: [
               ListTile(title: const Text("Brak (Ustaw jako główny)"), onTap: () { vm.assignParent(child.id, null); Navigator.pop(ctx); }),
-              ...potentialParents.map((p) => ListTile(
-                title: Text(p.commonName),
-                subtitle: Text(p.type),
-                onTap: () { vm.assignParent(child.id, p.id); Navigator.pop(ctx); },
-              )).toList(),
+              ...potentialParents.map((p) => ListTile(title: Text(p.commonName), subtitle: Text(p.type), onTap: () { vm.assignParent(child.id, p.id); Navigator.pop(ctx); })).toList(),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, ReleveViewModel vm, Releve currentReleve) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Usuń obszar"),
+        content: const Text("Czy na pewno chcesz trwale usunąć ten płat?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("ANULUJ")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () { vm.deleteReleve(currentReleve.id); Navigator.pop(ctx); Navigator.pop(context); },
+            child: const Text("USUŃ", style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }

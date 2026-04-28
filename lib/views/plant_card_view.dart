@@ -4,11 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/plant_observation.dart';
 import '../viewmodels/releve_view_model.dart';
+import '../viewmodels/observation_view_model.dart';
 import '../services/spatial_service.dart';
 import 'releve_details_screen.dart';
 
 class PlantCardView {
   static void show(BuildContext context, PlantObservation obs) {
+    // 1. ZMIANA: Pobieramy ViewModel i odszukujemy Słownikowy model Gatunku!
+    final obsVm = context.read<ObservationViewModel>();
+    final species = obsVm.getSpeciesById(obs.speciesId);
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -29,7 +34,7 @@ class PlantCardView {
               const SizedBox(height: 20),
               _buildHeader(obs),
               Text(
-                obs.latinName ?? "Brak nazwy łacińskiej",
+                species?.latinName ?? "Brak nazwy łacińskiej",
                 style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey),
               ),
               const Divider(),
@@ -37,29 +42,29 @@ class PlantCardView {
               const SizedBox(height: 20),
 
               _sectionHeader("1. Pozycja systematyczna"),
-              _infoItem(Icons.account_tree, "Rodzina", obs.family ?? "-"),
+              _infoItem(Icons.account_tree, "Rodzina", species?.family ?? "-"),
               _infoItem(Icons.subtitles, "Podgatunek/Odmiana", obs.subspecies ?? "-"),
 
               _sectionHeader("2. Ocena surowca i siedliska"),
-              _infoItem(Icons.category, "Typ surowca", obs.biologicalType ?? "-"),
+              _infoItem(Icons.category, "Typ surowca", species?.biologicalType ?? "-"),
               _infoItem(Icons.cleaning_services, "Czystość obszaru", obs.areaPurity ?? "-"),
               _infoItem(Icons.analytics, "Ilościowość", obs.abundance ?? "-"),
               _infoItem(Icons.favorite, "Żywotność", obs.vitality ?? "-"),
 
               _sectionHeader("3. Preferencje środowiskowe (ML Data)"),
-              _infoItem(Icons.science, "Zakres pH", "${obs.prefPhMin?.toStringAsFixed(1) ?? '?'} - ${obs.prefPhMax?.toStringAsFixed(1) ?? '?'}"),
+              _infoItem(Icons.science, "Zakres pH", "${species?.prefPhMin?.toStringAsFixed(1) ?? '?'} - ${species?.prefPhMax?.toStringAsFixed(1) ?? '?'}"),
               _infoItem(
                   Icons.landscape,
                   "Podłoże",
-                  obs.prefSubstrate.isNotEmpty ? obs.prefSubstrate.join(", ") : "-"
+                  (species != null && species.prefSubstrate.isNotEmpty) ? species.prefSubstrate.join(", ") : "-"
               ),
-              _infoItem(Icons.water_drop, "Wilgotność", _translateMoisture(obs.prefMoisture)),
-              _infoItem(Icons.wb_sunny, "Nasłonecznienie", _translateSun(obs.prefSunlight)),
+              _infoItem(Icons.water_drop, "Wilgotność", _translateMoisture(species?.prefMoisture)),
+              _infoItem(Icons.wb_sunny, "Nasłonecznienie", _translateSun(species?.prefSunlight)),
 
               _sectionHeader("4. Cechy i Wykorzystanie"),
               _infoItem(Icons.verified, "Stopień pewności", obs.certainty ?? "-"),
-              _infoItem(Icons.handyman, "Zastosowanie", obs.plantUsage ?? "-"),
-              _infoItem(Icons.home, "Hodowla", obs.cultivation ?? "-"),
+              _infoItem(Icons.handyman, "Zastosowanie", species?.plantUsage ?? "-"),
+              _infoItem(Icons.home, "Hodowla", species?.cultivation ?? "-"),
 
               _sectionHeader("5. Lokalizacja w płatach"),
               _buildReleveLinks(context, obs),

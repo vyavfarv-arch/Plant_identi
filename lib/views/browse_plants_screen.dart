@@ -1,13 +1,14 @@
+// lib/views/browse_plants_screen.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart'; // Dodano dla LatLng
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/plant_observation.dart';
-import '../viewmodels/observation_view_model.dart'; // Dane roślin
-import '../viewmodels/releve_view_model.dart';    // Dane obszarów
-import '../viewmodels/search_filter_view_model.dart'; // Stan filtrów
-import '../services/spatial_service.dart'; // Logika geometryczna
+import '../viewmodels/observation_view_model.dart';
+import '../viewmodels/releve_view_model.dart';
+import '../viewmodels/search_filter_view_model.dart';
+import '../services/spatial_service.dart';
 import 'detail_description_screen.dart';
 import 'plant_card_view.dart';
 
@@ -20,11 +21,9 @@ class BrowsePlantsScreen extends StatelessWidget {
     final filterVm = context.watch<SearchFilterViewModel>();
     final releveVm = context.read<ReleveViewModel>();
 
-    // Ręczne filtrowanie listy obserwacji
     final plants = obsVm.completeObservations.where((obs) {
-
-      // KLUCZOWA POPRAWKA: Nie wyświetlaj roślin poszukiwanych w Magazynie
-      if (obs.isSought) return false;
+      // 1. ZMIANA: Pobieramy gatunek przypisany do tej obserwacji
+      final species = obsVm.getSpeciesById(obs.speciesId);
 
       // Filtr daty
       if (filterVm.filterDateRange != null) {
@@ -35,9 +34,9 @@ class BrowsePlantsScreen extends StatelessWidget {
         }
       }
 
-      // Filtr rodziny
+      // 2. ZMIANA: Filtr rodziny korzysta teraz z danych Gatunku
       if (filterVm.selectedFamilies.isNotEmpty) {
-        if (obs.family == null || !filterVm.selectedFamilies.contains(obs.family)) {
+        if (species == null || !filterVm.selectedFamilies.contains(species.family)) {
           return false;
         }
       }
@@ -70,10 +69,7 @@ class BrowsePlantsScreen extends StatelessWidget {
             },
           ),
           IconButton(
-            icon: Icon(
-                Icons.layers,
-                color: filterVm.filterArea != null ? Colors.orange : null
-            ),
+            icon: Icon(Icons.layers, color: filterVm.filterArea != null ? Colors.orange : null),
             onPressed: () => _showAreaFilterDialog(context, releveVm, filterVm),
           ),
           IconButton(
@@ -81,8 +77,7 @@ class BrowsePlantsScreen extends StatelessWidget {
             onPressed: () => filterVm.resetAllFilters(),
           ),
           IconButton(
-            icon: Icon(Icons.account_tree_outlined,
-                color: filterVm.selectedFamilies.isNotEmpty ? Colors.orange : null),
+            icon: Icon(Icons.account_tree_outlined, color: filterVm.selectedFamilies.isNotEmpty ? Colors.orange : null),
             onPressed: () => _showFamilyFilterDialog(context, obsVm, filterVm),
           ),
         ],
@@ -101,7 +96,6 @@ class BrowsePlantsScreen extends StatelessWidget {
 
           return ListView(
             children: grouped.entries.map((entry) {
-              // Zabezpieczenie pobierania zdjęcia (NAPRAWA BŁĘDU Bad state: No element)
               final firstObsWithPhoto = entry.value.firstWhere(
                       (o) => o.photoPaths.isNotEmpty,
                   orElse: () => entry.value.first
@@ -158,15 +152,12 @@ class BrowsePlantsScreen extends StatelessWidget {
     return ListTile(
       contentPadding: const EdgeInsets.only(left: 32, right: 16),
       title: Text("Obserwacja z ${DateFormat('yyyy-MM-dd').format(obs.observationDate ?? obs.timestamp)}"),
-      subtitle: Text("Ilość: ${obs.abundance} | Pewność: ${obs.certainty ?? 'brak'}"),
+      subtitle: Text("Ilość: ${obs.abundance ?? '-'} | Pewność: ${obs.certainty ?? 'brak'}"),
       onTap: () => PlantCardView.show(context, obs),
       trailing: PopupMenuButton<String>(
         onSelected: (val) {
           if (val == 'edit') {
-            Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => DetailDescriptionScreen(observation: obs))
-            );
+            Navigator.push(context, MaterialPageRoute(builder: (_) => DetailDescriptionScreen(observation: obs)));
           } else if (val == 'delete') {
             obsVm.deleteObservation(obs.id);
           }
