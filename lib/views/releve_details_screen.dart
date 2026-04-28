@@ -138,10 +138,10 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
               releveId: area.id,
               isPotential: true,
               predictionProbability: prob,
-              latinName: entry.key,
+              latinName: entry.key, // Przypisujemy nazwę przewidzianą przez model
               photoPaths: [],
-              latitude: area.points.first.latitude,
-              longitude: area.points.first.longitude,
+              latitude: area.points.isNotEmpty ? area.points.first.latitude : 0.0,
+              longitude: area.points.isNotEmpty ? area.points.first.longitude : 0.0,
               timestamp: DateTime.now(),
               characteristics: {},
             );
@@ -152,9 +152,24 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Analiza zakończona. Dodano $addedCount nowych gatunków potencjalnych."))
-        );
+        if (addedCount > 0) {
+          // Sukces - znaleziono i dodano rośliny
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Analiza zakończona. Dodano $addedCount nowych gatunków potencjalnych."))
+          );
+        } else {
+          // Porażka
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text("Brak wyników", style: TextStyle(color: Colors.orange)),
+              content: const Text("Model nie znalazł żadnych roślin z prawdopodobieństwem powyżej 60% dla tego specyficznego siedliska."),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))
+              ],
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -163,8 +178,6 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
         );
       }
     } finally {
-      // Ten blok wykona się ZAWSZE, nawet jeśli wyżej wystąpi błąd.
-      // Wyłącza nieskończone ładowanie na przycisku.
       if (mounted) {
         setState(() => _isAnalyzing = false);
       }
