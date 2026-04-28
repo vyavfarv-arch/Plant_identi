@@ -1,10 +1,11 @@
+// lib/services/phytosociology_service.dart
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import '../models/syntaxon.dart';
 import '../models/plant_observation.dart';
+import '../models/plant_species.dart'; // DODANO SŁOWNIK
 
 class PhytosociologyService {
-  // Singleton pattern
   static final PhytosociologyService _instance = PhytosociologyService._internal();
   factory PhytosociologyService() => _instance;
   PhytosociologyService._internal();
@@ -24,26 +25,17 @@ class PhytosociologyService {
     }
   }
 
-  // Funkcja zwracająca pełną listę gatunków (własne + rodzica)
   List<String> _getAllDiagnosticSpecies(Syntaxon s) {
     List<String> all = List.from(s.characteristicSpecies);
     String? currentParentId = s.parentId;
     Set<String> visitedIds = {s.id};
 
     while (currentParentId != null) {
-
-      if (visitedIds.contains(currentParentId)) {
-        print("UWAGA: Wykryto cykl w hierarchii syntaksonów dla ID: $currentParentId");
-        break; // Przerywamy pętlę
-      }
+      if (visitedIds.contains(currentParentId)) break;
       visitedIds.add(currentParentId);
 
       final parentIndex = _syntaxaDatabase.indexWhere((element) => element.id == currentParentId);
-
-      if (parentIndex == -1) {
-        print("UWAGA: Brakujący rodzic w bazie syntaksonów o ID: $currentParentId");
-        break; // Przerywamy pętlę, ratując aplikację przed crashem
-      }
+      if (parentIndex == -1) break;
 
       final parent = _syntaxaDatabase[parentIndex];
       all.addAll(parent.characteristicSpecies);
@@ -52,14 +44,16 @@ class PhytosociologyService {
 
     return all.map((e) => e.toLowerCase()).toList();
   }
-  Map<String, dynamic> calculateBestFit(List<PlantObservation> observations) {
+
+  // ZMIANA: Przekazujemy listę dictionary, by "odkryć" nazwy łacińskie okazów
+  Map<String, dynamic> calculateBestFit(List<PlantObservation> observations, List<PlantSpecies> dictionary) {
     if (observations.isEmpty || !_isLoaded) return {'syntaxonId': null, 'warning': null};
 
-    final uniqueLatinNames = observations
-        .map((o) => o.latinName?.trim().toLowerCase())
-        .where((name) => name != null)
-        .cast<String>()
-        .toSet();
+    final uniqueLatinNames = observations.map((o) {
+      final specList = dictionary.where((s) => s.speciesID == o.speciesId);
+      final spec = specList.isNotEmpty ? specList.first : null;
+      return spec?.latinName.trim().toLowerCase();
+    }).where((name) => name != null && name.isNotEmpty).cast<String>().toSet();
 
     Syntaxon? bestFit;
     double highestScore = 0;
@@ -69,7 +63,6 @@ class PhytosociologyService {
       final diagSpecies = _getAllDiagnosticSpecies(syntaxon);
       if (diagSpecies.isEmpty) continue;
 
-      // Liczymy trafienia (tutaj charakterystyczne mają priorytet)
       int found = uniqueLatinNames.where((n) => diagSpecies.contains(n)).length;
       double score = found / diagSpecies.length;
 
