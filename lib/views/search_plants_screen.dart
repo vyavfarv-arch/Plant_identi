@@ -145,47 +145,90 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       color: Colors.deepOrange.shade50,
-      child: SizedBox(
-        width: double.infinity, height: 75,
-        child: ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange, foregroundColor: Colors.white),
-          onPressed: () async {
-            SoughtPlant targetPlant;
-            String? knownSpeciesId;
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: double.infinity, height: 55,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange, foregroundColor: Colors.white),
+              onPressed: () async {
+                SoughtPlant targetPlant;
+                String? knownSpeciesId;
 
-            if (item.originalObject is SoughtPlant) {
-              targetPlant = item.originalObject;
-            } else {
-              final sp = item.originalObject;
-              knownSpeciesId = sp.speciesID;
-              targetPlant = SoughtPlant(
-                id: sp.speciesID, polishName: sp.polishName, latinName: sp.latinName,
-                prefPhMin: sp.prefPhMin, prefPhMax: sp.prefPhMax,
-                prefAreaTypes: sp.prefAreaTypes, prefExposures: sp.prefExposures,
-                prefCanopyCovers: sp.prefCanopyCovers, prefWaterDynamics: sp.prefWaterDynamics,
-                prefSoilDepths: sp.prefSoilDepths,
-              );
-            }
+                if (item.originalObject is SoughtPlant) {
+                  targetPlant = item.originalObject;
+                } else {
+                  final sp = item.originalObject;
+                  knownSpeciesId = sp.speciesID;
+                  targetPlant = SoughtPlant(
+                    id: sp.speciesID, polishName: sp.polishName, latinName: sp.latinName,
+                    prefPhMin: sp.prefPhMin, prefPhMax: sp.prefPhMax,
+                    prefAreaTypes: sp.prefAreaTypes, prefExposures: sp.prefExposures,
+                    prefCanopyCovers: sp.prefCanopyCovers, prefWaterDynamics: sp.prefWaterDynamics,
+                    prefSoilDepths: sp.prefSoilDepths,
+                  );
+                }
 
-            final resultsIds = _mlService.getMatchingAreas(targetPlant, releveVm.allReleves);
-            final matchingObjects = releveVm.allReleves.where((r) => resultsIds.contains(r.id)).toList();
+                final resultsIds = _mlService.getMatchingAreas(targetPlant, releveVm.allReleves);
+                final matchingObjects = releveVm.allReleves.where((r) => resultsIds.contains(r.id)).toList();
 
-            if (matchingObjects.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Model ML nie wytypował żadnego odpowiedniego obszaru.")));
-              return;
-            }
+                if (matchingObjects.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Model ML nie wytypował żadnego odpowiedniego obszaru.")));
+                  return;
+                }
 
-            Navigator.push(context, MaterialPageRoute(
-                builder: (_) => ResultsMapScreen(
-                  matchingAreas: matchingObjects,
-                  plantName: item.name,
-                  speciesId: knownSpeciesId,
-                )
-            ));
-          },
-          icon: const Icon(Icons.map),
-          label: Text("POKAŻ POTENCJALNE OBSZARY (${item.name.toUpperCase()})"),
-        ),
+                Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => ResultsMapScreen(
+                      matchingAreas: matchingObjects,
+                      plantName: item.name,
+                      speciesId: knownSpeciesId,
+                    )
+                ));
+              },
+              icon: const Icon(Icons.map),
+              label: Text("POKAŻ POTENCJALNE OBSZARY ML"),
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // --- PRZYCISK DEWELOPERSKI (TEST UI MAPY) ---
+          SizedBox(
+            width: double.infinity, height: 45,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.deepOrange,
+                  side: const BorderSide(color: Colors.deepOrange)
+              ),
+              onPressed: () {
+                final allAreas = List.from(releveVm.allReleves);
+                if (allAreas.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Brak jakichkolwiek obszarów w bazie do wylosowania.")));
+                  return;
+                }
+
+                // Tasujemy wszystkie obszary i bierzemy maksymalnie 3 pierwsze
+                allAreas.shuffle();
+                final randomAreas = allAreas.take(3).toList();
+
+                String? knownSpeciesId;
+                if (item.originalObject is! SoughtPlant) {
+                  knownSpeciesId = item.originalObject.speciesID;
+                }
+
+                Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => ResultsMapScreen(
+                      matchingAreas: List<Releve>.from(randomAreas),
+                      plantName: item.name,
+                      speciesId: knownSpeciesId,
+                    )
+                ));
+              },
+              icon: const Icon(Icons.bug_report),
+              label: const Text("TEST MAPY (3 LOSOWE OBSZARY)"),
+            ),
+          ),
+        ],
       ),
     );
   }

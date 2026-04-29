@@ -7,6 +7,7 @@ import '../models/plant_observation.dart';
 import '../models/plant_species.dart';
 import '../services/camera_service.dart';
 import '../services/location_service.dart';
+import '../models/harvest_season.dart';
 import '../services/database_helper.dart';
 
 class ObservationViewModel extends ChangeNotifier {
@@ -115,7 +116,6 @@ class ObservationViewModel extends ChangeNotifier {
     await loadFromDisk();
   }
 
-  // --- ZAPIS SZCZEGÓŁÓW Z NOWYMI PARAMETRAMI ML ---
   Future<void> updateObservationDetailed({
     required String id,
     required String localName,
@@ -135,7 +135,9 @@ class ObservationViewModel extends ChangeNotifier {
     double? prefMoisture,
     double? prefSunlight,
     List<String>? prefSubstrate,
-    Map<String, List<int>>? harvestSeasons,
+    // ZMIANA: Listy kalendarzy zamiast mapy
+    List<HarvestSeason>? harvestSeasons,
+    List<HarvestSeason>? customHarvestSeasons,
     // NOWE LISTY Z UI
     List<String>? prefAreaTypes,
     List<String>? prefExposures,
@@ -150,7 +152,7 @@ class ObservationViewModel extends ChangeNotifier {
 
     final String targetSpeciesId = old.speciesId ?? const Uuid().v4();
 
-    // 1. Zapisujemy gatunek (Z nowymi preferencjami!)
+    // 1. Zapisujemy gatunek (Wiedza teoretyczna)
     final species = PlantSpecies(
       speciesID: targetSpeciesId,
       latinName: latinName,
@@ -164,8 +166,7 @@ class ObservationViewModel extends ChangeNotifier {
       prefSubstrate: prefSubstrate ?? [],
       prefMoisture: prefMoisture,
       prefSunlight: prefSunlight,
-      harvestSeasons: harvestSeasons ?? {},
-      // Zapisujemy nowe listy preferencji ML
+      harvestSeasons: harvestSeasons ?? [], // Przekazujemy listę kalendarzy domyślnych
       prefAreaTypes: prefAreaTypes ?? [],
       prefExposures: prefExposures ?? [],
       prefCanopyCovers: prefCanopyCovers ?? [],
@@ -174,7 +175,7 @@ class ObservationViewModel extends ChangeNotifier {
     );
     await _db.insertSpecies(species);
 
-    // 2. Aktualizujemy konkretny OKAZ
+    // 2. Aktualizujemy konkretny OKAZ (Stan faktyczny w terenie)
     final updatedObs = PlantObservation(
       id: old.id,
       releveId: old.releveId,
@@ -197,6 +198,7 @@ class ObservationViewModel extends ChangeNotifier {
       keyMorphologicalTraits: keyTraits,
       confusingSpecies: confusing,
       characteristicFeature: characteristic,
+      customHarvestSeasons: customHarvestSeasons ?? [], // Przekazujemy ew. indywidualny kalendarz
     );
 
     _observations[index] = updatedObs;

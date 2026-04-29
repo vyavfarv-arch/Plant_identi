@@ -1,5 +1,6 @@
 // lib/models/plant_species.dart
 import 'dart:convert';
+import 'harvest_season.dart';
 
 class PlantSpecies {
   final String speciesID;
@@ -34,7 +35,7 @@ class PlantSpecies {
 
   // Fitosocjologia i kalendarz
   final List<String> associatedSyntaxa;
-  final Map<String, List<int>> harvestSeasons;
+  final List<HarvestSeason> harvestSeasons;
 
   PlantSpecies({
     required this.speciesID, required this.latinName, required this.polishName, required this.family, required this.biologicalType,
@@ -46,7 +47,7 @@ class PlantSpecies {
     this.prefLandUseHistory = const [],
 
     this.plantUsage, this.cultivation, this.properties,
-    this.associatedSyntaxa = const [], this.harvestSeasons = const {},
+    this.associatedSyntaxa = const [], this.harvestSeasons = const [],
   });
 
   Map<String, dynamic> toMap() => {
@@ -66,17 +67,18 @@ class PlantSpecies {
     'prefLandUseHistoryJson': jsonEncode(prefLandUseHistory),
 
     'plantUsage': plantUsage, 'cultivation': cultivation, 'properties': properties,
-    'associatedSyntaxaJson': jsonEncode(associatedSyntaxa), 'harvestSeasonsJson': jsonEncode(harvestSeasons),
+    'associatedSyntaxaJson': jsonEncode(associatedSyntaxa),
+    'harvestSeasonsJson': jsonEncode(harvestSeasons.map((e) => e.toMap()).toList()),
   };
 
   factory PlantSpecies.fromMap(Map<String, dynamic> map) {
     List<String> decodeList(String? jsonStr) => jsonStr != null ? List<String>.from(jsonDecode(jsonStr)) : [];
 
-    Map<String, List<int>> decodedHarvest = {};
+    List<HarvestSeason> decodedSeasons = [];
     if (map['harvestSeasonsJson'] != null) {
       try {
-        final rawMap = jsonDecode(map['harvestSeasonsJson']) as Map<String, dynamic>;
-        rawMap.forEach((key, value) => decodedHarvest[key] = List<int>.from(value));
+        final List<dynamic> rawList = jsonDecode(map['harvestSeasonsJson']);
+        decodedSeasons = rawList.map((e) => HarvestSeason.fromMap(e)).toList();
       } catch (e) { print(e); }
     }
 
@@ -99,7 +101,7 @@ class PlantSpecies {
       prefLandUseHistory: decodeList(map['prefLandUseHistoryJson']),
 
       plantUsage: map['plantUsage'], cultivation: map['cultivation'], properties: map['properties'],
-      associatedSyntaxa: decodeList(map['associatedSyntaxaJson']), harvestSeasons: decodedHarvest,
+      associatedSyntaxa: decodeList(map['associatedSyntaxaJson']), harvestSeasons: decodedSeasons,
     );
   }
 }

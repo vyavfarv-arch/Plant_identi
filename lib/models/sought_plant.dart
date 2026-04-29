@@ -1,17 +1,18 @@
 // lib/models/sought_plant.dart
 import 'dart:convert';
+import 'harvest_season.dart'; // DODANY IMPORT
 
 class SoughtPlant {
   final String id;
   final String polishName;
   final String latinName;
 
-  // Parametry ML (zostają bez zmian)
   final double? prefPhMin;
   final double? prefPhMax;
   final List<String> prefSubstrate;
   final double? prefMoisture;
   final double? prefSunlight;
+
   final List<String> prefAreaTypes;
   final List<String> prefExposures;
   final List<String> prefCanopyCovers;
@@ -23,82 +24,53 @@ class SoughtPlant {
   final List<String> prefDeadWood;
   final List<String> prefLandUseHistory;
 
-  // NOWOŚĆ: Cel zbioru i miesiące przypomnień
-  final String? targetMaterial; // np. "Kwiaty", "Korzeń"
-  final List<int> reminderMonths; // np. [3, 4] marzec-kwiecień
+  // ZMIANA: Lista surowców z ich własnymi kalendarzami
+  final List<HarvestSeason> harvestSeasons;
 
   SoughtPlant({
-    required this.id,
-    required this.polishName,
-    required this.latinName,
-    this.prefPhMin,
-    this.prefPhMax,
-    this.prefSubstrate = const [],
-    this.prefMoisture,
-    this.prefSunlight,
-    this.prefAreaTypes = const [],
-    this.prefExposures = const [],
-    this.prefCanopyCovers = const [],
-    this.prefWaterDynamics = const [],
-    this.prefSoilDepths = const [],
-    this.prefSlopeAngles = const [],
-    this.prefLitterThicknesses = const [],
-    this.prefDistancesToWater = const [],
-    this.prefDeadWood = const [],
+    required this.id, required this.polishName, required this.latinName,
+    this.prefPhMin, this.prefPhMax, this.prefSubstrate = const [], this.prefMoisture, this.prefSunlight,
+    this.prefAreaTypes = const [], this.prefExposures = const [], this.prefCanopyCovers = const [],
+    this.prefWaterDynamics = const [], this.prefSoilDepths = const [], this.prefSlopeAngles = const [],
+    this.prefLitterThicknesses = const [], this.prefDistancesToWater = const [], this.prefDeadWood = const [],
     this.prefLandUseHistory = const [],
-    this.targetMaterial,
-    this.reminderMonths = const [],
+    this.harvestSeasons = const [], // ZMIANA
   });
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'polishName': polishName,
-      'latinName': latinName,
-      'prefPhMin': prefPhMin,
-      'prefPhMax': prefPhMax,
-      'prefSubstrateJson': jsonEncode(prefSubstrate),
-      'prefMoisture': prefMoisture,
-      'prefSunlight': prefSunlight,
-      'prefAreaTypesJson': jsonEncode(prefAreaTypes),
-      'prefExposuresJson': jsonEncode(prefExposures),
-      'prefCanopyCoversJson': jsonEncode(prefCanopyCovers),
-      'prefWaterDynamicsJson': jsonEncode(prefWaterDynamics),
-      'prefSoilDepthsJson': jsonEncode(prefSoilDepths),
-      'prefSlopeAnglesJson': jsonEncode(prefSlopeAngles),
-      'prefLitterThicknessesJson': jsonEncode(prefLitterThicknesses),
-      'prefDistancesToWaterJson': jsonEncode(prefDistancesToWater),
-      'prefDeadWoodJson': jsonEncode(prefDeadWood),
-      'prefLandUseHistoryJson': jsonEncode(prefLandUseHistory),
-      'targetMaterial': targetMaterial,
-      'reminderMonthsJson': jsonEncode(reminderMonths),
-    };
-  }
+  Map<String, dynamic> toMap() => {
+    'id': id, 'polishName': polishName, 'latinName': latinName,
+    'prefPhMin': prefPhMin, 'prefPhMax': prefPhMax, 'prefSubstrateJson': jsonEncode(prefSubstrate),
+    'prefMoisture': prefMoisture, 'prefSunlight': prefSunlight,
+    'prefAreaTypesJson': jsonEncode(prefAreaTypes), 'prefExposuresJson': jsonEncode(prefExposures),
+    'prefCanopyCoversJson': jsonEncode(prefCanopyCovers), 'prefWaterDynamicsJson': jsonEncode(prefWaterDynamics),
+    'prefSoilDepthsJson': jsonEncode(prefSoilDepths), 'prefSlopeAnglesJson': jsonEncode(prefSlopeAngles),
+    'prefLitterThicknessesJson': jsonEncode(prefLitterThicknesses), 'prefDistancesToWaterJson': jsonEncode(prefDistancesToWater),
+    'prefDeadWoodJson': jsonEncode(prefDeadWood), 'prefLandUseHistoryJson': jsonEncode(prefLandUseHistory),
+    'harvestSeasonsJson': jsonEncode(harvestSeasons.map((e) => e.toMap()).toList()), // ZMIANA
+  };
 
   factory SoughtPlant.fromMap(Map<String, dynamic> map) {
     List<String> decodeList(String? jsonStr) => jsonStr != null ? List<String>.from(jsonDecode(jsonStr)) : [];
 
+    // ZMIANA DEKODOWANIA
+    List<HarvestSeason> decodedSeasons = [];
+    if (map['harvestSeasonsJson'] != null) {
+      try {
+        final List<dynamic> rawList = jsonDecode(map['harvestSeasonsJson']);
+        decodedSeasons = rawList.map((e) => HarvestSeason.fromMap(e)).toList();
+      } catch (e) { print(e); }
+    }
+
     return SoughtPlant(
-      id: map['id'],
-      polishName: map['polishName'] ?? '',
-      latinName: map['latinName'] ?? '',
-      prefPhMin: map['prefPhMin']?.toDouble(),
-      prefPhMax: map['prefPhMax']?.toDouble(),
-      prefSubstrate: decodeList(map['prefSubstrateJson']),
-      prefMoisture: map['prefMoisture']?.toDouble(),
-      prefSunlight: map['prefSunlight']?.toDouble(),
-      prefAreaTypes: decodeList(map['prefAreaTypesJson']),
-      prefExposures: decodeList(map['prefExposuresJson']),
-      prefCanopyCovers: decodeList(map['prefCanopyCoversJson']),
-      prefWaterDynamics: decodeList(map['prefWaterDynamicsJson']),
-      prefSoilDepths: decodeList(map['prefSoilDepthsJson']),
-      prefSlopeAngles: decodeList(map['prefSlopeAnglesJson']),
-      prefLitterThicknesses: decodeList(map['prefLitterThicknessesJson']),
-      prefDistancesToWater: decodeList(map['prefDistancesToWaterJson']),
-      prefDeadWood: decodeList(map['prefDeadWoodJson']),
-      prefLandUseHistory: decodeList(map['prefLandUseHistoryJson']),
-      targetMaterial: map['targetMaterial'],
-      reminderMonths: map['reminderMonthsJson'] != null ? List<int>.from(jsonDecode(map['reminderMonthsJson'])) : [],
+      id: map['id'], polishName: map['polishName'] ?? '', latinName: map['latinName'] ?? '',
+      prefPhMin: map['prefPhMin']?.toDouble(), prefPhMax: map['prefPhMax']?.toDouble(),
+      prefSubstrate: decodeList(map['prefSubstrateJson']), prefMoisture: map['prefMoisture']?.toDouble(), prefSunlight: map['prefSunlight']?.toDouble(),
+      prefAreaTypes: decodeList(map['prefAreaTypesJson']), prefExposures: decodeList(map['prefExposuresJson']),
+      prefCanopyCovers: decodeList(map['prefCanopyCoversJson']), prefWaterDynamics: decodeList(map['prefWaterDynamicsJson']),
+      prefSoilDepths: decodeList(map['prefSoilDepthsJson']), prefSlopeAngles: decodeList(map['prefSlopeAnglesJson']),
+      prefLitterThicknesses: decodeList(map['prefLitterThicknessesJson']), prefDistancesToWater: decodeList(map['prefDistancesToWaterJson']),
+      prefDeadWood: decodeList(map['prefDeadWoodJson']), prefLandUseHistory: decodeList(map['prefLandUseHistoryJson']),
+      harvestSeasons: decodedSeasons, // ZMIANA
     );
   }
 }

@@ -24,81 +24,44 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'planticator.db');
     return await openDatabase(
       path,
-      version: 13, // Wersja 13 ze wszystkimi nowymi cechami ekologicznymi i przepisami
+      version: 15, // WERSJA 15: Wielokrotne kalendarze zbiorów w poszukiwaniach
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
     );
   }
 
   Future _onCreate(Database db, int version) async {
+    // ... Tabele Releves i Recipes pozostają bez zmian (zakładam, że kod jest jak poprzednio)
     await db.execute('''
       CREATE TABLE releves (
-        id TEXT PRIMARY KEY,
-        commonName TEXT NOT NULL,
-        phytosociologicalName TEXT,
-        type TEXT NOT NULL,
-        pointsJson TEXT NOT NULL,
-        parentId TEXT,
-        date TEXT NOT NULL,
-        habitatJson TEXT,
-        mlPredictionsJson TEXT,
+        id TEXT PRIMARY KEY, commonName TEXT NOT NULL, phytosociologicalName TEXT,
+        type TEXT NOT NULL, pointsJson TEXT NOT NULL, parentId TEXT,
+        date TEXT NOT NULL, habitatJson TEXT, mlPredictionsJson TEXT,
         FOREIGN KEY (parentId) REFERENCES releves (id) ON DELETE SET NULL
       )
     ''');
 
     await db.execute('''
       CREATE TABLE plant_species (
-        speciesID TEXT PRIMARY KEY,
-        latinName TEXT,
-        polishName TEXT,
-        family TEXT,
-        biologicalType TEXT,
-        prefPhMin REAL,
-        prefPhMax REAL,
-        prefSubstrateJson TEXT,
-        prefMoisture REAL,
-        prefSunlight REAL,
-        prefAreaTypesJson TEXT,
-        prefExposuresJson TEXT,
-        prefCanopyCoversJson TEXT,
-        prefWaterDynamicsJson TEXT,
-        prefSoilDepthsJson TEXT,
-        prefSlopeAnglesJson TEXT,
-        prefLitterThicknessesJson TEXT,
-        prefDistancesToWaterJson TEXT,
-        prefDeadWoodJson TEXT,
-        prefLandUseHistoryJson TEXT,
-        plantUsage TEXT,
-        cultivation TEXT,
-        properties TEXT,
-        associatedSyntaxaJson TEXT,
-        harvestSeasonsJson TEXT
+        speciesID TEXT PRIMARY KEY, latinName TEXT, polishName TEXT, family TEXT, biologicalType TEXT,
+        prefPhMin REAL, prefPhMax REAL, prefSubstrateJson TEXT, prefMoisture REAL, prefSunlight REAL,
+        prefAreaTypesJson TEXT, prefExposuresJson TEXT, prefCanopyCoversJson TEXT,
+        prefWaterDynamicsJson TEXT, prefSoilDepthsJson TEXT, prefSlopeAnglesJson TEXT,
+        prefLitterThicknessesJson TEXT, prefDistancesToWaterJson TEXT, prefDeadWoodJson TEXT,
+        prefLandUseHistoryJson TEXT, plantUsage TEXT, cultivation TEXT, properties TEXT,
+        associatedSyntaxaJson TEXT, harvestSeasonsJson TEXT
       )
     ''');
 
     await db.execute('''
       CREATE TABLE observations (
-        id TEXT PRIMARY KEY,
-        releveId TEXT,
-        speciesId TEXT,
-        localName TEXT,
-        subspecies TEXT,
-        tempBiologicalType TEXT,
-        photoPathsJson TEXT,
-        latitude REAL,
-        longitude REAL,
-        timestamp TEXT,
-        characteristicsJson TEXT,
-        observationDate TEXT,
-        phenologicalStage TEXT,
-        abundance TEXT,
-        coverage TEXT,
-        vitality TEXT,
-        certainty TEXT,
-        idDoubts TEXT,
-        keyMorphologicalTraits TEXT,
-        confusingSpecies TEXT,
-        characteristicFeature TEXT,
+        id TEXT PRIMARY KEY, releveId TEXT, speciesId TEXT, localName TEXT, subspecies TEXT,
+        tempBiologicalType TEXT, photoPathsJson TEXT, latitude REAL, longitude REAL,
+        timestamp TEXT, characteristicsJson TEXT, observationDate TEXT, phenologicalStage TEXT,
+        abundance TEXT, coverage TEXT, vitality TEXT, certainty TEXT, idDoubts TEXT,
+        keyMorphologicalTraits TEXT, confusingSpecies TEXT, characteristicFeature TEXT,
+        customHarvestSeasonsJson TEXT,
         FOREIGN KEY (releveId) REFERENCES releves (id) ON DELETE CASCADE,
         FOREIGN KEY (speciesId) REFERENCES plant_species (speciesID) ON DELETE SET NULL
       )
@@ -106,37 +69,30 @@ class DatabaseHelper {
 
     await db.execute('''
       CREATE TABLE sought_plants (
-        id TEXT PRIMARY KEY,
-        polishName TEXT,
-        latinName TEXT,
-        prefPhMin REAL,
-        prefPhMax REAL,
-        prefSubstrateJson TEXT,
-        prefMoisture REAL,
-        prefSunlight REAL,
-        prefAreaTypesJson TEXT,
-        prefExposuresJson TEXT,
-        prefCanopyCoversJson TEXT,
-        prefWaterDynamicsJson TEXT,
-        prefSoilDepthsJson TEXT,
-        prefSlopeAnglesJson TEXT,
-        prefLitterThicknessesJson TEXT,
-        prefDistancesToWaterJson TEXT,
-        prefDeadWoodJson TEXT,
-        prefLandUseHistoryJson TEXT
+        id TEXT PRIMARY KEY, polishName TEXT, latinName TEXT, prefPhMin REAL, prefPhMax REAL,
+        prefSubstrateJson TEXT, prefMoisture REAL, prefSunlight REAL,
+        prefAreaTypesJson TEXT, prefExposuresJson TEXT, prefCanopyCoversJson TEXT,
+        prefWaterDynamicsJson TEXT, prefSoilDepthsJson TEXT, prefSlopeAnglesJson TEXT,
+        prefLitterThicknessesJson TEXT, prefDistancesToWaterJson TEXT, prefDeadWoodJson TEXT,
+        prefLandUseHistoryJson TEXT, targetMaterial TEXT, reminderMonthsJson TEXT,
+        harvestSeasonsJson TEXT -- v15: Pełna lista surowców do szukania
       )
     ''');
 
     await db.execute('''
       CREATE TABLE recipes (
-        id TEXT PRIMARY KEY,
-        title TEXT,
-        type TEXT,
-        ingredientsJson TEXT,
-        instructions TEXT,
-        createdAt TEXT
+        id TEXT PRIMARY KEY, title TEXT, type TEXT, ingredientsJson TEXT,
+        instructions TEXT, createdAt TEXT
       )
     ''');
+  }
+
+  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 15) {
+      try {
+        await db.execute('ALTER TABLE sought_plants ADD COLUMN harvestSeasonsJson TEXT');
+      } catch (e) { print("Błąd migracji bazy do v15: $e"); }
+    }
   }
 
   // --- RELEVES CRUD ---

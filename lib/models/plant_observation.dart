@@ -1,5 +1,6 @@
 // lib/models/plant_observation.dart
 import 'dart:convert';
+import 'harvest_season.dart';
 
 class PlantObservation {
   final String id;
@@ -24,9 +25,7 @@ class PlantObservation {
   final String? confusingSpecies;
   final String? characteristicFeature;
 
-  // NOWOŚĆ: Indywidualny kalendarz zbiorów dla tego konkretnego okazu
-  // Jeśli jest pusty, aplikacja powinna brać dane z PlantSpecies
-  final Map<String, List<int>> customHarvestSeasons;
+  final List<HarvestSeason> customHarvestSeasons;
 
   PlantObservation({
     required this.id,
@@ -50,7 +49,7 @@ class PlantObservation {
     this.keyMorphologicalTraits,
     this.confusingSpecies,
     this.characteristicFeature,
-    this.customHarvestSeasons = const {},
+    this.customHarvestSeasons = const [],
   });
 
   String get displayName => localName ?? "Nieznana roślina";
@@ -79,7 +78,7 @@ class PlantObservation {
       'keyMorphologicalTraits': keyMorphologicalTraits,
       'confusingSpecies': confusingSpecies,
       'characteristicFeature': characteristicFeature,
-      'customHarvestSeasonsJson': jsonEncode(customHarvestSeasons),
+      'customHarvestSeasonsJson': jsonEncode(customHarvestSeasons.map((e) => e.toMap()).toList()),
     };
   }
 
@@ -92,11 +91,11 @@ class PlantObservation {
       } catch (e) { print(e); }
     }
 
-    Map<String, List<int>> decodedHarvest = {};
+    List<HarvestSeason> decodedSeasons = [];
     if (map['customHarvestSeasonsJson'] != null) {
       try {
-        final rawMap = jsonDecode(map['customHarvestSeasonsJson']) as Map<String, dynamic>;
-        rawMap.forEach((key, value) => decodedHarvest[key] = List<int>.from(value));
+        final List<dynamic> rawList = jsonDecode(map['customHarvestSeasonsJson']);
+        decodedSeasons = rawList.map((e) => HarvestSeason.fromMap(e)).toList();
       } catch (e) { print(e); }
     }
 
@@ -122,7 +121,7 @@ class PlantObservation {
       keyMorphologicalTraits: map['keyMorphologicalTraits'],
       confusingSpecies: map['confusingSpecies'],
       characteristicFeature: map['characteristicFeature'],
-      customHarvestSeasons: decodedHarvest,
+      customHarvestSeasons: decodedSeasons,
     );
   }
 }
