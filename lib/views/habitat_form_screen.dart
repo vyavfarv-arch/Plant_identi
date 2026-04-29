@@ -1,3 +1,4 @@
+// lib/views/habitat_form_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/releve.dart';
@@ -14,11 +15,19 @@ class HabitatFormScreen extends StatefulWidget {
 
 class _HabitatFormScreenState extends State<HabitatFormScreen> {
   final List<String> _selectedSubstrates = [];
-  final List<String> _selectedLitter = [];
-  double _moisture = 1.0;
   final TextEditingController _phController = TextEditingController();
+  double _moisture = 1.0;
+
+  String? _areaType;
+  String? _canopyCover;
+  String? _waterDynamics;
+  String? _litterThickness;
 
   final List<String> _moistureLabels = ["Sucho", "Świeżo", "Wilgotno", "Mokro"];
+  final List<String> _areaTypeOptions = ["Las", "Łąka", "Mokradło", "Zarośla", "Pole", "Pobocze drogi", "Teren miejski", "Skraj lasu"];
+  final List<String> _canopyCoverOptions = ["Otwarte (0-25%)", "Półotwarte (25-60%)", "Zacienione (60-85%)", "Gęste (>85%)"];
+  final List<String> _waterDynamicsOptions = ["Stale wilgotne", "Sezonowo zalewane", "Sezonowo wysychające", "Stale suche"];
+  final List<String> _litterThicknessOptions = ["Brak", "Cienka (<2cm)", "Umiarkowana (2-10cm)", "Gruba (>10cm)"];
 
   @override
   void initState() {
@@ -26,16 +35,19 @@ class _HabitatFormScreenState extends State<HabitatFormScreen> {
     if (widget.releve.habitat != null) {
       final h = widget.releve.habitat!;
       _selectedSubstrates.addAll(h.substrateType);
-      _selectedLitter.addAll(h.litterLayer);
       _moisture = h.moisture;
       _phController.text = h.ph?.toString() ?? "";
+      _areaType = h.areaType;
+      _canopyCover = h.canopyCover;
+      _waterDynamics = h.waterDynamics;
+      _litterThickness = h.litterThickness;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Opis siedliska")),
+      appBar: AppBar(title: const Text("Pełen opis siedliska")),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -44,8 +56,7 @@ class _HabitatFormScreenState extends State<HabitatFormScreen> {
 
           const Text("Wilgotność:", style: TextStyle(fontWeight: FontWeight.bold)),
           Slider(
-            value: _moisture,
-            min: 0, max: 3, divisions: 3,
+            value: _moisture, min: 0, max: 3, divisions: 3,
             label: _moistureLabels[_moisture.round()],
             onChanged: (v) => setState(() => _moisture = v),
           ),
@@ -53,13 +64,15 @@ class _HabitatFormScreenState extends State<HabitatFormScreen> {
 
           const SizedBox(height: 20),
           TextField(
-            controller: _phController,
-            keyboardType: TextInputType.number,
+            controller: _phController, keyboardType: TextInputType.number,
             decoration: const InputDecoration(labelText: "Wartość pH (opcjonalnie)", border: OutlineInputBorder()),
           ),
 
           const SizedBox(height: 20),
-          _buildMultiSelect("Warstwa ściółki", ["Brak", "Cienka warstwa", "Gruba warstwa"], _selectedLitter),
+          _buildDropdown("Typ obszaru", _areaTypeOptions, _areaType, (v) => setState(() => _areaType = v)),
+          _buildDropdown("Zwarcie koron", _canopyCoverOptions, _canopyCover, (v) => setState(() => _canopyCover = v)),
+          _buildDropdown("Dynamika wody", _waterDynamicsOptions, _waterDynamics, (v) => setState(() => _waterDynamics = v)),
+          _buildDropdown("Warstwa ściółki", _litterThicknessOptions, _litterThickness, (v) => setState(() => _litterThickness = v)),
 
           const SizedBox(height: 40),
           ElevatedButton(
@@ -68,6 +81,18 @@ class _HabitatFormScreenState extends State<HabitatFormScreen> {
             child: const Text("ZAPISZ INFORMACJE O SIEDLISKU"),
           )
         ],
+      ),
+    );
+  }
+
+  Widget _buildDropdown(String label, List<String> options, String? value, Function(String?) onChanged) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: DropdownButtonFormField<String>(
+        value: value,
+        decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+        items: options.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+        onChanged: onChanged,
       ),
     );
   }
@@ -83,8 +108,7 @@ class _HabitatFormScreenState extends State<HabitatFormScreen> {
           children: options.map((opt) {
             final isSelected = targetList.contains(opt);
             return ChoiceChip(
-              label: Text(opt),
-              selected: isSelected,
+              label: Text(opt), selected: isSelected,
               onSelected: (s) => setState(() => s ? targetList.add(opt) : targetList.remove(opt)),
             );
           }).toList(),
@@ -98,9 +122,11 @@ class _HabitatFormScreenState extends State<HabitatFormScreen> {
       substrateType: _selectedSubstrates,
       moisture: _moisture,
       ph: double.tryParse(_phController.text),
-      litterLayer: _selectedLitter,
+      areaType: _areaType,
+      canopyCover: _canopyCover,
+      waterDynamics: _waterDynamics,
+      litterThickness: _litterThickness,
     );
-    // ZMIANA: Wywołanie metody w ReleveViewModel
     context.read<ReleveViewModel>().updateReleveHabitat(widget.releve.id, info);
     Navigator.pop(context);
   }

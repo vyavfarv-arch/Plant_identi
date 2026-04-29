@@ -1,7 +1,7 @@
 // lib/services/ml_prediction_service.dart
 import 'dart:convert';
 import 'package:flutter/services.dart';
-import '../models/sought_plant.dart'; // ZMIANA MODELU
+import '../models/sought_plant.dart';
 import '../models/releve.dart';
 
 class MlPredictionService {
@@ -38,13 +38,18 @@ class MlPredictionService {
     Map<String, double> features = {
       'ph': h.ph ?? 7.0,
       'moisture': h.moisture,
-      'sunlight': h.sunlight,
-      'pollution': h.pollution,
     };
 
-    for (var sub in h.substrateType) {
-      features[sub] = 1.0;
-    }
+    // Konwersja zmiennych kategorycznych na format binarny dla starych modeli (Feature obecny = 1.0)
+    for (var sub in h.substrateType) { features[sub] = 1.0; }
+    if (h.areaType != null) features[h.areaType!] = 1.0;
+    if (h.exposure != null) features[h.exposure!] = 1.0;
+    if (h.canopyCover != null) features[h.canopyCover!] = 1.0;
+    if (h.waterDynamics != null) features[h.waterDynamics!] = 1.0;
+    if (h.soilDepth != null) features[h.soilDepth!] = 1.0;
+    if (h.slopeAngle != null) features[h.slopeAngle!] = 1.0;
+    if (h.litterThickness != null) features[h.litterThickness!] = 1.0;
+    if (h.distanceToWater != null) features[h.distanceToWater!] = 1.0;
 
     final List<dynamic> classes = _modelData!['classes'];
     final List<dynamic> forest = _modelData!['forest'];
@@ -70,7 +75,6 @@ class MlPredictionService {
     return Map.fromEntries(sortedEntries);
   }
 
-  // ZMIANA: Szukamy na podstawie obiektu SoughtPlant
   List<String> getMatchingAreas(SoughtPlant plant, List<Releve> allReleves) {
     if (_modelData == null) return [];
 

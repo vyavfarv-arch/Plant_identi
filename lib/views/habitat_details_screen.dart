@@ -18,23 +18,25 @@ class HabitatDetailsScreen extends StatefulWidget {
 class _HabitatDetailsScreenState extends State<HabitatDetailsScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Dane podstawowe
   final TextEditingController _commonNameController = TextEditingController();
   final TextEditingController _phytoNameController = TextEditingController();
-  String _selectedType = "Zespół";
+  String _selectedType = "Obszar"; // NOWY PODZIAŁ HIERARCHII
 
-  // Dane siedliskowe (Numeryczne dla Random Forest)
   final TextEditingController _phController = TextEditingController();
   final List<String> _selectedSubstrates = [];
-  final List<String> _selectedLitter = [];
   double _moisture = 1.0;
-  double _sunlight = 2.0;
-  double _pollution = 0.0;
 
-  // Etykiety dla suwaków
+  // NOWE KRYTYCZNE ZMIENNE EKOLOGICZNE
+  String? _areaType;
+  String? _canopyCover;
+  String? _waterDynamics;
+  String? _litterThickness;
+
   final List<String> _moistureLabels = ["Sucho", "Świeżo", "Wilgotno", "Mokro"];
-  final List<String> _sunlightLabels = ["Pełne słońce", "Przewaga słońca", "Półcień", "Przewaga cienia", "Cień"];
-  final List<String> _pollutionLabels = ["Dzikie", "Uczęszczane", "Przy polach uprawnych", "Przy drodze", "Zanieczyszczone"];
+  final List<String> _areaTypeOptions = ["Las", "Łąka", "Mokradło", "Zarośla", "Pole", "Pobocze drogi", "Teren miejski", "Skraj lasu"];
+  final List<String> _canopyCoverOptions = ["Otwarte (0-25%)", "Półotwarte (25-60%)", "Zacienione (60-85%)", "Gęste (>85%)"];
+  final List<String> _waterDynamicsOptions = ["Stale wilgotne", "Sezonowo zalewane", "Sezonowo wysychające", "Stale suche"];
+  final List<String> _litterThicknessOptions = ["Brak", "Cienka (<2cm)", "Umiarkowana (2-10cm)", "Gruba (>10cm)"];
 
   @override
   Widget build(BuildContext context) {
@@ -55,14 +57,9 @@ class _HabitatDetailsScreenState extends State<HabitatDetailsScreen> {
                 validator: (v) => v!.isEmpty ? "To pole jest wymagane" : null,
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _phytoNameController,
-                decoration: const InputDecoration(labelText: "Nazwa naukowa (Syntakson)", border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: _selectedType,
-                items: ["Zespół", "Związek", "Rząd", "Klasa"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                items: ["Obszar", "Podobszar"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
                 onChanged: (v) => setState(() => _selectedType = v!),
                 decoration: const InputDecoration(labelText: "Ranga", border: OutlineInputBorder()),
               ),
@@ -76,14 +73,17 @@ class _HabitatDetailsScreenState extends State<HabitatDetailsScreen> {
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: "Wartość pH gleby", border: OutlineInputBorder(), hintText: "np. 6.5"),
               ),
-
               const SizedBox(height: 20),
-              _buildMultiSelect("Typ podłoża:", ["Piasek", "Glina", "Torf", "Skała wapienna", "Skała krzemianowa"], _selectedSubstrates),
-              _buildMultiSelect("Warstwa ściółki:", ["Brak", "Cienka warstwa", "Gruba warstwa"], _selectedLitter),
 
-              _buildSlider("Wilgotność:", _moisture, 3, _moistureLabels, (v) => setState(() => _moisture = v)),
-              _buildSlider("Nasłonecznienie:", _sunlight, 4, _sunlightLabels, (v) => setState(() => _sunlight = v)),
-              _buildSlider("Stopień zanieczyszczenia / antropopresji:", _pollution, 4, _pollutionLabels, (v) => setState(() => _pollution = v)),
+              _buildMultiSelect("Typ podłoża:", ["Piasek", "Glina", "Torf", "Skała wapienna", "Skała krzemianowa"], _selectedSubstrates),
+              const SizedBox(height: 20),
+
+              _buildDropdown("Typ obszaru", _areaTypeOptions, _areaType, (v) => setState(() => _areaType = v)),
+              _buildDropdown("Zwarcie koron (nasłonecznienie)", _canopyCoverOptions, _canopyCover, (v) => setState(() => _canopyCover = v)),
+              _buildDropdown("Dynamika wody", _waterDynamicsOptions, _waterDynamics, (v) => setState(() => _waterDynamics = v)),
+              _buildDropdown("Grubość warstwy ściółki", _litterThicknessOptions, _litterThickness, (v) => setState(() => _litterThickness = v)),
+
+              _buildSlider("Chwilowa wilgotność gleby:", _moisture, 3, _moistureLabels, (v) => setState(() => _moisture = v)),
 
               const SizedBox(height: 40),
               SizedBox(
@@ -103,18 +103,27 @@ class _HabitatDetailsScreenState extends State<HabitatDetailsScreen> {
     );
   }
 
+  Widget _buildDropdown(String label, List<String> options, String? value, Function(String?) onChanged) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: DropdownButtonFormField<String>(
+        value: value,
+        decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+        items: options.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+        onChanged: onChanged,
+      ),
+    );
+  }
+
   Widget _buildSlider(String title, double value, int divisions, List<String> labels, Function(double) onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 20),
+        const SizedBox(height: 10),
         Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         Slider(
-          value: value,
-          min: 0, max: divisions.toDouble(),
-          divisions: divisions,
-          label: labels[value.round()],
-          onChanged: onChanged,
+          value: value, min: 0, max: divisions.toDouble(), divisions: divisions,
+          label: labels[value.round()], onChanged: onChanged,
         ),
         Center(child: Text(labels[value.round()], style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold))),
       ],
@@ -132,8 +141,7 @@ class _HabitatDetailsScreenState extends State<HabitatDetailsScreen> {
           children: options.map((opt) {
             final isSelected = targetList.contains(opt);
             return FilterChip(
-              label: Text(opt),
-              selected: isSelected,
+              label: Text(opt), selected: isSelected,
               onSelected: (s) => setState(() => s ? targetList.add(opt) : targetList.remove(opt)),
             );
           }).toList(),
@@ -156,9 +164,10 @@ class _HabitatDetailsScreenState extends State<HabitatDetailsScreen> {
         substrateType: _selectedSubstrates,
         moisture: _moisture,
         ph: double.tryParse(_phController.text),
-        litterLayer: _selectedLitter,
-        sunlight: _sunlight,
-        pollution: _pollution,
+        areaType: _areaType,
+        canopyCover: _canopyCover,
+        waterDynamics: _waterDynamics,
+        litterThickness: _litterThickness,
       ),
     );
 
