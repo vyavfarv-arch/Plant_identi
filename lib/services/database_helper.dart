@@ -5,6 +5,7 @@ import '../models/releve.dart';
 import '../models/plant_observation.dart';
 import '../models/plant_species.dart';
 import '../models/sought_plant.dart';
+import '../models/recipe.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -23,14 +24,14 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'planticator.db');
     return await openDatabase(
       path,
-      version: 1, // Świeża wersja po wielkim refaktorze
+      version: 12, // PODNIESIONO DO 11
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
     );
   }
 
   Future _onCreate(Database db, int version) async {
-    // 1. Tabela Płatów (Releves)
     await db.execute('''
       CREATE TABLE releves (
         id TEXT PRIMARY KEY,
@@ -41,12 +42,11 @@ class DatabaseHelper {
         parentId TEXT,
         date TEXT NOT NULL,
         habitatJson TEXT,
-        mlPredictionsJson TEXT, -- Tabela trzyma wyniki ML
+        mlPredictionsJson TEXT,
         FOREIGN KEY (parentId) REFERENCES releves (id) ON DELETE SET NULL
       )
     ''');
 
-    // 2. Tabela Gatunków (Słownik / Ghost Plants)
     await db.execute('''
       CREATE TABLE plant_species (
         speciesID TEXT PRIMARY KEY,
@@ -67,7 +67,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // 3. Tabela Obserwacji (Fizyczne okazy)
     await db.execute('''
       CREATE TABLE observations (
         id TEXT PRIMARY KEY,
@@ -82,7 +81,7 @@ class DatabaseHelper {
         timestamp TEXT,
         characteristicsJson TEXT,
         observationDate TEXT,
-        areaPurity TEXT,
+        phenologicalStage TEXT, -- ZMIANA
         abundance TEXT,
         coverage TEXT,
         vitality TEXT,
@@ -96,7 +95,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // 4. Tabela Poszukiwań (Moduł: Szukaj roślin)
     await db.execute('''
       CREATE TABLE sought_plants (
         id TEXT PRIMARY KEY,
@@ -109,6 +107,29 @@ class DatabaseHelper {
         prefSunlight REAL
       )
     ''');
+    await db.execute('''
+      CREATE TABLE recipes (
+        id TEXT PRIMARY KEY,
+        title TEXT,
+        type TEXT,
+        ingredientsJson TEXT,
+        instructions TEXT,
+        createdAt TEXT
+      )
+    ''');
+  }
+
+  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    // ... poprzednie uaktualnienia ...
+    if (oldVersion < 12) {
+      try {
+        await db.execute('''
+          CREATE TABLE recipes (
+            id TEXT PRIMARY KEY, title TEXT, type TEXT, ingredientsJson TEXT, instructions TEXT, createdAt TEXT
+          )
+        ''');
+      } catch (e) { print("Błąd aktualizacji v12: $e"); }
+    }
   }
 
   // --- RELEVES CRUD ---
@@ -145,7 +166,7 @@ class DatabaseHelper {
     await db.delete('observations', where: 'id = ?', whereArgs: [id]);
   }
 
-  // --- SPECIES (GHOST PLANTS) CRUD ---
+  // --- SPECIES CRUD ---
   Future<void> insertSpecies(PlantSpecies species) async {
     final db = await database;
     await db.insert('plant_species', species.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
@@ -172,5 +193,20 @@ class DatabaseHelper {
   Future<void> deleteSoughtPlant(String id) async {
     final db = await database;
     await db.delete('sought_plants', where: 'id = ?', whereArgs: [id]);
+  }
+  Future<void> insertRecipe(Recipe recipe) async {
+    final db = await database;
+    await db.insert('recipes', recipe.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<List<Recipe>> getRecipes() async {
+    final db = await database;
+    final maps = await db.query('recipes');
+    return List.generate(maps.length, (i) => Recipe.fromMap(maps[i]));
+  }
+
+  Future<void> deleteRecipe(String id) async {
+    final db = await database;
+    await db.delete('recipes', where: 'id = ?', whereArgs: [id]);
   }
 }

@@ -140,7 +140,7 @@ class _FormScreenState extends State<FormScreen> {
       abundance: widget.observation.abundance,
       coverage: widget.observation.coverage,
       vitality: widget.observation.vitality,
-      areaPurity: widget.observation.areaPurity,
+      phenologicalStage: widget.observation.phenologicalStage,
       // observationDate ustawiamy na null, żeby wpadło do "Niekompletne/Opisz"
     );
 

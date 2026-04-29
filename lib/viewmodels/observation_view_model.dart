@@ -19,19 +19,27 @@ class ObservationViewModel extends ChangeNotifier {
   bool _isInitializing = false;
 
   List<String> get currentPhotoPaths => _currentPhotoPaths;
+
   bool get canTakePhoto => _currentPhotoPaths.length < 10;
+
   bool get isInitializing => _isInitializing;
+
   CameraController? get controller => _cameraService.controller;
+
   Position? get currentPosition => _currentPosition;
 
   List<PlantObservation> _observations = [];
   List<PlantSpecies> _speciesDictionary = [];
 
   List<PlantObservation> get allObservations => _observations;
+
   List<PlantSpecies> get speciesDictionary => _speciesDictionary;
 
-  List<PlantObservation> get incompleteObservations => _observations.where((obs) => !obs.isComplete).toList();
-  List<PlantObservation> get completeObservations => _observations.where((obs) => obs.isComplete).toList();
+  List<PlantObservation> get incompleteObservations =>
+      _observations.where((obs) => !obs.isComplete).toList();
+
+  List<PlantObservation> get completeObservations =>
+      _observations.where((obs) => obs.isComplete).toList();
 
   PlantSpecies? getSpeciesById(String? speciesId) {
     if (speciesId == null) return null;
@@ -43,11 +51,18 @@ class ObservationViewModel extends ChangeNotifier {
   }
 
   List<String> get uniquePlantNames {
-    return _speciesDictionary.map((s) => s.polishName.isNotEmpty ? s.polishName : s.latinName).toSet().toList();
+    return _speciesDictionary.map((s) =>
+    s.polishName.isNotEmpty
+        ? s.polishName
+        : s.latinName).toSet().toList();
   }
 
   List<String> get uniqueFamilies {
-    return _speciesDictionary.map((s) => s.family).where((f) => f.isNotEmpty).toSet().toList();
+    return _speciesDictionary
+        .map((s) => s.family)
+        .where((f) => f.isNotEmpty)
+        .toSet()
+        .toList();
   }
 
   Future<void> loadFromDisk() async {
@@ -118,16 +133,12 @@ class ObservationViewModel extends ChangeNotifier {
     List<String>? prefSubstrate,
     Map<String, List<int>>? harvestSeasons,
   }) async {
-
-    // 1. Zabezpieczenie przed duplikatami - pobieramy starą obserwację
     final index = _observations.indexWhere((o) => o.id == id);
-    if (index == -1) return; // Jeśli nie ma takiej rośliny, przerwij
+    if (index == -1) return;
     final old = _observations[index];
 
-    // 2. NAPRAWA DUPLIKATÓW: Używamy starego ID gatunku. Nowe generujemy tylko przy 1. zapisie!
     final String targetSpeciesId = old.speciesId ?? const Uuid().v4();
 
-    // 3. Tworzymy obiekt słownikowy Gatunku (z nadpisaniem starego)
     final species = PlantSpecies(
       speciesID: targetSpeciesId,
       latinName: latinName,
@@ -143,13 +154,12 @@ class ObservationViewModel extends ChangeNotifier {
       prefSunlight: prefSunlight,
       harvestSeasons: harvestSeasons ?? {},
     );
-    await _db.insertSpecies(species); // Zapis (nadpisuje istniejący gatunek)
+    await _db.insertSpecies(species);
 
-    // 4. Aktualizujemy konkretny OKAZ
     final updatedObs = PlantObservation(
       id: old.id,
       releveId: old.releveId,
-      speciesId: targetSpeciesId, // PRZYPIĘCIE!
+      speciesId: targetSpeciesId,
       localName: localName,
       subspecies: subspecies,
       tempBiologicalType: old.tempBiologicalType,
@@ -159,7 +169,8 @@ class ObservationViewModel extends ChangeNotifier {
       timestamp: old.timestamp,
       characteristics: old.characteristics,
       observationDate: old.observationDate ?? DateTime.now(),
-      areaPurity: old.areaPurity,
+      phenologicalStage: old.phenologicalStage,
+      // ZMIANA: Zachowujemy wybrany etap
       abundance: old.abundance,
       coverage: old.coverage,
       vitality: old.vitality,
@@ -174,10 +185,15 @@ class ObservationViewModel extends ChangeNotifier {
     await _db.insertObservation(updatedObs);
     await loadFromDisk();
   }
-
   void reset() {
     _currentPhotoPaths = [];
     _currentPosition = null;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _cameraService.dispose();
+    super.dispose();
   }
 }

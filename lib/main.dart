@@ -4,7 +4,8 @@ import 'viewmodels/observation_view_model.dart'; // Jedyny plik dla obserwacji
 import 'viewmodels/releve_view_model.dart'; // Zarządzanie obszarami
 import 'viewmodels/search_filter_view_model.dart'; // Filtrowanie
 import 'services/phytosociology_service.dart'; //
-import 'views/home_screen.dart'; // DODANO: Brakujący import dla HomeScreen
+import 'views/home_screen.dart';
+import 'viewmodels/recipe_view_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,15 +14,10 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        // Zaktualizowano: ObservationViewModel w Twoim pliku obsługuje zarówno sesję aparatu,
-        // jak i bazę danych roślin (loadFromDisk)
         ChangeNotifierProvider(create: (_) => ObservationViewModel()..loadFromDisk()),
-
-        // Obsługa obszarów, ich nazw i hierarchii
         ChangeNotifierProvider(create: (_) => ReleveViewModel()..loadFromDisk()),
-
-        // Globalny stan filtrów (zakresy dat, rodziny, multiselect)
-        ChangeNotifierProvider(create: (_) => SearchFilterViewModel()),
+        ChangeNotifierProvider(create: (_) => SearchFilterViewModel()..loadSoughtPlants()),
+        ChangeNotifierProvider(create: (_) => RecipeViewModel()..loadFromDisk()), // NOWA LINIJKA!
       ],
       child: const MyApp(),
     ),

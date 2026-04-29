@@ -7,6 +7,8 @@ import 'releve_list_map_screen.dart';
 import "area_managment_screen.dart";
 import "search_plants_screen.dart";
 import '../services/data_export_service.dart';
+import 'recipe_list_screen.dart';
+
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -79,6 +81,13 @@ class HomeScreen extends StatelessWidget {
                     icon: Icons.account_tree,
                     color: Colors.blueGrey,
                     onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AreaManagementScreen())),
+                  ),
+                  _buildGridButton(
+                    context,
+                    title: 'Przepisy',
+                    icon: Icons.menu_book,
+                    color: Colors.pink, // Możesz zmienić kolor na dowolny
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RecipeListScreen())),
                   ),
                   _buildGridButton(
                     context,

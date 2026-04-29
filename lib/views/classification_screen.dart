@@ -17,13 +17,20 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
   String? _selectedType;
   String? _selectedAbundance;
   String? _selectedVitality;
-  String? _selectedPurity;
+  String? _selectedPhenology; // ZMIANA
 
   final List<String> _types = ["Drzewo", "Krzew", "Zielne", "Grzyb", "Mszaki"];
 
-  final Map<String, String> _purityDescriptions = {
-    "4": "Obszar Dziki", "3": "Czysty (500m od dróg)", "2": "Średni", "1": "Zanieczyszczony"
+  // ZMIANA: Nowy słownik dla etapów fenologicznych
+  final Map<String, String> _phenologyDescriptions = {
+    "Wegetatywny": "Rozwój pędów i liści",
+    "Pączkowanie": "Widoczne pąki kwiatowe",
+    "Kwitnienie": "Rozwinięte kwiaty",
+    "Owocowanie": "Zawiązywanie i dojrzewanie owoców",
+    "Rozsiewanie": "Wysiew nasion/zarodników",
+    "Spoczynek": "Zamieranie jesienne / stan zimowy"
   };
+
   final Map<String, String> _abundanceDescriptions = {
     "5": "75-100% pokrycia", "4": "50-75% pokrycia", "3": "25-50%", "2": "5-25%", "1": "<5%", "0": "nielicznie"
   };
@@ -60,7 +67,7 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
               },
             ),
             const SizedBox(height: 20),
-            _buildDetailedDropdown("Czystość obszaru", _purityDescriptions, (v) => setState(() => _selectedPurity = v)),
+            _buildDetailedDropdown("Etap fenologiczny", _phenologyDescriptions, (v) => setState(() => _selectedPhenology = v)), // ZMIANA
             _buildDetailedDropdown("Ilościowość", _abundanceDescriptions, (v) => setState(() => _selectedAbundance = v)),
             _buildDetailedDropdown("Żywotność", _vitalityDescriptions, (v) => setState(() => _selectedVitality = v)),
             const SizedBox(height: 30),
@@ -99,7 +106,7 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
       timestamp: DateTime.now(),
       characteristics: {},
       tempBiologicalType: _selectedType,
-      areaPurity: _selectedPurity,
+      phenologicalStage: _selectedPhenology, // ZMIANA
       abundance: _selectedAbundance,
       vitality: _selectedVitality,
     );

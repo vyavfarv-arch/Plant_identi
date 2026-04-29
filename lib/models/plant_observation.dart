@@ -3,15 +3,13 @@ import 'dart:convert';
 
 class PlantObservation {
   final String id;
-  final String? releveId; // KLUCZ OBCY -> płat (Releve)
-  final String? speciesId; // KLUCZ OBCY -> gatunek (PlantSpecies.speciesID)
+  final String? releveId;
+  final String? speciesId;
 
-  // Robocze dane (zanim przypiszemy go do konkretnego gatunku z bazy)
   final String? localName;
   final String? subspecies;
   final String? tempBiologicalType;
 
-  // Fizyczne dane tego jednego, konkretnego okazu
   final List<String> photoPaths;
   final double latitude;
   final double longitude;
@@ -19,8 +17,8 @@ class PlantObservation {
   final Map<String, List<String>> characteristics;
   final DateTime? observationDate;
 
-  // Ocena okazu w momencie znalezienia
-  final String? areaPurity;
+  // ZMIANA: Zastąpiono areaPurity etapem fenologicznym
+  final String? phenologicalStage;
   final String? abundance;
   final String? coverage;
   final String? vitality;
@@ -43,7 +41,7 @@ class PlantObservation {
     required this.timestamp,
     required this.characteristics,
     this.observationDate,
-    this.areaPurity,
+    this.phenologicalStage, // ZMIANA
     this.abundance,
     this.coverage,
     this.vitality,
@@ -54,9 +52,7 @@ class PlantObservation {
     this.characteristicFeature,
   });
 
-  // Tymczasowe wyświetlanie nazwy (docelowo połączymy z PlantSpecies przez SQL JOIN)
   String get displayName => localName ?? "Nieznana roślina";
-
   bool get isComplete => observationDate != null && (speciesId != null || localName != null);
 
   Map<String, dynamic> toMap() {
@@ -73,7 +69,7 @@ class PlantObservation {
       'timestamp': timestamp.toIso8601String(),
       'characteristicsJson': jsonEncode(characteristics),
       'observationDate': observationDate?.toIso8601String(),
-      'areaPurity': areaPurity,
+      'phenologicalStage': phenologicalStage, // ZMIANA
       'abundance': abundance,
       'coverage': coverage,
       'vitality': vitality,
@@ -107,7 +103,7 @@ class PlantObservation {
       timestamp: DateTime.parse(map['timestamp']),
       characteristics: decodedChars,
       observationDate: map['observationDate'] != null ? DateTime.parse(map['observationDate']) : null,
-      areaPurity: map['areaPurity'],
+      phenologicalStage: map['phenologicalStage'], // ZMIANA
       abundance: map['abundance'],
       coverage: map['coverage'],
       vitality: map['vitality'],

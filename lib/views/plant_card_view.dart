@@ -47,7 +47,7 @@ class PlantCardView {
 
               _sectionHeader("2. Ocena surowca i siedliska"),
               _infoItem(Icons.category, "Typ surowca", species?.biologicalType ?? "-"),
-              _infoItem(Icons.cleaning_services, "Czystość obszaru", obs.areaPurity ?? "-"),
+              _infoItem(Icons.filter_vintage, "Etap fenologiczny", obs.phenologicalStage ?? "-"), // ZMIANA Z areaPurity
               _infoItem(Icons.analytics, "Ilościowość", obs.abundance ?? "-"),
               _infoItem(Icons.favorite, "Żywotność", obs.vitality ?? "-"),
 
