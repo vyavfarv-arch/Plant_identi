@@ -9,6 +9,7 @@ import '../services/database_helper.dart';
 import 'add_sought_plant_screen.dart';
 import 'results_map_screen.dart';
 import '../models/sought_plant.dart';
+import '../models/releve.dart';
 
 class _SearchListItem {
   final String id;

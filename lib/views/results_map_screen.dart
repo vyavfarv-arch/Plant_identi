@@ -19,7 +19,6 @@ class ResultsMapScreen extends StatefulWidget {
 }
 
 class _ResultsMapScreenState extends State<ResultsMapScreen> {
-  GoogleMapController? _mapController;
   Set<Polygon> _polygons = {};
 
   @override
@@ -128,7 +127,6 @@ class _ResultsMapScreenState extends State<ResultsMapScreen> {
         polygons: _polygons,
         mapType: MapType.hybrid,
         myLocationEnabled: true,
-        onMapCreated: (controller) => _mapController = controller,
       ),
     );
   }

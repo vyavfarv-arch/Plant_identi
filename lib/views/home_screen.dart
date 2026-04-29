@@ -7,6 +7,7 @@ import 'map_screen.dart';
 import 'releve_list_map_screen.dart';
 import "search_plants_screen.dart";
 import 'recipe_list_screen.dart';
+import 'reminder_list_screen.dart'; // NOWY IMPORT!
 import '../services/data_export_service.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -34,67 +35,53 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   _buildGridButton(
                     context,
-                    title: 'Dodaj roślinę',
-                    icon: Icons.add_a_photo,
-                    color: Colors.green,
+                    title: 'Dodaj roślinę', icon: Icons.add_a_photo, color: Colors.green,
                     onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CameraScreen())),
                   ),
                   _buildGridButton(
                     context,
-                    title: 'Opisz rośliny',
-                    icon: Icons.edit_note,
-                    color: Colors.teal,
+                    title: 'Opisz rośliny', icon: Icons.edit_note, color: Colors.teal,
                     onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DescriptionGridScreen())),
                   ),
                   _buildGridButton(
                     context,
-                    title: 'Magazyn',
-                    icon: Icons.library_books,
-                    color: Colors.blue,
+                    title: 'Magazyn', icon: Icons.library_books, color: Colors.blue,
                     onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BrowsePlantsScreen())),
                   ),
                   _buildGridButton(
                     context,
-                    title: 'Mapa roślin',
-                    icon: Icons.map,
-                    color: Colors.orange,
+                    title: 'Mapa roślin', icon: Icons.map, color: Colors.orange,
                     onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MapScreen())),
                   ),
                   _buildGridButton(
                     context,
-                    title: 'Obszary',
-                    icon: Icons.layers,
-                    color: Colors.indigo,
+                    title: 'Obszary', icon: Icons.layers, color: Colors.indigo,
                     onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReleveListMapScreen())),
                   ),
                   _buildGridButton(
                     context,
-                    title: 'Szukaj roślin',
-                    icon: Icons.search_rounded,
-                    color: Colors.deepOrange,
+                    title: 'Szukaj roślin', icon: Icons.search_rounded, color: Colors.deepOrange,
                     onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchPlantsScreen())),
                   ),
                   _buildGridButton(
                     context,
-                    title: 'Przepisy',
-                    icon: Icons.menu_book,
-                    color: Colors.pink,
+                    title: 'Przepisy', icon: Icons.menu_book, color: Colors.pink,
                     onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RecipeListScreen())),
                   ),
                   _buildGridButton(
                     context,
-                    title: 'Eksport ML',
-                    icon: Icons.import_export,
-                    color: Colors.brown,
+                    title: 'Eksport ML', icon: Icons.import_export, color: Colors.brown,
                     onPressed: () async {
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (ctx) => const Center(child: CircularProgressIndicator()),
-                      );
+                      showDialog(context: context, barrierDismissible: false, builder: (ctx) => const Center(child: CircularProgressIndicator()));
                       await DataExportService().exportDataForML();
                       if (context.mounted) Navigator.pop(context);
                     },
+                  ),
+                  // NOWY KAFELEK
+                  _buildGridButton(
+                    context,
+                    title: 'Przypomnienia', icon: Icons.notifications_active, color: Colors.amber.shade700,
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReminderListScreen())),
                   ),
                 ],
               ),
@@ -105,12 +92,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildGridButton(BuildContext context, {
-    required String title,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onPressed
-  }) {
+  Widget _buildGridButton(BuildContext context, {required String title, required IconData icon, required Color color, required VoidCallback onPressed}) {
     return InkWell(
       onTap: onPressed,
       borderRadius: BorderRadius.circular(15),
@@ -125,15 +107,7 @@ class HomeScreen extends StatelessWidget {
           children: [
             Icon(icon, size: 32, color: color),
             const SizedBox(height: 8),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: color.withOpacity(0.9),
-              ),
-            ),
+            Text(title, textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color.withOpacity(0.9))),
           ],
         ),
       ),

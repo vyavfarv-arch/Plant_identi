@@ -1,4 +1,3 @@
-// lib/services/database_helper.dart
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/releve.dart';
@@ -6,6 +5,7 @@ import '../models/plant_observation.dart';
 import '../models/plant_species.dart';
 import '../models/sought_plant.dart';
 import '../models/recipe.dart';
+import '../models/app_reminder.dart'; // NOWY IMPORT
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -24,13 +24,12 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'planticator.db');
     return await openDatabase(
       path,
-      version: 15, // WERSJA 15: Wielokrotne kalendarze zbiorów w poszukiwaniach
+      version: 16, // WERSJA 16: System Przypomnień i Minutników
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
     );
   }
-
   Future _onCreate(Database db, int version) async {
     // ... Tabele Releves i Recipes pozostają bez zmian (zakładam, że kod jest jak poprzednio)
     await db.execute('''
@@ -82,19 +81,33 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE recipes (
         id TEXT PRIMARY KEY, title TEXT, type TEXT, ingredientsJson TEXT,
-        instructions TEXT, createdAt TEXT
+        instructions TEXT, createdAt TEXT, timersJson TEXT
+      )
+    ''');
+
+
+    await db.execute('''
+      CREATE TABLE app_reminders (
+        id TEXT PRIMARY KEY, title TEXT, body TEXT, scheduledTime TEXT,
+        relatedId TEXT, type TEXT, isCompleted INTEGER
       )
     ''');
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 15) {
+    // ... poprzednie migracje ...
+    if (oldVersion < 16) {
       try {
-        await db.execute('ALTER TABLE sought_plants ADD COLUMN harvestSeasonsJson TEXT');
-      } catch (e) { print("Błąd migracji bazy do v15: $e"); }
+        await db.execute('ALTER TABLE recipes ADD COLUMN timersJson TEXT');
+        await db.execute('''
+          CREATE TABLE app_reminders (
+            id TEXT PRIMARY KEY, title TEXT, body TEXT, scheduledTime TEXT,
+            relatedId TEXT, type TEXT, isCompleted INTEGER
+          )
+        ''');
+      } catch (e) { print("Błąd migracji bazy do v16: $e"); }
     }
   }
-
   // --- RELEVES CRUD ---
   Future<void> insertReleve(Releve releve) async {
     final db = await database;
@@ -164,5 +177,25 @@ class DatabaseHelper {
   Future<void> deleteRecipe(String id) async {
     final db = await database;
     await db.delete('recipes', where: 'id = ?', whereArgs: [id]);
+  }
+  Future<void> insertReminder(AppReminder reminder) async {
+    final db = await database;
+    await db.insert('app_reminders', reminder.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<List<AppReminder>> getReminders() async {
+    final db = await database;
+    final maps = await db.query('app_reminders', orderBy: 'scheduledTime ASC');
+    return List.generate(maps.length, (i) => AppReminder.fromMap(maps[i]));
+  }
+
+  Future<void> updateReminderStatus(String id, bool isCompleted) async {
+    final db = await database;
+    await db.update('app_reminders', {'isCompleted': isCompleted ? 1 : 0}, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> deleteReminder(String id) async {
+    final db = await database;
+    await db.delete('app_reminders', where: 'id = ?', whereArgs: [id]);
   }
 }

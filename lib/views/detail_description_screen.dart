@@ -6,6 +6,9 @@ import '../models/plant_species.dart';
 import '../viewmodels/observation_view_model.dart';
 import '../widgets/ecological_amplitude_picker.dart';
 import 'dart:io';
+import '../models/harvest_season.dart';
+import '../widgets/harvest_season_picker.dart';
+import '../viewmodels/reminder_view_model.dart';
 
 class DetailDescriptionScreen extends StatefulWidget {
   final PlantObservation observation;
@@ -18,6 +21,7 @@ class DetailDescriptionScreen extends StatefulWidget {
 class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
   final Map<String, TextEditingController> _controllers = {};
   String? _selectedCertainty;
+  List<HarvestSeason> _selectedSeasons = [];
 
   // Magia DRY - Jeden elegancki kontroler zamiast 7 list i 30 funkcji!
   final EcologicalDataController _ecoController = EcologicalDataController();
@@ -54,6 +58,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       _controllers['localName']!.text = s.polishName;
       _controllers['usage']!.text = s.plantUsage ?? "";
       _controllers['cultivation']!.text = s.cultivation ?? "";
+      _selectedSeasons = List.from(s.harvestSeasons); // Wczytanie z bazy
     });
 
     // Autouzupełnianie logiki ML jednym poleceniem
@@ -79,7 +84,18 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
             title: const Text("Amplituda ekologiczna (ML)", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
             children: [ Padding(padding: const EdgeInsets.all(12), child: EcologicalAmplitudePicker(controller: _ecoController)) ],
           ),
-
+          ExpansionTile(
+            title: const Text("Surowce i Zbiory", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: HarvestSeasonPicker(
+                  initialSeasons: _selectedSeasons,
+                  onChanged: (seasons) => setState(() => _selectedSeasons = List.from(seasons)),
+                ),
+              )
+            ],
+          ),
           _buildUsageSection(),
           const SizedBox(height: 30),
           ElevatedButton(
@@ -162,8 +178,24 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
   void _saveAndGoBack() {
     if (_controllers['localName']!.text.isEmpty) return;
 
-    // Przekazujemy dane wyjęte z naszego nowego _ecoController!
-    context.read<ObservationViewModel>().updateObservationDetailed(
+    final obsVm = context.read<ObservationViewModel>();
+    final remVm = context.read<ReminderViewModel>();
+
+    // Generowanie przypomnień z włączoną flagą
+    for (var season in _selectedSeasons) {
+      if (season.reminderEnabled) {
+        for (var month in season.months) {
+          remVm.addHarvestReminder(
+              plantName: _controllers['localName']!.text,
+              material: season.material,
+              month: month,
+              relatedId: widget.observation.speciesId ?? "new_species"
+          );
+        }
+      }
+    }
+
+    obsVm.updateObservationDetailed(
       id: widget.observation.id,
       localName: _controllers['localName']!.text, latinName: _controllers['latinName']!.text,
       family: _controllers['family']!.text, biologicalType: widget.observation.tempBiologicalType,
@@ -171,6 +203,8 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       doubts: _controllers['idDoubts']!.text, keyTraits: _controllers['keyTraits']!.text,
       confusing: _controllers['confusing']!.text, characteristic: _controllers['characteristic']!.text,
       usage: _controllers['usage']!.text, cultivation: _controllers['cultivation']!.text,
+
+      harvestSeasons: _selectedSeasons, // ZMIANA: Wysyłamy kalendarze do bazy
 
       prefPhMin: _ecoController.phMin, prefPhMax: _ecoController.phMax,
       prefAreaTypes: _ecoController.areaTypes, prefExposures: _ecoController.exposures,
