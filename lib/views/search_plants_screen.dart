@@ -5,7 +5,6 @@ import '../viewmodels/observation_view_model.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../viewmodels/search_filter_view_model.dart';
 import '../services/ml_prediction_service.dart';
-import '../services/database_helper.dart';
 import 'add_sought_plant_screen.dart';
 import 'results_map_screen.dart';
 import '../models/sought_plant.dart';
