@@ -46,15 +46,31 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
     final filterVm = context.watch<SearchFilterViewModel>();
     final releveVm = context.read<ReleveViewModel>();
 
-    final speciesItems = obsVm.speciesDictionary.map((s) => _SearchListItem(
-      id: s.speciesID, name: s.polishName.isNotEmpty ? s.polishName : s.latinName, subtitle: "Magazyn (Zbadana)", isSought: false, originalObject: s,
-    )).toList();
+    // GRUPOWANIE GATUNKÓW - unikanie duplikatów na liście (bierzemy unikalne nazwy)
+    final Map<String, _SearchListItem> uniqueItemsMap = {};
 
-    final soughtItems = filterVm.soughtPlants.map((s) => _SearchListItem(
-      id: s.id, name: s.polishName.isNotEmpty ? s.polishName : s.latinName, subtitle: "Poszukiwana (Tylko ML)", isSought: true, originalObject: s,
-    )).toList();
+    // 1. Zasilanie mapy gatunkami z magazynu
+    for (var s in obsVm.speciesDictionary) {
+      final nameKey = s.latinName.isNotEmpty ? s.latinName.toLowerCase() : s.polishName.toLowerCase();
+      if (!uniqueItemsMap.containsKey(nameKey)) {
+        uniqueItemsMap[nameKey] = _SearchListItem(
+          id: s.speciesID, name: s.polishName.isNotEmpty ? s.polishName : s.latinName, subtitle: "Magazyn (Zbadana)", isSought: false, originalObject: s,
+        );
+      }
+    }
 
-    List<_SearchListItem> allItems = [...speciesItems, ...soughtItems];
+    // 2. Zasilanie mapy roślinami poszukiwanymi (nadpisze lub doda nowe)
+    for (var s in filterVm.soughtPlants) {
+      final nameKey = s.latinName.isNotEmpty ? s.latinName.toLowerCase() : s.polishName.toLowerCase();
+      if (!uniqueItemsMap.containsKey(nameKey)) {
+        uniqueItemsMap[nameKey] = _SearchListItem(
+          id: s.id, name: s.polishName.isNotEmpty ? s.polishName : s.latinName, subtitle: "Poszukiwana (Tylko ML)", isSought: true, originalObject: s,
+        );
+      }
+    }
+
+    // 3. Spłaszczamy mapę do zwykłej listy
+    List<_SearchListItem> allItems = uniqueItemsMap.values.toList();
 
     final filteredItems = allItems.where((p) {
       final matchesSearch = p.name.toLowerCase().contains(_searchQuery.toLowerCase());
@@ -130,7 +146,7 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
       padding: const EdgeInsets.all(16),
       color: Colors.deepOrange.shade50,
       child: SizedBox(
-        width: double.infinity, height: 55,
+        width: double.infinity, height: 75,
         child: ElevatedButton.icon(
           style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange, foregroundColor: Colors.white),
           onPressed: () async {
@@ -141,7 +157,7 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
               targetPlant = item.originalObject;
             } else {
               final sp = item.originalObject;
-              knownSpeciesId = sp.speciesID; // Zapisujemy ID, jeśli to znana roślina
+              knownSpeciesId = sp.speciesID;
               targetPlant = SoughtPlant(
                 id: sp.speciesID, polishName: sp.polishName, latinName: sp.latinName,
                 prefPhMin: sp.prefPhMin, prefPhMax: sp.prefPhMax,
@@ -163,7 +179,7 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
                 builder: (_) => ResultsMapScreen(
                   matchingAreas: matchingObjects,
                   plantName: item.name,
-                  speciesId: knownSpeciesId, // Przekazujemy na mapę
+                  speciesId: knownSpeciesId,
                 )
             ));
           },

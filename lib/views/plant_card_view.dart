@@ -10,7 +10,6 @@ import 'releve_details_screen.dart';
 
 class PlantCardView {
   static void show(BuildContext context, PlantObservation obs) {
-    // 1. ZMIANA: Pobieramy ViewModel i odszukujemy Słownikowy model Gatunku!
     final obsVm = context.read<ObservationViewModel>();
     final species = obsVm.getSpeciesById(obs.speciesId);
 
@@ -45,21 +44,19 @@ class PlantCardView {
               _infoItem(Icons.account_tree, "Rodzina", species?.family ?? "-"),
               _infoItem(Icons.subtitles, "Podgatunek/Odmiana", obs.subspecies ?? "-"),
 
-              _sectionHeader("2. Ocena surowca i siedliska"),
+              _sectionHeader("2. Ocena surowca i kondycja"),
               _infoItem(Icons.category, "Typ surowca", species?.biologicalType ?? "-"),
-              _infoItem(Icons.filter_vintage, "Etap fenologiczny", obs.phenologicalStage ?? "-"), // ZMIANA Z areaPurity
+              _infoItem(Icons.filter_vintage, "Etap fenologiczny", obs.phenologicalStage ?? "-"),
               _infoItem(Icons.analytics, "Ilościowość", obs.abundance ?? "-"),
               _infoItem(Icons.favorite, "Żywotność", obs.vitality ?? "-"),
 
-              _sectionHeader("3. Preferencje środowiskowe (ML Data)"),
+              _sectionHeader("3. Amplituda ekologiczna "),
               _infoItem(Icons.science, "Zakres pH", "${species?.prefPhMin?.toStringAsFixed(1) ?? '?'} - ${species?.prefPhMax?.toStringAsFixed(1) ?? '?'}"),
-              _infoItem(
-                  Icons.landscape,
-                  "Podłoże",
-                  (species != null && species.prefSubstrate.isNotEmpty) ? species.prefSubstrate.join(", ") : "-"
-              ),
-              _infoItem(Icons.water_drop, "Wilgotność", _translateMoisture(species?.prefMoisture)),
-              _infoItem(Icons.wb_sunny, "Nasłonecznienie", _translateSun(species?.prefSunlight)),
+              _infoItem(Icons.landscape, "Typy obszaru", _joinList(species?.prefAreaTypes)),
+              _infoItem(Icons.explore, "Ekspozycja stoku", _joinList(species?.prefExposures)),
+              _infoItem(Icons.wb_sunny, "Zwarcie koron", _joinList(species?.prefCanopyCovers)),
+              _infoItem(Icons.water_drop, "Dynamika wody", _joinList(species?.prefWaterDynamics)),
+              _infoItem(Icons.layers, "Głębokość gleby", _joinList(species?.prefSoilDepths)),
 
               _sectionHeader("4. Cechy i Wykorzystanie"),
               _infoItem(Icons.verified, "Stopień pewności", obs.certainty ?? "-"),
@@ -74,6 +71,12 @@ class PlantCardView {
         ),
       ),
     );
+  }
+
+  // Helper do łączenia elementów list w estetyczny napis
+  static String _joinList(List<String>? list) {
+    if (list == null || list.isEmpty) return "-";
+    return list.join(", ");
   }
 
   static Widget _buildHandle() => Center(
@@ -140,14 +143,4 @@ class PlantCardView {
       ],
     ),
   );
-
-  static String _translateMoisture(double? v) {
-    if (v == null) return "-";
-    return ["Sucho", "Świeżo", "Wilgotno", "Mokro"][v.round()];
-  }
-
-  static String _translateSun(double? v) {
-    if (v == null) return "-";
-    return ["Pełne słońce", "Przewaga słońca", "Półcień", "Przewaga cienia", "Cień"][v.round()];
-  }
 }

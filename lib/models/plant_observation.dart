@@ -5,19 +5,15 @@ class PlantObservation {
   final String id;
   final String? releveId;
   final String? speciesId;
-
   final String? localName;
   final String? subspecies;
   final String? tempBiologicalType;
-
   final List<String> photoPaths;
   final double latitude;
   final double longitude;
   final DateTime timestamp;
   final Map<String, List<String>> characteristics;
   final DateTime? observationDate;
-
-  // ZMIANA: Zastąpiono areaPurity etapem fenologicznym
   final String? phenologicalStage;
   final String? abundance;
   final String? coverage;
@@ -27,6 +23,10 @@ class PlantObservation {
   final String? keyMorphologicalTraits;
   final String? confusingSpecies;
   final String? characteristicFeature;
+
+  // NOWOŚĆ: Indywidualny kalendarz zbiorów dla tego konkretnego okazu
+  // Jeśli jest pusty, aplikacja powinna brać dane z PlantSpecies
+  final Map<String, List<int>> customHarvestSeasons;
 
   PlantObservation({
     required this.id,
@@ -41,7 +41,7 @@ class PlantObservation {
     required this.timestamp,
     required this.characteristics,
     this.observationDate,
-    this.phenologicalStage, // ZMIANA
+    this.phenologicalStage,
     this.abundance,
     this.coverage,
     this.vitality,
@@ -50,6 +50,7 @@ class PlantObservation {
     this.keyMorphologicalTraits,
     this.confusingSpecies,
     this.characteristicFeature,
+    this.customHarvestSeasons = const {},
   });
 
   String get displayName => localName ?? "Nieznana roślina";
@@ -69,7 +70,7 @@ class PlantObservation {
       'timestamp': timestamp.toIso8601String(),
       'characteristicsJson': jsonEncode(characteristics),
       'observationDate': observationDate?.toIso8601String(),
-      'phenologicalStage': phenologicalStage, // ZMIANA
+      'phenologicalStage': phenologicalStage,
       'abundance': abundance,
       'coverage': coverage,
       'vitality': vitality,
@@ -78,6 +79,7 @@ class PlantObservation {
       'keyMorphologicalTraits': keyMorphologicalTraits,
       'confusingSpecies': confusingSpecies,
       'characteristicFeature': characteristicFeature,
+      'customHarvestSeasonsJson': jsonEncode(customHarvestSeasons),
     };
   }
 
@@ -87,6 +89,14 @@ class PlantObservation {
       try {
         final rawMap = jsonDecode(map['characteristicsJson']) as Map<String, dynamic>;
         rawMap.forEach((key, value) => decodedChars[key] = List<String>.from(value));
+      } catch (e) { print(e); }
+    }
+
+    Map<String, List<int>> decodedHarvest = {};
+    if (map['customHarvestSeasonsJson'] != null) {
+      try {
+        final rawMap = jsonDecode(map['customHarvestSeasonsJson']) as Map<String, dynamic>;
+        rawMap.forEach((key, value) => decodedHarvest[key] = List<int>.from(value));
       } catch (e) { print(e); }
     }
 
@@ -103,7 +113,7 @@ class PlantObservation {
       timestamp: DateTime.parse(map['timestamp']),
       characteristics: decodedChars,
       observationDate: map['observationDate'] != null ? DateTime.parse(map['observationDate']) : null,
-      phenologicalStage: map['phenologicalStage'], // ZMIANA
+      phenologicalStage: map['phenologicalStage'],
       abundance: map['abundance'],
       coverage: map['coverage'],
       vitality: map['vitality'],
@@ -112,6 +122,7 @@ class PlantObservation {
       keyMorphologicalTraits: map['keyMorphologicalTraits'],
       confusingSpecies: map['confusingSpecies'],
       characteristicFeature: map['characteristicFeature'],
+      customHarvestSeasons: decodedHarvest,
     );
   }
 }
