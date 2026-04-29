@@ -1,14 +1,16 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'viewmodels/observation_view_model.dart'; // Jedyny plik dla obserwacji
-import 'viewmodels/releve_view_model.dart'; // Zarządzanie obszarami
-import 'viewmodels/search_filter_view_model.dart'; // Filtrowanie
-import 'services/phytosociology_service.dart'; //
-import 'views/home_screen.dart';
+
+import 'viewmodels/observation_view_model.dart';
+import 'viewmodels/releve_view_model.dart';
+import 'viewmodels/search_filter_view_model.dart';
 import 'viewmodels/recipe_view_model.dart';
 import 'viewmodels/reminder_view_model.dart';
+import 'views/home_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -23,12 +25,11 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ReleveViewModel()..loadFromDisk()),
         ChangeNotifierProvider(create: (_) => SearchFilterViewModel()..loadSoughtPlants()),
         ChangeNotifierProvider(create: (_) => RecipeViewModel()..loadFromDisk()),
-
-        // NOWOŚĆ: Rejestrujemy ViewModel Przypomnień
         ChangeNotifierProvider(create: (_) => ReminderViewModel()..loadFromDisk()),
       ],
       child: MaterialApp(
         title: 'Plantifikator',
+        debugShowCheckedModeBanner: false, // ZMIANA: Usunięcie paska DEBUG w prawym górnym rogu
         theme: ThemeData(
           primarySwatch: Colors.green,
           visualDensity: VisualDensity.adaptivePlatformDensity,

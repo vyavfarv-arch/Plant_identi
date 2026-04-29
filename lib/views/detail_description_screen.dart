@@ -181,34 +181,39 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
     final obsVm = context.read<ObservationViewModel>();
     final remVm = context.read<ReminderViewModel>();
 
-    // Generowanie przypomnień z włączoną flagą
+    // NAPRAWA BŁĘDU: Używamy startDate zamiast months
     for (var season in _selectedSeasons) {
-      if (season.reminderEnabled) {
-        for (var month in season.months) {
-          remVm.addHarvestReminder(
-              plantName: _controllers['localName']!.text,
-              material: season.material,
-              month: month,
-              relatedId: widget.observation.speciesId ?? "new_species"
-          );
-        }
+      if (season.reminderEnabled && season.startDate != null) {
+        remVm.addHarvestReminder(
+            plantName: _controllers['localName']!.text,
+            material: season.material,
+            date: season.startDate!, // Jedno przypomnienie na start sezonu
+            relatedId: widget.observation.id // Łączymy z tą konkretną obserwacją
+        );
       }
     }
 
     obsVm.updateObservationDetailed(
       id: widget.observation.id,
-      localName: _controllers['localName']!.text, latinName: _controllers['latinName']!.text,
-      family: _controllers['family']!.text, biologicalType: widget.observation.tempBiologicalType,
-      subspecies: _controllers['subspecies']!.text, certainty: _selectedCertainty,
-      doubts: _controllers['idDoubts']!.text, keyTraits: _controllers['keyTraits']!.text,
-      confusing: _controllers['confusing']!.text, characteristic: _controllers['characteristic']!.text,
-      usage: _controllers['usage']!.text, cultivation: _controllers['cultivation']!.text,
-
-      harvestSeasons: _selectedSeasons, // ZMIANA: Wysyłamy kalendarze do bazy
-
-      prefPhMin: _ecoController.phMin, prefPhMax: _ecoController.phMax,
-      prefAreaTypes: _ecoController.areaTypes, prefExposures: _ecoController.exposures,
-      prefCanopyCovers: _ecoController.canopyCovers, prefWaterDynamics: _ecoController.waterDynamics,
+      localName: _controllers['localName']!.text,
+      latinName: _controllers['latinName']!.text,
+      family: _controllers['family']!.text,
+      biologicalType: widget.observation.tempBiologicalType,
+      subspecies: _controllers['subspecies']!.text,
+      certainty: _selectedCertainty,
+      doubts: _controllers['idDoubts']!.text,
+      keyTraits: _controllers['keyTraits']!.text,
+      confusing: _controllers['confusing']!.text,
+      characteristic: _controllers['characteristic']!.text,
+      usage: _controllers['usage']!.text,
+      cultivation: _controllers['cultivation']!.text,
+      harvestSeasons: _selectedSeasons, // Wysyłamy nową strukturę Od-Do
+      prefPhMin: _ecoController.phMin,
+      prefPhMax: _ecoController.phMax,
+      prefAreaTypes: _ecoController.areaTypes,
+      prefExposures: _ecoController.exposures,
+      prefCanopyCovers: _ecoController.canopyCovers,
+      prefWaterDynamics: _ecoController.waterDynamics,
       prefSoilDepths: _ecoController.soilDepths,
     );
     Navigator.pop(context);

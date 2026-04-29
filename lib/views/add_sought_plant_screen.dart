@@ -7,8 +7,9 @@ import '../models/harvest_season.dart';
 import '../services/database_helper.dart';
 import '../viewmodels/search_filter_view_model.dart';
 import '../viewmodels/observation_view_model.dart';
+import '../viewmodels/reminder_view_model.dart'; // DODANY IMPORT!
 import '../widgets/ecological_amplitude_picker.dart';
-import '../widgets/harvest_season_picker.dart'; // Widget z poprzedniego kroku!
+import '../widgets/harvest_season_picker.dart';
 
 class AddSoughtPlantScreen extends StatefulWidget {
   const AddSoughtPlantScreen({super.key});
@@ -22,7 +23,7 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
   final TextEditingController _latinController = TextEditingController();
 
   final EcologicalDataController _ecoController = EcologicalDataController();
-  List<HarvestSeason> _selectedSeasons = []; // Surowce i miesiące
+  List<HarvestSeason> _selectedSeasons = []; // Surowce i zakresy dat
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +66,7 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
 
             const Divider(height: 40),
 
-            // WIDGET KALENDARZY (Z poprz. kroku)
+            // WIDGET KALENDARZY
             HarvestSeasonPicker(
               initialSeasons: _selectedSeasons,
               onChanged: (seasons) => setState(() => _selectedSeasons = List.from(seasons)),
@@ -74,7 +75,7 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
             const Divider(height: 40),
             const Text("Amplituda Ekologiczna (Zaznacz dopuszczalne)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.teal)),
 
-            // WIDGET EKOLOGICZNY (Stworzony w tym kroku)
+            // WIDGET EKOLOGICZNY
             EcologicalAmplitudePicker(controller: _ecoController),
 
             const SizedBox(height: 30),
@@ -97,8 +98,10 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
   void _saveAndSetReminder() async {
     if (_nameController.text.isEmpty) return;
 
+    final soughtId = const Uuid().v4();
+
     final sought = SoughtPlant(
-      id: const Uuid().v4(),
+      id: soughtId,
       polishName: _nameController.text,
       latinName: _latinController.text,
       harvestSeasons: _selectedSeasons, // Zapisywanie zaawansowanego kalendarza
@@ -114,11 +117,20 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
 
     await DatabaseHelper().insertSoughtPlant(sought);
 
-    if (_selectedSeasons.isNotEmpty) {
-      debugPrint("LOG: Zaplanowano powiadomienia dla ${_nameController.text}. Surowce: ${_selectedSeasons.map((e) => e.material).join(', ')}");
-    }
-
+    // ZAPIS FAKTYCZNYCH PRZYPOMNIEŃ DO BAZY (MÓZG SYSTEMU)
     if (mounted) {
+      final remVm = context.read<ReminderViewModel>();
+      for (var season in _selectedSeasons) {
+        if (season.reminderEnabled && season.startDate != null) {
+          remVm.addHarvestReminder(
+              plantName: _nameController.text,
+              material: season.material,
+              date: season.startDate!,
+              relatedId: soughtId // Używamy ID poszukiwanej rośliny
+          );
+        }
+      }
+
       context.read<SearchFilterViewModel>().loadSoughtPlants();
       Navigator.pop(context);
     }
