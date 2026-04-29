@@ -37,7 +37,6 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
   void initState() {
     super.initState();
     _mlService.loadModel();
-    // Odświeżenie roślin poszukiwanych na wejściu w ekran
     Future.microtask(() => context.read<SearchFilterViewModel>().loadSoughtPlants());
   }
 
@@ -47,46 +46,28 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
     final filterVm = context.watch<SearchFilterViewModel>();
     final releveVm = context.read<ReleveViewModel>();
 
-    // 1. Mapujemy Słownik Gatunków
     final speciesItems = obsVm.speciesDictionary.map((s) => _SearchListItem(
-      id: s.speciesID,
-      name: s.polishName.isNotEmpty ? s.polishName : s.latinName,
-      subtitle: "W MAGAZYNIE",
-      isSought: false,
-      originalObject: s,
+      id: s.speciesID, name: s.polishName.isNotEmpty ? s.polishName : s.latinName, subtitle: "Magazyn (Zbadana)", isSought: false, originalObject: s,
     )).toList();
 
-    // 2. Mapujemy Rośliny Poszukiwane
     final soughtItems = filterVm.soughtPlants.map((s) => _SearchListItem(
-      id: s.id,
-      name: s.polishName.isNotEmpty ? s.polishName : s.latinName,
-      subtitle: "POSZUKIWANA",
-      isSought: true,
-      originalObject: s,
+      id: s.id, name: s.polishName.isNotEmpty ? s.polishName : s.latinName, subtitle: "Poszukiwana (Tylko ML)", isSought: true, originalObject: s,
     )).toList();
 
-    // 3. Łączymy i filtrujemy
     List<_SearchListItem> allItems = [...speciesItems, ...soughtItems];
 
     final filteredItems = allItems.where((p) {
       final matchesSearch = p.name.toLowerCase().contains(_searchQuery.toLowerCase());
-      bool matchesFilter = true;
-      if (_filterType == "Magazyn") matchesFilter = !p.isSought;
-      if (_filterType == "Poszukiwane") matchesFilter = p.isSought;
-
-      return matchesSearch && matchesFilter;
+      if (_filterType == "Magazyn") return matchesSearch && !p.isSought;
+      if (_filterType == "Poszukiwane") return matchesSearch && p.isSought;
+      return matchesSearch;
     }).toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Baza i Poszukiwania"),
+        title: const Text("Znajdź Obszary (ML)"),
         actions: [
-          PopupMenuButton<String>(
-            onSelected: (v) {
-              if (v == 'add') Navigator.push(context, MaterialPageRoute(builder: (_) => const AddSoughtPlantScreen()));
-            },
-            itemBuilder: (ctx) => [const PopupMenuItem(value: 'add', child: Text("Dodaj szukaną roślinę"))],
-          )
+          IconButton(icon: const Icon(Icons.add), tooltip: "Dodaj nowy cel poszukiwań", onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddSoughtPlantScreen()))),
         ],
       ),
       body: Column(
@@ -96,7 +77,7 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
             child: Column(
               children: [
                 TextField(
-                  decoration: const InputDecoration(hintText: "Szukaj rośliny...", prefixIcon: Icon(Icons.search), border: OutlineInputBorder()),
+                  decoration: const InputDecoration(hintText: "Wybierz roślinę do analizy...", prefixIcon: Icon(Icons.search), border: OutlineInputBorder()),
                   onChanged: (v) => setState(() => _searchQuery = v),
                 ),
                 const SizedBox(height: 8),
@@ -119,15 +100,20 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
                 final item = filteredItems[index];
 
                 return RadioListTile<String>(
+                  activeColor: Colors.deepOrange,
                   title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(item.subtitle),
-                  secondary: IconButton(
-                    icon: Icon(Icons.info_outline, color: item.isSought ? Colors.orange : Colors.green),
-                    onPressed: () => _showPlantEcoDetails(context, item, filterVm, releveVm),
-                  ),
+                  subtitle: Text(item.subtitle, style: TextStyle(color: item.isSought ? Colors.deepOrange : Colors.green)),
                   value: item.id,
                   groupValue: _selectedPlantId,
                   onChanged: (v) => setState(() => _selectedPlantId = v),
+                  secondary: item.isSought ? IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.grey),
+                    onPressed: () {
+                      DatabaseHelper().deleteSoughtPlant(item.id);
+                      filterVm.loadSoughtPlants();
+                      if (_selectedPlantId == item.id) setState(() => _selectedPlantId = null);
+                    },
+                  ) : null,
                 );
               },
             ),
@@ -142,87 +128,48 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
   Widget _buildActionFooter(_SearchListItem item, ReleveViewModel releveVm) {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: Colors.teal.shade50,
+      color: Colors.deepOrange.shade50,
       child: SizedBox(
-        width: double.infinity,
+        width: double.infinity, height: 55,
         child: ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange, foregroundColor: Colors.white),
           onPressed: () async {
-            // Zamieniamy na SoughtPlant dla algorytmu ML, żeby miał jednorodny input
             SoughtPlant targetPlant;
+            String? knownSpeciesId;
+
             if (item.originalObject is SoughtPlant) {
               targetPlant = item.originalObject;
             } else {
-              final sp = item.originalObject; // PlantSpecies
+              final sp = item.originalObject;
+              knownSpeciesId = sp.speciesID; // Zapisujemy ID, jeśli to znana roślina
               targetPlant = SoughtPlant(
                 id: sp.speciesID, polishName: sp.polishName, latinName: sp.latinName,
-                prefPhMin: sp.prefPhMin, prefPhMax: sp.prefPhMax, prefSubstrate: sp.prefSubstrate,
-                prefMoisture: sp.prefMoisture, prefSunlight: sp.prefSunlight,
+                prefPhMin: sp.prefPhMin, prefPhMax: sp.prefPhMax,
+                prefAreaTypes: sp.prefAreaTypes, prefExposures: sp.prefExposures,
+                prefCanopyCovers: sp.prefCanopyCovers, prefWaterDynamics: sp.prefWaterDynamics,
+                prefSoilDepths: sp.prefSoilDepths,
               );
             }
 
             final resultsIds = _mlService.getMatchingAreas(targetPlant, releveVm.allReleves);
-
             final matchingObjects = releveVm.allReleves.where((r) => resultsIds.contains(r.id)).toList();
 
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Analiza zakończona. Znaleziono ${resultsIds.length} obszarów.")));
-
-            if (matchingObjects.isNotEmpty) {
-              Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => ResultsMapScreen(matchingAreas: matchingObjects, plantName: item.name)
-              ));
+            if (matchingObjects.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Model ML nie wytypował żadnego odpowiedniego obszaru.")));
+              return;
             }
+
+            Navigator.push(context, MaterialPageRoute(
+                builder: (_) => ResultsMapScreen(
+                  matchingAreas: matchingObjects,
+                  plantName: item.name,
+                  speciesId: knownSpeciesId, // Przekazujemy na mapę
+                )
+            ));
           },
-          icon: const Icon(Icons.search),
-          label: const Text("ZNAJDŹ OBSZARY (ML)"),
+          icon: const Icon(Icons.map),
+          label: Text("POKAŻ POTENCJALNE OBSZARY (${item.name.toUpperCase()})"),
         ),
-      ),
-    );
-  }
-
-  void _showPlantEcoDetails(BuildContext context, _SearchListItem item, SearchFilterViewModel filterVm, ReleveViewModel releveVm) {
-    String ph = "? - ?";
-    String substrate = "Brak";
-
-    if (item.originalObject is SoughtPlant) {
-      final p = item.originalObject as SoughtPlant;
-      ph = "${p.prefPhMin?.toStringAsFixed(1) ?? '?'} - ${p.prefPhMax?.toStringAsFixed(1) ?? '?'}";
-      substrate = p.prefSubstrate.isNotEmpty ? p.prefSubstrate.join(', ') : 'Brak';
-    } else {
-      final p = item.originalObject; // PlantSpecies
-      ph = "${p.prefPhMin?.toStringAsFixed(1) ?? '?'} - ${p.prefPhMax?.toStringAsFixed(1) ?? '?'}";
-      substrate = p.prefSubstrate.isNotEmpty ? p.prefSubstrate.join(', ') : 'Brak';
-    }
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(child: Text(item.name)),
-            if (item.isSought) // Usuwanie dozwolone tylko dla Poszukiwanych
-              IconButton(
-                icon: const Icon(Icons.delete_forever, color: Colors.red),
-                onPressed: () {
-                  DatabaseHelper().deleteSoughtPlant(item.id);
-                  filterVm.loadSoughtPlants();
-                  Navigator.pop(ctx);
-                  setState(() => _selectedPlantId = null);
-                },
-              ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Ekologia i siedlisko:", style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text("pH: $ph"),
-            Text("Podłoże: $substrate"),
-          ],
-        ),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("ZAMKNIJ"))],
       ),
     );
   }

@@ -1,14 +1,13 @@
+// lib/views/home_screen.dart
 import 'package:flutter/material.dart';
 import 'camera_screen.dart';
 import 'description_grid_screen.dart';
 import 'browse_plants_screen.dart';
 import 'map_screen.dart';
 import 'releve_list_map_screen.dart';
-import "area_managment_screen.dart";
 import "search_plants_screen.dart";
-import '../services/data_export_service.dart';
 import 'recipe_list_screen.dart';
-
+import '../services/data_export_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -29,7 +28,7 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 30),
             Expanded(
               child: GridView.count(
-                crossAxisCount: 3, // Siatka 3 kolumny
+                crossAxisCount: 3,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
                 children: [
@@ -77,16 +76,9 @@ class HomeScreen extends StatelessWidget {
                   ),
                   _buildGridButton(
                     context,
-                    title: 'Struktura',
-                    icon: Icons.account_tree,
-                    color: Colors.blueGrey,
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AreaManagementScreen())),
-                  ),
-                  _buildGridButton(
-                    context,
                     title: 'Przepisy',
                     icon: Icons.menu_book,
-                    color: Colors.pink, // Możesz zmienić kolor na dowolny
+                    color: Colors.pink,
                     onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RecipeListScreen())),
                   ),
                   _buildGridButton(
@@ -95,19 +87,15 @@ class HomeScreen extends StatelessWidget {
                     icon: Icons.import_export,
                     color: Colors.brown,
                     onPressed: () async {
-                      // Pokaż loader
                       showDialog(
                         context: context,
                         barrierDismissible: false,
                         builder: (ctx) => const Center(child: CircularProgressIndicator()),
                       );
-
                       await DataExportService().exportDataForML();
-
-                      if (context.mounted) Navigator.pop(context); // Zamknij loader
+                      if (context.mounted) Navigator.pop(context);
                     },
                   ),
-                  // Tutaj możesz łatwo dodawać kolejne przyciski
                 ],
               ),
             ),

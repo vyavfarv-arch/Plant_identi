@@ -19,27 +19,35 @@ class ObservationViewModel extends ChangeNotifier {
   bool _isInitializing = false;
 
   List<String> get currentPhotoPaths => _currentPhotoPaths;
-
   bool get canTakePhoto => _currentPhotoPaths.length < 10;
-
   bool get isInitializing => _isInitializing;
-
   CameraController? get controller => _cameraService.controller;
-
   Position? get currentPosition => _currentPosition;
 
   List<PlantObservation> _observations = [];
   List<PlantSpecies> _speciesDictionary = [];
 
   List<PlantObservation> get allObservations => _observations;
-
   List<PlantSpecies> get speciesDictionary => _speciesDictionary;
 
-  List<PlantObservation> get incompleteObservations =>
-      _observations.where((obs) => !obs.isComplete).toList();
+  List<PlantObservation> get incompleteObservations => _observations.where((obs) => !obs.isComplete).toList();
+  List<PlantObservation> get completeObservations => _observations.where((obs) => obs.isComplete).toList();
 
-  List<PlantObservation> get completeObservations =>
-      _observations.where((obs) => obs.isComplete).toList();
+  // --- LOGIKA INTELIGENTNEGO WYSZUKIWANIA I AUTO-UZUPEŁNIANIA ---
+
+  List<String> get allLatinNames {
+    return _speciesDictionary.map((s) => s.latinName).where((name) => name.isNotEmpty).toList();
+  }
+
+  PlantSpecies? findSpeciesByLatinName(String latinName) {
+    try {
+      return _speciesDictionary.firstWhere(
+              (s) => s.latinName.toLowerCase() == latinName.toLowerCase().trim()
+      );
+    } catch (e) {
+      return null;
+    }
+  }
 
   PlantSpecies? getSpeciesById(String? speciesId) {
     if (speciesId == null) return null;
@@ -51,19 +59,14 @@ class ObservationViewModel extends ChangeNotifier {
   }
 
   List<String> get uniquePlantNames {
-    return _speciesDictionary.map((s) =>
-    s.polishName.isNotEmpty
-        ? s.polishName
-        : s.latinName).toSet().toList();
+    return _speciesDictionary.map((s) => s.polishName.isNotEmpty ? s.polishName : s.latinName).toSet().toList();
   }
 
   List<String> get uniqueFamilies {
-    return _speciesDictionary
-        .map((s) => s.family)
-        .where((f) => f.isNotEmpty)
-        .toSet()
-        .toList();
+    return _speciesDictionary.map((s) => s.family).where((f) => f.isNotEmpty).toSet().toList();
   }
+
+  // --- ŁADOWANIE BAZY DANYCH ---
 
   Future<void> loadFromDisk() async {
     _observations = await _db.getObservations();
@@ -112,6 +115,7 @@ class ObservationViewModel extends ChangeNotifier {
     await loadFromDisk();
   }
 
+  // --- ZAPIS SZCZEGÓŁÓW Z NOWYMI PARAMETRAMI ML ---
   Future<void> updateObservationDetailed({
     required String id,
     required String localName,
@@ -132,13 +136,21 @@ class ObservationViewModel extends ChangeNotifier {
     double? prefSunlight,
     List<String>? prefSubstrate,
     Map<String, List<int>>? harvestSeasons,
+    // NOWE LISTY Z UI
+    List<String>? prefAreaTypes,
+    List<String>? prefExposures,
+    List<String>? prefCanopyCovers,
+    List<String>? prefWaterDynamics,
+    List<String>? prefSoilDepths,
   }) async {
+
     final index = _observations.indexWhere((o) => o.id == id);
     if (index == -1) return;
     final old = _observations[index];
 
     final String targetSpeciesId = old.speciesId ?? const Uuid().v4();
 
+    // 1. Zapisujemy gatunek (Z nowymi preferencjami!)
     final species = PlantSpecies(
       speciesID: targetSpeciesId,
       latinName: latinName,
@@ -153,9 +165,16 @@ class ObservationViewModel extends ChangeNotifier {
       prefMoisture: prefMoisture,
       prefSunlight: prefSunlight,
       harvestSeasons: harvestSeasons ?? {},
+      // Zapisujemy nowe listy preferencji ML
+      prefAreaTypes: prefAreaTypes ?? [],
+      prefExposures: prefExposures ?? [],
+      prefCanopyCovers: prefCanopyCovers ?? [],
+      prefWaterDynamics: prefWaterDynamics ?? [],
+      prefSoilDepths: prefSoilDepths ?? [],
     );
     await _db.insertSpecies(species);
 
+    // 2. Aktualizujemy konkretny OKAZ
     final updatedObs = PlantObservation(
       id: old.id,
       releveId: old.releveId,
@@ -170,7 +189,6 @@ class ObservationViewModel extends ChangeNotifier {
       characteristics: old.characteristics,
       observationDate: old.observationDate ?? DateTime.now(),
       phenologicalStage: old.phenologicalStage,
-      // ZMIANA: Zachowujemy wybrany etap
       abundance: old.abundance,
       coverage: old.coverage,
       vitality: old.vitality,
@@ -185,6 +203,7 @@ class ObservationViewModel extends ChangeNotifier {
     await _db.insertObservation(updatedObs);
     await loadFromDisk();
   }
+
   void reset() {
     _currentPhotoPaths = [];
     _currentPosition = null;

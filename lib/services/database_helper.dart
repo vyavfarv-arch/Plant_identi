@@ -24,9 +24,8 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'planticator.db');
     return await openDatabase(
       path,
-      version: 12, // PODNIESIONO DO 11
+      version: 13, // Wersja 13 ze wszystkimi nowymi cechami ekologicznymi i przepisami
       onCreate: _onCreate,
-      onUpgrade: _onUpgrade,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
     );
   }
@@ -59,6 +58,16 @@ class DatabaseHelper {
         prefSubstrateJson TEXT,
         prefMoisture REAL,
         prefSunlight REAL,
+        prefAreaTypesJson TEXT,
+        prefExposuresJson TEXT,
+        prefCanopyCoversJson TEXT,
+        prefWaterDynamicsJson TEXT,
+        prefSoilDepthsJson TEXT,
+        prefSlopeAnglesJson TEXT,
+        prefLitterThicknessesJson TEXT,
+        prefDistancesToWaterJson TEXT,
+        prefDeadWoodJson TEXT,
+        prefLandUseHistoryJson TEXT,
         plantUsage TEXT,
         cultivation TEXT,
         properties TEXT,
@@ -81,7 +90,7 @@ class DatabaseHelper {
         timestamp TEXT,
         characteristicsJson TEXT,
         observationDate TEXT,
-        phenologicalStage TEXT, -- ZMIANA
+        phenologicalStage TEXT,
         abundance TEXT,
         coverage TEXT,
         vitality TEXT,
@@ -104,9 +113,20 @@ class DatabaseHelper {
         prefPhMax REAL,
         prefSubstrateJson TEXT,
         prefMoisture REAL,
-        prefSunlight REAL
+        prefSunlight REAL,
+        prefAreaTypesJson TEXT,
+        prefExposuresJson TEXT,
+        prefCanopyCoversJson TEXT,
+        prefWaterDynamicsJson TEXT,
+        prefSoilDepthsJson TEXT,
+        prefSlopeAnglesJson TEXT,
+        prefLitterThicknessesJson TEXT,
+        prefDistancesToWaterJson TEXT,
+        prefDeadWoodJson TEXT,
+        prefLandUseHistoryJson TEXT
       )
     ''');
+
     await db.execute('''
       CREATE TABLE recipes (
         id TEXT PRIMARY KEY,
@@ -119,31 +139,16 @@ class DatabaseHelper {
     ''');
   }
 
-  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // ... poprzednie uaktualnienia ...
-    if (oldVersion < 12) {
-      try {
-        await db.execute('''
-          CREATE TABLE recipes (
-            id TEXT PRIMARY KEY, title TEXT, type TEXT, ingredientsJson TEXT, instructions TEXT, createdAt TEXT
-          )
-        ''');
-      } catch (e) { print("Błąd aktualizacji v12: $e"); }
-    }
-  }
-
   // --- RELEVES CRUD ---
   Future<void> insertReleve(Releve releve) async {
     final db = await database;
     await db.insert('releves', releve.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
-
   Future<List<Releve>> getReleves() async {
     final db = await database;
     final maps = await db.query('releves');
     return List.generate(maps.length, (i) => Releve.fromMap(maps[i]));
   }
-
   Future<void> deleteReleve(String id) async {
     final db = await database;
     await db.delete('releves', where: 'id = ?', whereArgs: [id]);
@@ -154,13 +159,11 @@ class DatabaseHelper {
     final db = await database;
     await db.insert('observations', obs.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
-
   Future<List<PlantObservation>> getObservations() async {
     final db = await database;
     final maps = await db.query('observations');
     return List.generate(maps.length, (i) => PlantObservation.fromMap(maps[i]));
   }
-
   Future<void> deleteObservation(String id) async {
     final db = await database;
     await db.delete('observations', where: 'id = ?', whereArgs: [id]);
@@ -171,7 +174,6 @@ class DatabaseHelper {
     final db = await database;
     await db.insert('plant_species', species.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
-
   Future<List<PlantSpecies>> getSpecies() async {
     final db = await database;
     final maps = await db.query('plant_species');
@@ -183,28 +185,26 @@ class DatabaseHelper {
     final db = await database;
     await db.insert('sought_plants', plant.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
-
   Future<List<SoughtPlant>> getSoughtPlants() async {
     final db = await database;
     final maps = await db.query('sought_plants');
     return List.generate(maps.length, (i) => SoughtPlant.fromMap(maps[i]));
   }
-
   Future<void> deleteSoughtPlant(String id) async {
     final db = await database;
     await db.delete('sought_plants', where: 'id = ?', whereArgs: [id]);
   }
+
+  // --- RECIPES CRUD ---
   Future<void> insertRecipe(Recipe recipe) async {
     final db = await database;
     await db.insert('recipes', recipe.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
-
   Future<List<Recipe>> getRecipes() async {
     final db = await database;
     final maps = await db.query('recipes');
     return List.generate(maps.length, (i) => Recipe.fromMap(maps[i]));
   }
-
   Future<void> deleteRecipe(String id) async {
     final db = await database;
     await db.delete('recipes', where: 'id = ?', whereArgs: [id]);

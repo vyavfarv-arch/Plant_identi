@@ -19,19 +19,23 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
 
   double _prefPhMin = 5.5;
   double _prefPhMax = 7.5;
-  final List<String> _prefSubstrateList = [];
-  double _prefMoisture = 1.0;
-  double _prefSunlight = 2.0;
 
-  final List<String> _substrateOptions = [
-    "Gliniasta", "Piaskowa", "Żwirowa", "Torfowa",
-    "Kamienista", "Próchnicza", "Wapienna", "Krzemianowa"
-  ];
+  final List<String> _prefAreaTypes = [];
+  final List<String> _prefExposures = [];
+  final List<String> _prefCanopyCovers = [];
+  final List<String> _prefWaterDynamics = [];
+  final List<String> _prefSoilDepths = [];
+
+  final List<String> _areaTypeOptions = ["Las", "Łąka", "Mokradło", "Zarośla", "Pole", "Pobocze drogi", "Teren miejski", "Skraj lasu"];
+  final List<String> _exposureOptions = ["N", "S", "E", "W", "Płasko"];
+  final List<String> _canopyOptions = ["Otwarte (0-25%)", "Półotwarte (25-60%)", "Zacienione (60-85%)", "Gęste (>85%)"];
+  final List<String> _waterOptions = ["Stale wilgotne", "Sezonowo zalewane", "Sezonowo wysychające", "Stale suche"];
+  final List<String> _soilOptions = ["Płytka skalista", "Średnia", "Głęboka próchnowa"];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Nowa roślina poszukiwana")),
+      appBar: AppBar(title: const Text("Nowy Cel Poszukiwań ML")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -42,56 +46,57 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
             TextField(controller: _nameController, decoration: const InputDecoration(labelText: "Nazwa polska", border: OutlineInputBorder())),
             const SizedBox(height: 10),
             TextField(controller: _latinController, decoration: const InputDecoration(labelText: "Nazwa łacińska", border: OutlineInputBorder())),
-            const SizedBox(height: 20),
+
+            const SizedBox(height: 30),
+            const Text("Amplituda Ekologiczna (Zaznacz wszystkie dopuszczalne)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.teal)),
             const Divider(),
-            const Text("Ekologia (pod ML)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            const SizedBox(height: 10),
-            Text("Przedział pH gleby: ${_prefPhMin.toStringAsFixed(1)} - ${_prefPhMax.toStringAsFixed(1)}"),
+
+            _buildMultiSelect("Typy obszaru:", _areaTypeOptions, _prefAreaTypes),
+            _buildMultiSelect("Ekspozycja stoku:", _exposureOptions, _prefExposures),
+            _buildMultiSelect("Zwarcie koron:", _canopyOptions, _prefCanopyCovers),
+            _buildMultiSelect("Dynamika wody:", _waterOptions, _prefWaterDynamics),
+            _buildMultiSelect("Głębokość gleby:", _soilOptions, _prefSoilDepths),
+
+            const Divider(),
+            Text("Preferowane pH: ${_prefPhMin.toStringAsFixed(1)} - ${_prefPhMax.toStringAsFixed(1)}"),
             RangeSlider(
-              values: RangeValues(_prefPhMin, _prefPhMax),
-              min: 3.0, max: 9.0, divisions: 60,
-              labels: RangeLabels(_prefPhMin.toStringAsFixed(1), _prefPhMax.toStringAsFixed(1)),
+              values: RangeValues(_prefPhMin, _prefPhMax), min: 3.0, max: 9.0, divisions: 60,
               onChanged: (v) => setState(() { _prefPhMin = v.start; _prefPhMax = v.end; }),
             ),
-            const SizedBox(height: 15),
-            const Text("Preferowane typy gleby:", style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8, runSpacing: 4,
-              children: _substrateOptions.map((substrate) {
-                final isSelected = _prefSubstrateList.contains(substrate);
-                return FilterChip(
-                  label: Text(substrate, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : Colors.black)),
-                  selected: isSelected, selectedColor: Colors.teal, checkmarkColor: Colors.white,
-                  onSelected: (bool selected) => setState(() { selected ? _prefSubstrateList.add(substrate) : _prefSubstrateList.remove(substrate); }),
-                );
-              }).toList(),
-            ),
-            _buildSlider("Wilgotność:", _prefMoisture, 3, ["Sucho", "Świeżo", "Wilgotno", "Mokro"], (v) => setState(() => _prefMoisture = v)),
-            _buildSlider("Nasłonecznienie:", _prefSunlight, 4, ["Pełne słońce", "Przewaga słońca", "Półcień", "Przewaga cienia", "Cień"], (v) => setState(() => _prefSunlight = v)),
+
             const SizedBox(height: 30),
             SizedBox(
               width: double.infinity, height: 50,
               child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange, foregroundColor: Colors.white),
                 onPressed: _saveSoughtPlant,
-                child: const Text("DODAJ CEL POSZUKIWAŃ"),
+                child: const Text("DODAJ DO LISTY POSZUKIWAŃ"),
               ),
             ),
+            const SizedBox(height: 30),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSlider(String title, double value, int divisions, List<String> labels, Function(double) onChanged) {
+  Widget _buildMultiSelect(String title, List<String> options, List<String> targetList) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 15),
-        Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        Slider(value: value, min: 0, max: divisions.toDouble(), divisions: divisions, label: labels[value.round()], onChanged: onChanged),
-        Center(child: Text(labels[value.round()], style: const TextStyle(color: Colors.blue))),
+        const SizedBox(height: 10),
+        Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        Wrap(
+          spacing: 8,
+          children: options.map((opt) {
+            final isSelected = targetList.contains(opt);
+            return FilterChip(
+              label: Text(opt, style: TextStyle(fontSize: 11, color: isSelected ? Colors.white : Colors.black)),
+              selected: isSelected, selectedColor: Colors.teal,
+              onSelected: (s) => setState(() => s ? targetList.add(opt) : targetList.remove(opt)),
+            );
+          }).toList(),
+        ),
       ],
     );
   }
@@ -105,16 +110,16 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
       latinName: _latinController.text,
       prefPhMin: _prefPhMin,
       prefPhMax: _prefPhMax,
-      prefSubstrate: _prefSubstrateList,
-      prefMoisture: _prefMoisture,
-      prefSunlight: _prefSunlight,
+      prefAreaTypes: _prefAreaTypes,
+      prefExposures: _prefExposures,
+      prefCanopyCovers: _prefCanopyCovers,
+      prefWaterDynamics: _prefWaterDynamics,
+      prefSoilDepths: _prefSoilDepths,
     );
 
-    // Wykorzystujemy nową tabelę z DatabaseHelper
     await DatabaseHelper().insertSoughtPlant(soughtPlant);
 
     if (mounted) {
-      // Odświeżamy ViewModel, żeby pojawiła się na liście wyszukiwania!
       context.read<SearchFilterViewModel>().loadSoughtPlants();
       Navigator.pop(context);
     }
