@@ -187,8 +187,9 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
         remVm.addHarvestReminder(
             plantName: _controllers['localName']!.text,
             material: season.material,
-            date: season.startDate!, // Jedno przypomnienie na start sezonu
-            relatedId: widget.observation.id // Łączymy z tą konkretną obserwacją
+            startDate: season.startDate!,
+            endDate: season.endDate ?? season.startDate!.add(const Duration(days: 30)),
+            relatedId: widget.observation.id
         );
       }
     }

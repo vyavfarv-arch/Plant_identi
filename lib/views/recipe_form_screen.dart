@@ -12,15 +12,36 @@ class _IngredientControllers {
   _IngredientControllers(String n, String p, String a) : name = TextEditingController(text: n), part = TextEditingController(text: p), amount = TextEditingController(text: a);
 }
 
-// Klasa pomocnicza trzymająca kontrolery dla kroków (Tekst LUB Minutnik)
+// Zmodyfikowana klasa z logiką Jednostek (Minuty/Godziny/Dni)
 class _StepData {
   String type; // 'text' lub 'timer'
-  TextEditingController contentCtrl;
-  TextEditingController durationCtrl;
+  late TextEditingController contentCtrl;
+  late TextEditingController durationCtrl;
+  String unit = 'Minuty';
 
-  _StepData({required this.type, String content = '', int duration = 0})
-      : contentCtrl = TextEditingController(text: content),
-        durationCtrl = TextEditingController(text: duration > 0 ? duration.toString() : '');
+  _StepData({required this.type, String content = '', int duration = 0}) {
+    contentCtrl = TextEditingController(text: content);
+
+    // Heurystyka odtwarzania jednostki przy ładowaniu przepisu z bazy
+    if (duration > 0 && duration % 1440 == 0) {
+      durationCtrl = TextEditingController(text: (duration ~/ 1440).toString());
+      unit = 'Dni';
+    } else if (duration > 0 && duration % 60 == 0) {
+      durationCtrl = TextEditingController(text: (duration ~/ 60).toString());
+      unit = 'Godziny';
+    } else {
+      durationCtrl = TextEditingController(text: duration > 0 ? duration.toString() : '');
+      unit = 'Minuty';
+    }
+  }
+
+  // Funkcja zwracająca łączny czas w minutach przed zapisem do bazy
+  int get durationAsMinutes {
+    final val = int.tryParse(durationCtrl.text) ?? 0;
+    if (unit == 'Dni') return val * 1440;
+    if (unit == 'Godziny') return val * 60;
+    return val;
+  }
 }
 
 class RecipeFormScreen extends StatefulWidget {
@@ -49,7 +70,7 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
       for (var s in r.steps) { _steps.add(_StepData(type: s.type, content: s.content, duration: s.durationMinutes)); }
     } else {
       _ingredients.add(_IngredientControllers('', '', ''));
-      _steps.add(_StepData(type: 'text')); // Domyślny pierwszy krok to tekst
+      _steps.add(_StepData(type: 'text'));
     }
   }
 
@@ -58,12 +79,12 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
 
     final recipeId = widget.recipeToEdit?.id ?? const Uuid().v4();
 
-    // Konwersja naszych edytorów na modele bazodanowe
+    // Konwersja naszych edytorów i jednostek na model bazodanowy
     List<RecipeStep> finalSteps = _steps.where((s) => s.contentCtrl.text.isNotEmpty).map((s) {
       return RecipeStep(
           type: s.type,
           content: s.contentCtrl.text,
-          durationMinutes: int.tryParse(s.durationCtrl.text) ?? 0
+          durationMinutes: s.durationAsMinutes
       );
     }).toList();
 
@@ -113,7 +134,6 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
           const Text("Sposób przygotowania:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 10),
 
-          // Rysowanie dynamicznej listy kroków
           ..._steps.asMap().entries.map((e) {
             final idx = e.key;
             final step = e.value;
@@ -129,7 +149,7 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
                 ],
               );
             } else {
-              // Blok Czasowy
+              // Blok Czasowy z Jednostkami!
               return Card(
                 color: Colors.indigo.shade50,
                 elevation: 0,
@@ -140,9 +160,17 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
                     children: [
                       const Icon(Icons.timer, color: Colors.indigo),
                       const SizedBox(width: 8),
-                      Expanded(flex: 3, child: TextField(controller: step.contentCtrl, decoration: const InputDecoration(hintText: "Nazwa akcji (np. Maceracja)", isDense: true))),
+                      Expanded(flex: 3, child: TextField(controller: step.contentCtrl, decoration: const InputDecoration(hintText: "Nazwa akcji", isDense: true))),
                       const SizedBox(width: 8),
-                      Expanded(flex: 2, child: TextField(controller: step.durationCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(hintText: "Minuty", isDense: true))),
+                      Expanded(flex: 2, child: TextField(controller: step.durationCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(hintText: "Czas", isDense: true))),
+                      const SizedBox(width: 8),
+                      // Dropdown z Jednostkami
+                      Expanded(flex: 3, child: DropdownButton<String>(
+                        value: step.unit,
+                        isExpanded: true,
+                        items: ['Minuty', 'Godziny', 'Dni'].map((u) => DropdownMenuItem(value: u, child: Text(u, style: const TextStyle(fontSize: 13)))).toList(),
+                        onChanged: (v) => setState(() => step.unit = v!),
+                      )),
                       IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => setState(() => _steps.removeAt(idx))),
                     ],
                   ),

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../models/releve.dart';
 import 'releve_details_screen.dart';
+import 'releve_map_screen.dart'; // IMPORT MAPY
 
 class ReleveListMapScreen extends StatefulWidget {
   const ReleveListMapScreen({super.key});
@@ -27,10 +28,27 @@ class _ReleveListMapScreenState extends State<ReleveListMapScreen> {
     }).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Zarządzanie Obszarami")),
+      appBar: AppBar(
+        title: const Text("Zarządzanie Obszarami"),
+        actions: [
+          // PRZYCISK PRZEGLĄDANIA MAPY WSZYSTKICH OBSZARÓW
+          IconButton(
+            icon: const Icon(Icons.map_outlined),
+            tooltip: "Podgląd mapy",
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReleveMapScreen())),
+          ),
+        ],
+      ),
+      // PRZYCISK DODAWANIA NOWEGO OBSZARU
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: Colors.indigo,
+        foregroundColor: Colors.white,
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReleveMapScreen())),
+        icon: const Icon(Icons.add_location_alt),
+        label: const Text("NOWY OBSZAR"),
+      ),
       body: Column(
         children: [
-          // NOWE FILTRY: Obszar / Podobszar
           Container(
             padding: const EdgeInsets.all(8.0),
             color: Colors.indigo.shade50,
@@ -42,7 +60,7 @@ class _ReleveListMapScreenState extends State<ReleveListMapScreen> {
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4.0),
                     child: ChoiceChip(
-                      label: Text(type, style: TextStyle(fontWeight: _selectedType == type ? FontWeight.bold : FontWeight.normal)),
+                      label: Text(type),
                       selected: _selectedType == type,
                       selectedColor: Colors.indigo.shade200,
                       onSelected: (selected) {
@@ -54,77 +72,44 @@ class _ReleveListMapScreenState extends State<ReleveListMapScreen> {
               ),
             ),
           ),
-
           Expanded(
             child: filteredReleves.isEmpty
-                ? const Center(child: Text("Brak obszarów dla tego filtru.", style: TextStyle(color: Colors.grey)))
+                ? const Center(child: Text("Brak obszarów. Kliknij przycisk poniżej, aby dodać."))
                 : ListView.builder(
               itemCount: filteredReleves.length,
+              padding: const EdgeInsets.only(bottom: 80), // Miejsce na FAB
               itemBuilder: (context, index) {
                 final r = filteredReleves[index];
-
-                // Szukamy Podobszarów dla tego Obszaru
                 List<Releve> subareas = [];
                 if (r.type == "Obszar") {
                   subareas = allReleves.where((sub) => sub.parentId == r.id).toList();
                 }
-
-                // Szukamy nadrzędnego Obszaru dla tego Podobszaru
                 Releve? parentArea;
                 if (r.type == "Podobszar" && r.parentId != null) {
-                  try {
-                    parentArea = allReleves.firstWhere((p) => p.id == r.parentId);
-                  } catch (_) {}
+                  try { parentArea = allReleves.firstWhere((p) => p.id == r.parentId); } catch (_) {}
                 }
 
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   elevation: 2,
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     leading: CircleAvatar(
                       backgroundColor: r.type == "Obszar" ? Colors.indigo.shade100 : Colors.blue.shade100,
-                      child: Icon(
-                        r.type == "Obszar" ? Icons.map : Icons.layers,
-                        color: r.type == "Obszar" ? Colors.indigo : Colors.blue,
-                      ),
+                      child: Icon(r.type == "Obszar" ? Icons.map : Icons.layers, color: r.type == "Obszar" ? Colors.indigo : Colors.blue),
                     ),
-                    title: Text(r.commonName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    title: Text(r.commonName, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 4),
-                        Text("Ranga: ${r.type}", style: const TextStyle(color: Colors.black87)),
-
-                        // Wyświetlanie Podobszarów pod Obszarem
+                        Text("Typ: ${r.type}"),
                         if (r.type == "Obszar" && subareas.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6.0),
-                            child: Text(
-                              "Podobszary: ${subareas.map((s) => s.commonName).join(' • ')}",
-                              style: const TextStyle(color: Colors.teal, fontSize: 12, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-
-                        // Wyświetlanie Nadrzędnego Obszaru nad Podobszarem
+                          Text("Podobszary: ${subareas.length}", style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 12)),
                         if (r.type == "Podobszar" && parentArea != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6.0),
-                            child: Text(
-                              "Należy do: ${parentArea.commonName}",
-                              style: const TextStyle(color: Colors.indigo, fontSize: 12, fontStyle: FontStyle.italic),
-                            ),
-                          ),
+                          Text("Należy do: ${parentArea.commonName}", style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 12)),
                       ],
                     ),
-                    trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-                    isThreeLine: (r.type == "Obszar" && subareas.isNotEmpty) || (r.type == "Podobszar" && parentArea != null),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => ReleveDetailsScreen(releve: r)),
-                      );
-                    },
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReleveDetailsScreen(releve: r))),
                   ),
                 );
               },

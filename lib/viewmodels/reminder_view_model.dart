@@ -28,14 +28,23 @@ class ReminderViewModel extends ChangeNotifier {
     await _db.insertReminder(reminder);
     await loadFromDisk();
   }
+  Future<void> toggleMute(String id, bool currentMute) async {
+    final db = await _db.database;
+    await db.update('app_reminders', {'isMuted': currentMute ? 0 : 1}, where: 'id = ?', whereArgs: [id]);
+    await loadFromDisk();
+  }
 
   // ZMIANA: Przyjmujemy konkretną datę (np. startDate z kalendarza)
-  Future<void> addHarvestReminder({required String plantName, required String material, required DateTime date, required String relatedId}) async {
+  Future<void> addHarvestReminder({
+    required String plantName, required String material,
+    required DateTime startDate, required DateTime endDate, required String relatedId
+  }) async {
     final reminder = AppReminder(
       id: const Uuid().v4(),
       title: "Zbiory: $plantName",
-      body: "Początek sezonu na surowiec: $material",
-      scheduledTime: date,
+      body: "Surowiec: $material",
+      scheduledTime: startDate,
+      endDate: endDate,
       relatedId: relatedId,
       type: 'HARVEST',
     );

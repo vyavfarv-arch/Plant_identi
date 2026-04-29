@@ -81,11 +81,14 @@ class RecipeListScreen extends StatelessWidget {
                                   onPressed: () {
                                     remVm.addTimerReminder(
                                         title: "Przepis: ${r.title}",
-                                        body: "Zakończono: ${step.content}",
+                                        body: "Trwa proces: ${step.content}", // Zmiana z "Zakończono" na "Trwa"
                                         durationMinutes: step.durationMinutes,
                                         relatedId: r.id
                                     );
-                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Uruchomiono odliczanie: ${step.content}!"), backgroundColor: Colors.green));
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                        content: Text("Rozpoczęto odliczanie: ${step.content}"),
+                                        backgroundColor: Colors.indigo
+                                    ));
                                   },
                                   child: const Text("START"),
                                 ),

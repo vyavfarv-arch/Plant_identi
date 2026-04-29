@@ -1,3 +1,4 @@
+// lib/services/database_helper.dart
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/releve.dart';
@@ -24,14 +25,14 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'planticator.db');
     return await openDatabase(
       path,
-      version: 16, // WERSJA 16: System Przypomnień i Minutników
+      version: 19, // WERSJA 18: Naprawa brakującej kolumny stepsJson w przepisach
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
     );
   }
+
   Future _onCreate(Database db, int version) async {
-    // ... Tabele Releves i Recipes pozostają bez zmian (zakładam, że kod jest jak poprzednio)
     await db.execute('''
       CREATE TABLE releves (
         id TEXT PRIMARY KEY, commonName TEXT NOT NULL, phytosociologicalName TEXT,
@@ -86,26 +87,22 @@ class DatabaseHelper {
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // ... poprzednie migracje ...
-    if (oldVersion < 17) {
+    // Od v16 dodawane były Timery i Przypomnienia
+    if (oldVersion < 19) {
+      try {
+        await db.execute('ALTER TABLE app_reminders ADD COLUMN endDate TEXT');
+        await db.execute('ALTER TABLE app_reminders ADD COLUMN isMuted INTEGER DEFAULT 0');
+      } catch (e) { print("Błąd v19: $e"); }
+    }
+    // Naprawa błędu "no column named stepsJson"
+    if (oldVersion < 18) {
       try {
         await db.execute('ALTER TABLE recipes ADD COLUMN stepsJson TEXT');
-      } catch (e) { print("Błąd migracji bazy do v17: $e"); }
-    }
-    if (oldVersion < 16) {
-      try {
-        await db.execute('ALTER TABLE recipes ADD COLUMN timersJson TEXT');
-        await db.execute('''
-          CREATE TABLE app_reminders (
-            id TEXT PRIMARY KEY, title TEXT, body TEXT, scheduledTime TEXT,
-            relatedId TEXT, type TEXT, isCompleted INTEGER
-          )
-        ''');
-      } catch (e) { print("Błąd migracji bazy do v16: $e"); }
+      } catch (e) { print("Błąd migracji bazy do v18: $e"); }
     }
   }
 
-  // --- SPECIES CRUD ---
+  // --- STANDARDOWY CRUD ---
   Future<void> insertReleve(Releve releve) async { final db = await database; await db.insert('releves', releve.toMap(), conflictAlgorithm: ConflictAlgorithm.replace); }
   Future<List<Releve>> getReleves() async { final db = await database; final maps = await db.query('releves'); return List.generate(maps.length, (i) => Releve.fromMap(maps[i])); }
   Future<void> deleteReleve(String id) async { final db = await database; await db.delete('releves', where: 'id = ?', whereArgs: [id]); }

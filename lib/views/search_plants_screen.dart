@@ -10,6 +10,7 @@ import 'add_sought_plant_screen.dart';
 import 'results_map_screen.dart';
 import '../models/sought_plant.dart';
 import '../models/releve.dart';
+import 'plant_card_view.dart'; // IMPORT KARTY
 
 class _SearchListItem {
   final String id;
@@ -31,7 +32,6 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
   String? _selectedPlantId;
   String _searchQuery = "";
   String _filterType = "Wszystkie";
-
   final MlPredictionService _mlService = MlPredictionService();
 
   @override
@@ -41,38 +41,61 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
     Future.microtask(() => context.read<SearchFilterViewModel>().loadSoughtPlants());
   }
 
+  // LOGIKA PRZYTRZYMANIA (LONG PRESS)
+  void _handleLongPress(BuildContext context, _SearchListItem item) {
+    final obsVm = context.read<ObservationViewModel>();
+
+    if (!item.isSought) {
+      // Jeśli to roślina z magazynu, znajdź dowolną obserwację tego gatunku, by pokazać kartę
+      try {
+        final obs = obsVm.allObservations.firstWhere((o) => o.speciesId == item.id);
+        PlantCardView.show(context, obs);
+      } catch (_) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Brak szczegółowych danych obserwacji dla tego gatunku.")));
+      }
+    } else {
+      // Jeśli to poszukiwana, otwórz dialog (podobnie jak w Terminarzu)
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(item.name),
+          content: const Text("To jest roślina poszukiwana. Czy chcesz przejść do edycji jej wymagań?"),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Anuluj")),
+            ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const AddSoughtPlantScreen()));
+                },
+                child: const Text("EDYTUJ")
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final obsVm = context.watch<ObservationViewModel>();
     final filterVm = context.watch<SearchFilterViewModel>();
     final releveVm = context.read<ReleveViewModel>();
 
-    // GRUPOWANIE GATUNKÓW - unikanie duplikatów na liście (bierzemy unikalne nazwy)
     final Map<String, _SearchListItem> uniqueItemsMap = {};
-
-    // 1. Zasilanie mapy gatunkami z magazynu
     for (var s in obsVm.speciesDictionary) {
       final nameKey = s.latinName.isNotEmpty ? s.latinName.toLowerCase() : s.polishName.toLowerCase();
       if (!uniqueItemsMap.containsKey(nameKey)) {
-        uniqueItemsMap[nameKey] = _SearchListItem(
-          id: s.speciesID, name: s.polishName.isNotEmpty ? s.polishName : s.latinName, subtitle: "Magazyn (Zbadana)", isSought: false, originalObject: s,
-        );
+        uniqueItemsMap[nameKey] = _SearchListItem(id: s.speciesID, name: s.polishName.isNotEmpty ? s.polishName : s.latinName, subtitle: "Magazyn (Zbadana)", isSought: false, originalObject: s);
       }
     }
-
-    // 2. Zasilanie mapy roślinami poszukiwanymi (nadpisze lub doda nowe)
     for (var s in filterVm.soughtPlants) {
       final nameKey = s.latinName.isNotEmpty ? s.latinName.toLowerCase() : s.polishName.toLowerCase();
       if (!uniqueItemsMap.containsKey(nameKey)) {
-        uniqueItemsMap[nameKey] = _SearchListItem(
-          id: s.id, name: s.polishName.isNotEmpty ? s.polishName : s.latinName, subtitle: "Poszukiwana (Tylko ML)", isSought: true, originalObject: s,
-        );
+        uniqueItemsMap[nameKey] = _SearchListItem(id: s.id, name: s.polishName.isNotEmpty ? s.polishName : s.latinName, subtitle: "Poszukiwana (Tylko ML)", isSought: true, originalObject: s);
       }
     }
 
-    // 3. Spłaszczamy mapę do zwykłej listy
     List<_SearchListItem> allItems = uniqueItemsMap.values.toList();
-
     final filteredItems = allItems.where((p) {
       final matchesSearch = p.name.toLowerCase().contains(_searchQuery.toLowerCase());
       if (_filterType == "Magazyn") return matchesSearch && !p.isSought;
@@ -81,67 +104,39 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
     }).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Znajdź Obszary (ML)"),
-        actions: [
-          IconButton(icon: const Icon(Icons.add), tooltip: "Dodaj nowy cel poszukiwań", onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddSoughtPlantScreen()))),
-        ],
-      ),
+      appBar: AppBar(title: const Text("Znajdź Obszary (ML)"), actions: [IconButton(icon: const Icon(Icons.add), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddSoughtPlantScreen())))]),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Column(
-              children: [
-                TextField(
-                  decoration: const InputDecoration(hintText: "Wybierz roślinę do analizy...", prefixIcon: Icon(Icons.search), border: OutlineInputBorder()),
-                  onChanged: (v) => setState(() => _searchQuery = v),
-                ),
-                const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: ["Wszystkie", "Magazyn", "Poszukiwane"].map((type) => Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: ChoiceChip(label: Text(type), selected: _filterType == type, onSelected: (val) => setState(() => _filterType = type)),
-                    )).toList(),
-                  ),
-                ),
-              ],
-            ),
+            child: TextField(decoration: const InputDecoration(hintText: "Szukaj...", prefixIcon: Icon(Icons.search), border: OutlineInputBorder()), onChanged: (v) => setState(() => _searchQuery = v)),
           ),
           Expanded(
             child: ListView.builder(
               itemCount: filteredItems.length,
               itemBuilder: (context, index) {
                 final item = filteredItems[index];
-
-                return RadioListTile<String>(
-                  activeColor: Colors.deepOrange,
-                  title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(item.subtitle, style: TextStyle(color: item.isSought ? Colors.deepOrange : Colors.green)),
-                  value: item.id,
-                  groupValue: _selectedPlantId,
-                  onChanged: (v) => setState(() => _selectedPlantId = v),
-                  secondary: item.isSought ? IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.grey),
-                    onPressed: () {
-                      DatabaseHelper().deleteSoughtPlant(item.id);
-                      filterVm.loadSoughtPlants();
-                      if (_selectedPlantId == item.id) setState(() => _selectedPlantId = null);
-                    },
-                  ) : null,
+                return GestureDetector( // OPAKOWANIE W GESTURE DETECTOR
+                  onLongPress: () => _handleLongPress(context, item),
+                  child: RadioListTile<String>(
+                    activeColor: Colors.deepOrange,
+                    title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text(item.subtitle, style: TextStyle(color: item.isSought ? Colors.deepOrange : Colors.green)),
+                    value: item.id,
+                    groupValue: _selectedPlantId,
+                    onChanged: (v) => setState(() => _selectedPlantId = v),
+                  ),
                 );
               },
             ),
           ),
-          if (_selectedPlantId != null)
-            _buildActionFooter(allItems.firstWhere((p) => p.id == _selectedPlantId), releveVm),
+          if (_selectedPlantId != null) _buildActionFooter(allItems.firstWhere((p) => p.id == _selectedPlantId), releveVm),
         ],
       ),
     );
   }
 
+  // ... (metoda _buildActionFooter pozostaje bez zmian jak ostatnio)
   Widget _buildActionFooter(_SearchListItem item, ReleveViewModel releveVm) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -156,77 +151,37 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
               onPressed: () async {
                 SoughtPlant targetPlant;
                 String? knownSpeciesId;
-
                 if (item.originalObject is SoughtPlant) {
                   targetPlant = item.originalObject;
                 } else {
                   final sp = item.originalObject;
                   knownSpeciesId = sp.speciesID;
-                  targetPlant = SoughtPlant(
-                    id: sp.speciesID, polishName: sp.polishName, latinName: sp.latinName,
-                    prefPhMin: sp.prefPhMin, prefPhMax: sp.prefPhMax,
-                    prefAreaTypes: sp.prefAreaTypes, prefExposures: sp.prefExposures,
-                    prefCanopyCovers: sp.prefCanopyCovers, prefWaterDynamics: sp.prefWaterDynamics,
-                    prefSoilDepths: sp.prefSoilDepths,
-                  );
+                  targetPlant = SoughtPlant(id: sp.speciesID, polishName: sp.polishName, latinName: sp.latinName, prefPhMin: sp.prefPhMin, prefPhMax: sp.prefPhMax, prefAreaTypes: sp.prefAreaTypes, prefExposures: sp.prefExposures, prefCanopyCovers: sp.prefCanopyCovers, prefWaterDynamics: sp.prefWaterDynamics, prefSoilDepths: sp.prefSoilDepths);
                 }
-
                 final resultsIds = _mlService.getMatchingAreas(targetPlant, releveVm.allReleves);
                 final matchingObjects = releveVm.allReleves.where((r) => resultsIds.contains(r.id)).toList();
-
                 if (matchingObjects.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Model ML nie wytypował żadnego odpowiedniego obszaru.")));
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Brak dopasowań ML.")));
                   return;
                 }
-
-                Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => ResultsMapScreen(
-                      matchingAreas: matchingObjects,
-                      plantName: item.name,
-                      speciesId: knownSpeciesId,
-                    )
-                ));
+                Navigator.push(context, MaterialPageRoute(builder: (_) => ResultsMapScreen(matchingAreas: matchingObjects, plantName: item.name, speciesId: knownSpeciesId)));
               },
-              icon: const Icon(Icons.map),
-              label: Text("POKAŻ POTENCJALNE OBSZARY ML"),
+              icon: const Icon(Icons.map), label: const Text("POKAŻ POTENCJALNE OBSZARY ML"),
             ),
           ),
           const SizedBox(height: 10),
-
-          // --- PRZYCISK DEWELOPERSKI (TEST UI MAPY) ---
           SizedBox(
             width: double.infinity, height: 45,
             child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.deepOrange,
-                  side: const BorderSide(color: Colors.deepOrange)
-              ),
+              style: OutlinedButton.styleFrom(foregroundColor: Colors.deepOrange, side: const BorderSide(color: Colors.deepOrange)),
               onPressed: () {
-                final allAreas = List.from(releveVm.allReleves);
-                if (allAreas.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Brak jakichkolwiek obszarów w bazie do wylosowania.")));
-                  return;
-                }
-
-                // Tasujemy wszystkie obszary i bierzemy maksymalnie 3 pierwsze
+                final allAreas = List<Releve>.from(releveVm.allReleves);
+                if (allAreas.isEmpty) return;
                 allAreas.shuffle();
                 final randomAreas = allAreas.take(3).toList();
-
-                String? knownSpeciesId;
-                if (item.originalObject is! SoughtPlant) {
-                  knownSpeciesId = item.originalObject.speciesID;
-                }
-
-                Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => ResultsMapScreen(
-                      matchingAreas: List<Releve>.from(randomAreas),
-                      plantName: item.name,
-                      speciesId: knownSpeciesId,
-                    )
-                ));
+                Navigator.push(context, MaterialPageRoute(builder: (_) => ResultsMapScreen(matchingAreas: randomAreas, plantName: item.name)));
               },
-              icon: const Icon(Icons.bug_report),
-              label: const Text("TEST MAPY (3 LOSOWE OBSZARY)"),
+              icon: const Icon(Icons.bug_report), label: const Text("TEST MAPY (3 LOSOWE)"),
             ),
           ),
         ],

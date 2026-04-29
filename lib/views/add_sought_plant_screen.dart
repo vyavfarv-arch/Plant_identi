@@ -125,8 +125,10 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
           remVm.addHarvestReminder(
               plantName: _nameController.text,
               material: season.material,
-              date: season.startDate!,
-              relatedId: soughtId // Używamy ID poszukiwanej rośliny
+              startDate: season.startDate!,
+              // Jeśli użytkownik nie wybrał daty końcowej, domyślnie dajemy miesiąc na zbiory
+              endDate: season.endDate ?? season.startDate!.add(const Duration(days: 30)),
+              relatedId: soughtId
           );
         }
       }

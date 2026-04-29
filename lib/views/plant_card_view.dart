@@ -2,7 +2,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../models/plant_observation.dart';
+import '../models/harvest_season.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../viewmodels/observation_view_model.dart';
 import '../services/spatial_service.dart';
@@ -13,12 +15,15 @@ class PlantCardView {
     final obsVm = context.read<ObservationViewModel>();
     final species = obsVm.getSpeciesById(obs.speciesId);
 
+    // Pobieramy kalendarz: najpierw indywidualny okazu, jeśli pusty - z gatunku
+    final harvestData = obs.customHarvestSeasons.isNotEmpty
+        ? obs.customHarvestSeasons
+        : (species?.harvestSeasons ?? []);
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => DraggableScrollableSheet(
         initialChildSize: 0.8,
         minChildSize: 0.5,
@@ -32,10 +37,7 @@ class PlantCardView {
               _buildHandle(),
               const SizedBox(height: 20),
               _buildHeader(obs),
-              Text(
-                species?.latinName ?? "Brak nazwy łacińskiej",
-                style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey),
-              ),
+              Text(species?.latinName ?? "Brak nazwy łacińskiej", style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey)),
               const Divider(),
               _buildPhotoGallery(obs),
               const SizedBox(height: 20),
@@ -48,20 +50,17 @@ class PlantCardView {
               _infoItem(Icons.category, "Typ surowca", species?.biologicalType ?? "-"),
               _infoItem(Icons.filter_vintage, "Etap fenologiczny", obs.phenologicalStage ?? "-"),
               _infoItem(Icons.analytics, "Ilościowość", obs.abundance ?? "-"),
-              _infoItem(Icons.favorite, "Żywotność", obs.vitality ?? "-"),
 
-              _sectionHeader("3. Amplituda ekologiczna "),
+              // NOWA SEKCJA: KALENDARZ ZBIORÓW
+              _sectionHeader("3. Terminy zbioru surowców"),
+              if (harvestData.isEmpty)
+                const Padding(padding: EdgeInsets.only(left: 35), child: Text("Brak zdefiniowanych terminów.", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)))
+              else
+                ...harvestData.map((h) => _harvestItem(h)),
+
+              _sectionHeader("4. Amplituda ekologiczna (ML)"),
               _infoItem(Icons.science, "Zakres pH", "${species?.prefPhMin?.toStringAsFixed(1) ?? '?'} - ${species?.prefPhMax?.toStringAsFixed(1) ?? '?'}"),
               _infoItem(Icons.landscape, "Typy obszaru", _joinList(species?.prefAreaTypes)),
-              _infoItem(Icons.explore, "Ekspozycja stoku", _joinList(species?.prefExposures)),
-              _infoItem(Icons.wb_sunny, "Zwarcie koron", _joinList(species?.prefCanopyCovers)),
-              _infoItem(Icons.water_drop, "Dynamika wody", _joinList(species?.prefWaterDynamics)),
-              _infoItem(Icons.layers, "Głębokość gleby", _joinList(species?.prefSoilDepths)),
-
-              _sectionHeader("4. Cechy i Wykorzystanie"),
-              _infoItem(Icons.verified, "Stopień pewności", obs.certainty ?? "-"),
-              _infoItem(Icons.handyman, "Zastosowanie", species?.plantUsage ?? "-"),
-              _infoItem(Icons.home, "Hodowla", species?.cultivation ?? "-"),
 
               _sectionHeader("5. Lokalizacja w płatach"),
               _buildReleveLinks(context, obs),
@@ -73,74 +72,38 @@ class PlantCardView {
     );
   }
 
-  // Helper do łączenia elementów list w estetyczny napis
-  static String _joinList(List<String>? list) {
-    if (list == null || list.isEmpty) return "-";
-    return list.join(", ");
+  static Widget _harvestItem(HarvestSeason h) {
+    final df = DateFormat('dd.MM');
+    final dateRange = (h.startDate != null && h.endDate != null)
+        ? "${df.format(h.startDate!)} - ${df.format(h.endDate!)}"
+        : "Cały rok";
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
+      child: Row(
+        children: [
+          Icon(Icons.calendar_today, size: 16, color: h.reminderEnabled ? Colors.orange : Colors.green),
+          const SizedBox(width: 10),
+          Expanded(child: Text(h.material, style: const TextStyle(fontWeight: FontWeight.bold))),
+          Text(dateRange, style: const TextStyle(color: Colors.blueGrey)),
+        ],
+      ),
+    );
   }
 
-  static Widget _buildHandle() => Center(
-    child: Container(width: 40, height: 5, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10))),
-  );
-
-  static Widget _buildHeader(PlantObservation obs) => Text(
-    obs.displayName,
-    style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.green),
-  );
-
-  static Widget _buildPhotoGallery(PlantObservation obs) => SizedBox(
-    height: 180,
-    child: ListView.builder(
-      scrollDirection: Axis.horizontal,
-      itemCount: obs.photoPaths.length,
-      itemBuilder: (ctx, i) => Padding(
-        padding: const EdgeInsets.only(right: 12),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.file(File(obs.photoPaths[i]), width: 240, fit: BoxFit.cover),
-        ),
-      ),
-    ),
-  );
+  static String _joinList(List<String>? list) => (list == null || list.isEmpty) ? "-" : list.join(", ");
+  static Widget _buildHandle() => Center(child: Container(width: 40, height: 5, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10))));
+  static Widget _buildHeader(PlantObservation obs) => Text(obs.displayName, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.green));
+  static Widget _buildPhotoGallery(PlantObservation obs) => SizedBox(height: 150, child: ListView.builder(scrollDirection: Axis.horizontal, itemCount: obs.photoPaths.length, itemBuilder: (ctx, i) => Padding(padding: const EdgeInsets.only(right: 12), child: ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.file(File(obs.photoPaths[i]), width: 200, fit: BoxFit.cover)))));
+  static Widget _sectionHeader(String title) => Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal)));
+  static Widget _infoItem(IconData icon, String label, String value) => Padding(padding: const EdgeInsets.symmetric(vertical: 4.0), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(icon, color: Colors.green, size: 20), const SizedBox(width: 15), Expanded(child: RichText(text: TextSpan(style: const TextStyle(color: Colors.black, fontSize: 14), children: [TextSpan(text: "$label: ", style: const TextStyle(fontWeight: FontWeight.bold)), TextSpan(text: value)])))]));
 
   static Widget _buildReleveLinks(BuildContext context, PlantObservation obs) {
     return Builder(builder: (context) {
       final releveVm = context.read<ReleveViewModel>();
       final foundInReleves = SpatialService.getAreasForPlant(releveVm.allReleves, obs);
-
-      if (foundInReleves.isEmpty) return const Text("Roślina poza zdefiniowanymi obszarami.");
-      return Column(
-        children: foundInReleves.map((r) => ListTile(
-          dense: true,
-          leading: const Icon(Icons.layers, color: Colors.indigo),
-          title: Text("${r.type}: ${r.commonName}"),
-          trailing: const Icon(Icons.chevron_right, size: 18),
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(context, MaterialPageRoute(builder: (_) => ReleveDetailsScreen(releve: r)));
-          },
-        )).toList(),
-      );
+      if (foundInReleves.isEmpty) return const Text("Poza obszarami.");
+      return Column(children: foundInReleves.map((r) => ListTile(dense: true, leading: const Icon(Icons.layers, color: Colors.indigo), title: Text(r.commonName), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReleveDetailsScreen(releve: r))))).toList());
     });
   }
-
-  static Widget _sectionHeader(String title) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 10),
-    child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal)),
-  );
-
-  static Widget _infoItem(IconData icon, String label, String value) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6.0),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: Colors.green, size: 20),
-        const SizedBox(width: 15),
-        Expanded(child: RichText(text: TextSpan(style: const TextStyle(color: Colors.black, fontSize: 15), children: [
-          TextSpan(text: "$label: ", style: const TextStyle(fontWeight: FontWeight.bold)),
-          TextSpan(text: value),
-        ]))),
-      ],
-    ),
-  );
 }
