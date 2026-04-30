@@ -48,10 +48,9 @@ class ReminderViewModel extends ChangeNotifier {
 
   Future<void> toggleMute(String id, bool currentMute) async {
     final newMuteStatus = !currentMute;
-    final db = await _db.database;
-    await db.update('app_reminders', {'isMuted': newMuteStatus ? 1 : 0}, where: 'id = ?', whereArgs: [id]);
 
-    // LOGIKA DZWONKA: Jeśli wyciszamy, anulujemy w systemie. Jeśli włączamy, planujemy na nowo.
+    await _db.updateReminderMuteStatus(id, newMuteStatus);
+
     final reminder = _reminders.firstWhere((r) => r.id == id);
     if (newMuteStatus) {
       await _notifService.cancelNotification(reminder.id.hashCode);
@@ -61,7 +60,6 @@ class ReminderViewModel extends ChangeNotifier {
 
     await loadFromDisk();
   }
-
   Future<void> toggleReminderStatus(String id, bool isCompleted) async {
     await _db.updateReminderStatus(id, isCompleted);
     if (isCompleted) await _notifService.cancelNotification(id.hashCode); // Jeśli zakończono ręcznie, anuluj powiadomienie

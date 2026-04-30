@@ -15,62 +15,65 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
+  bool _showPlants = true;
+  String _plantFilter = "Wszystkie";
+
   @override
   Widget build(BuildContext context) {
     final obsVm = context.watch<ObservationViewModel>();
     final releveVm = context.watch<ReleveViewModel>();
 
     Set<Marker> markers = {};
+    if (_showPlants) {
+      markers = obsVm.allObservations.where((o) {
+        if (_plantFilter == "Wszystkie") return true;
+        return o.displayName.contains(_plantFilter);
+      }).map((obs) {
+        return Marker(
+          markerId: MarkerId('plant_${obs.id}'),
+          position: LatLng(obs.latitude, obs.longitude),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          onTap: () => PlantCardView.show(context, obs),
+        );
+      }).toSet();
+    }
 
-    // 1. Markery Roślin (Zielone)
-    markers.addAll(obsVm.allObservations.map((obs) {
-      return Marker(
-        markerId: MarkerId('plant_${obs.id}'),
-        position: LatLng(obs.latitude, obs.longitude),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-        infoWindow: InfoWindow(title: obs.displayName, snippet: 'Kliknij, aby zobaczyć kartę'),
-        onTap: () => PlantCardView.show(context, obs),
-      );
-    }));
-
-    // 2. Markery-Etykiety dla Obszarów (Niebieskie/Fioletowe szpilki w centrum obszaru)
-    markers.addAll(releveVm.allReleves.where((r) => r.points.isNotEmpty).map((r) {
-      final isArea = r.type == "Obszar";
-      return Marker(
-        markerId: MarkerId('area_lbl_${r.id}'),
-        position: r.points.first, // Stawiamy etykietę na pierwszym punkcie
-        icon: BitmapDescriptor.defaultMarkerWithHue(isArea ? BitmapDescriptor.hueBlue : BitmapDescriptor.hueViolet),
-        infoWindow: InfoWindow(title: "${r.type}: ${r.commonName}", snippet: "Otwórz szczegóły"),
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReleveDetailsScreen(releve: r))),
-      );
-    }));
-
-    // 3. Budowanie zarysów (Polygonów) ze ZWIĘKSZONĄ intensywnością i grubością
     Set<Polygon> polygons = releveVm.allReleves.where((r) => r.points.isNotEmpty).map((r) {
-      final isArea = r.type == "Obszar";
       return Polygon(
         polygonId: PolygonId(r.id),
         points: r.points,
-        // Zmiana z opacity 0.2 na 0.45 dla mocniejszego efektu wizualnego
-        fillColor: isArea ? Colors.indigo.withOpacity(0.45) : Colors.purple.withOpacity(0.45),
-        strokeColor: isArea ? Colors.indigoAccent : Colors.purpleAccent,
-        strokeWidth: 3, // Grubsze linie graniczne
+        fillColor: Colors.indigo.withOpacity(0.4),
+        strokeColor: Colors.indigo,
+        strokeWidth: 2,
         consumeTapEvents: true,
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReleveDetailsScreen(releve: r))),
       );
     }).toSet();
 
-    LatLng initialPos = const LatLng(52.2297, 21.0122);
-    if (obsVm.allObservations.isNotEmpty) {
-      initialPos = LatLng(obsVm.allObservations.first.latitude, obsVm.allObservations.first.longitude);
-    } else if (releveVm.allReleves.isNotEmpty && releveVm.allReleves.first.points.isNotEmpty) {
-      initialPos = releveVm.allReleves.first.points.first;
-    }
-
     return Scaffold(
-      appBar: AppBar(title: const Text("Mapa Terenowa")),
+      appBar: AppBar(
+        title: const Text("Mapa Terenowa"),
+        actions: [
+          // FILTR W PRAWYM GÓRNYM ROGU
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.filter_list),
+            onSelected: (val) {
+              setState(() {
+                if (val == "ukryj") { _showPlants = false; }
+                else { _showPlants = true; _plantFilter = val; }
+              });
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: "Wszystkie", child: Text("Pokaż wszystkie rośliny")),
+              const PopupMenuItem(value: "ukryj", child: Text("Ukryj rośliny")),
+              const PopupMenuDivider(),
+              ...obsVm.allLatinNames.take(5).map((name) => PopupMenuItem(value: name, child: Text(name))),
+            ],
+          )
+        ],
+      ),
       body: GoogleMap(
-        initialCameraPosition: CameraPosition(target: initialPos, zoom: 12),
+        initialCameraPosition: const CameraPosition(target: LatLng(52.23, 21.01), zoom: 10),
         markers: markers,
         polygons: polygons,
         mapType: MapType.hybrid,

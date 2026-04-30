@@ -145,10 +145,29 @@ class _HarvestSeasonPickerState extends State<HarvestSeasonPicker> {
             elevation: 1, margin: const EdgeInsets.symmetric(vertical: 4),
             child: ListTile(
               dense: true,
-              leading: Icon(season.reminderEnabled ? Icons.notifications_active : Icons.spa, color: season.reminderEnabled ? Colors.orange : Colors.green),
+              leading: IconButton(
+                icon: Icon(
+                    season.reminderEnabled ? Icons.notifications_active : Icons.notifications_off,
+                    color: season.reminderEnabled ? Colors.orange : Colors.grey
+                ),
+                onPressed: () {
+                  // TOGGLE DZWONKA NA LIŚCIE
+                  final updatedSeason = HarvestSeason(
+                    material: season.material,
+                    startDate: season.startDate,
+                    endDate: season.endDate,
+                    reminderEnabled: !season.reminderEnabled,
+                  );
+                  setState(() => _seasons[idx] = updatedSeason);
+                  widget.onChanged(_seasons);
+                },
+              ),
               title: Text(season.material, style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text(dateText, style: const TextStyle(color: Colors.black87)),
-              trailing: IconButton(icon: const Icon(Icons.delete, color: Colors.red, size: 20), onPressed: () { setState(() => _seasons.removeAt(idx)); widget.onChanged(_seasons); }),
+              subtitle: Text(dateText),
+              trailing: IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                  onPressed: () { setState(() => _seasons.removeAt(idx)); widget.onChanged(_seasons); }
+              ),
             ),
           );
         }).toList()

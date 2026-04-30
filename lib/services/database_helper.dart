@@ -25,7 +25,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'planticator.db');
     return await openDatabase(
       path,
-      version: 19, // WERSJA 18: Naprawa brakującej kolumny stepsJson w przepisach
+      version: 19,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
@@ -78,27 +78,39 @@ class DatabaseHelper {
       )
     ''');
 
+    // ZMIANA: Zaktualizowane tworzenie tabeli o kolumny z v19
     await db.execute('''
       CREATE TABLE app_reminders (
         id TEXT PRIMARY KEY, title TEXT, body TEXT, scheduledTime TEXT,
-        relatedId TEXT, type TEXT, isCompleted INTEGER
+        endDate TEXT, relatedId TEXT, type TEXT, isCompleted INTEGER, isMuted INTEGER DEFAULT 0
       )
     ''');
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Od v16 dodawane były Timery i Przypomnienia
+    // ZMIANA: Chronologiczne ułożenie migracji (v16 -> v18 -> v19)
+    if (oldVersion < 16) {
+      try {
+        await db.execute('ALTER TABLE recipes ADD COLUMN timersJson TEXT');
+        // W starszej wersji tworzyliśmy tabelę bez endDate i isMuted, zostanie to naprawione w bloku v19 poniżej
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS app_reminders (
+            id TEXT PRIMARY KEY, title TEXT, body TEXT, scheduledTime TEXT,
+            relatedId TEXT, type TEXT, isCompleted INTEGER
+          )
+        ''');
+      } catch (e) { print("Błąd migracji do v16: $e"); }
+    }
+    if (oldVersion < 18) {
+      try {
+        await db.execute('ALTER TABLE recipes ADD COLUMN stepsJson TEXT');
+      } catch (e) { print("Błąd migracji do v18: $e"); }
+    }
     if (oldVersion < 19) {
       try {
         await db.execute('ALTER TABLE app_reminders ADD COLUMN endDate TEXT');
         await db.execute('ALTER TABLE app_reminders ADD COLUMN isMuted INTEGER DEFAULT 0');
-      } catch (e) { print("Błąd v19: $e"); }
-    }
-    // Naprawa błędu "no column named stepsJson"
-    if (oldVersion < 18) {
-      try {
-        await db.execute('ALTER TABLE recipes ADD COLUMN stepsJson TEXT');
-      } catch (e) { print("Błąd migracji bazy do v18: $e"); }
+      } catch (e) { print("Błąd migracji do v19: $e"); }
     }
   }
 
@@ -125,5 +137,12 @@ class DatabaseHelper {
   Future<void> insertReminder(AppReminder reminder) async { final db = await database; await db.insert('app_reminders', reminder.toMap(), conflictAlgorithm: ConflictAlgorithm.replace); }
   Future<List<AppReminder>> getReminders() async { final db = await database; final maps = await db.query('app_reminders', orderBy: 'scheduledTime ASC'); return List.generate(maps.length, (i) => AppReminder.fromMap(maps[i])); }
   Future<void> updateReminderStatus(String id, bool isCompleted) async { final db = await database; await db.update('app_reminders', {'isCompleted': isCompleted ? 1 : 0}, where: 'id = ?', whereArgs: [id]); }
+
+  // ZMIANA: Dodana metoda dla wyciszania zgodnie z dobrymi praktykami architektury!
+  Future<void> updateReminderMuteStatus(String id, bool isMuted) async {
+    final db = await database;
+    await db.update('app_reminders', {'isMuted': isMuted ? 1 : 0}, where: 'id = ?', whereArgs: [id]);
+  }
+
   Future<void> deleteReminder(String id) async { final db = await database; await db.delete('app_reminders', where: 'id = ?', whereArgs: [id]); }
 }
