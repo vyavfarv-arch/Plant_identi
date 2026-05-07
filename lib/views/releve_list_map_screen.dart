@@ -2,9 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/releve_view_model.dart';
+import '../viewmodels/search_filter_view_model.dart';
 import '../models/releve.dart';
 import 'releve_details_screen.dart';
-import 'releve_map_screen.dart'; // IMPORT MAPY
+import 'releve_map_screen.dart';
+import 'area_filter_screen.dart'; // IMPORT NOWEGO EKRANU
 
 class ReleveListMapScreen extends StatefulWidget {
   const ReleveListMapScreen({super.key});
@@ -14,32 +16,76 @@ class ReleveListMapScreen extends StatefulWidget {
 }
 
 class _ReleveListMapScreenState extends State<ReleveListMapScreen> {
-  String _selectedType = "Wszystkie";
-  final List<String> _filterOptions = ["Wszystkie", "Obszar", "Podobszar"];
+
+  // Metoda pomocnicza sprawdzająca, czy jakikolwiek filtr jest aktywny (dla koloru ikony)
+  bool _isAnyFilterActive(SearchFilterViewModel vm) {
+    return vm.areaFilterType != null ||
+        vm.areaFilterCanopy != null ||
+        vm.areaFilterWater != null ||
+        vm.areaFilterSlope != null ||
+        vm.areaFilterSubstrates.isNotEmpty ||
+        vm.areaFilterPh.start > 3.1 ||
+        vm.areaFilterPh.end < 8.9;
+  }
 
   @override
   Widget build(BuildContext context) {
     final releveVm = context.watch<ReleveViewModel>();
-    final allReleves = releveVm.allReleves;
+    final filterVm = context.watch<SearchFilterViewModel>();
 
-    final filteredReleves = allReleves.where((r) {
-      if (_selectedType == "Wszystkie") return true;
-      return r.type == _selectedType;
+    // LOGIKA FILTROWANIA LISTY
+    final filteredReleves = releveVm.allReleves.where((r) {
+      final h = r.habitat;
+
+      // Jeśli filtry są aktywne, nie pokazujemy obszarów bez opisu siedliska
+      if (h == null) return !_isAnyFilterActive(filterVm);
+
+      // Filtry dokładnego dopasowania
+      if (filterVm.areaFilterType != null && r.type != filterVm.areaFilterType) return false;
+      if (filterVm.areaFilterCanopy != null && h.canopyCover != filterVm.areaFilterCanopy) return false;
+      if (filterVm.areaFilterWater != null && h.waterDynamics != filterVm.areaFilterWater) return false;
+      if (filterVm.areaFilterSlope != null && h.slopeAngle != filterVm.areaFilterSlope) return false;
+
+      // Logika AND dla podłoży: obszar musi zawierać WSZYSTKIE zaznaczone typy
+      if (filterVm.areaFilterSubstrates.isNotEmpty) {
+        if (!filterVm.areaFilterSubstrates.every((s) => h.substrateType.contains(s))) return false;
+      }
+
+      // Filtr zakresu pH
+      if (h.ph != null) {
+        if (h.ph! < filterVm.areaFilterPh.start || h.ph! > filterVm.areaFilterPh.end) return false;
+      }
+
+      return true;
     }).toList();
 
     return Scaffold(
       appBar: AppBar(
         title: const Text("Zarządzanie Obszarami"),
+        backgroundColor: Colors.indigo,
+        foregroundColor: Colors.white,
         actions: [
-          // PRZYCISK PRZEGLĄDANIA MAPY WSZYSTKICH OBSZARÓW
+          // PRZYCISK FILTRA (Zamiast starej mapy)
           IconButton(
-            icon: const Icon(Icons.map_outlined),
-            tooltip: "Podgląd mapy",
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReleveMapScreen())),
+            icon: Icon(
+              Icons.tune,
+              color: _isAnyFilterActive(filterVm) ? Colors.orange : null,
+            ),
+            tooltip: "Filtruj obszary",
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AreaFilterScreen()),
+            ),
           ),
+          // SZYBKI RESET
+          if (_isAnyFilterActive(filterVm))
+            IconButton(
+              icon: const Icon(Icons.layers_clear_outlined),
+              tooltip: "Resetuj filtry",
+              onPressed: () => filterVm.resetAreaFilters(),
+            ),
         ],
       ),
-      // PRZYCISK DODAWANIA NOWEGO OBSZARU
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
@@ -49,45 +95,31 @@ class _ReleveListMapScreenState extends State<ReleveListMapScreen> {
       ),
       body: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8.0),
-            color: Colors.indigo.shade50,
-            width: double.infinity,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _filterOptions.map((type) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: ChoiceChip(
-                      label: Text(type),
-                      selected: _selectedType == type,
-                      selectedColor: Colors.indigo.shade200,
-                      onSelected: (selected) {
-                        if (selected) setState(() => _selectedType = type);
-                      },
-                    ),
-                  );
-                }).toList(),
+          // Pasek informacyjny o aktywnych filtrach
+          if (_isAnyFilterActive(filterVm))
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              color: Colors.orange.shade50,
+              width: double.infinity,
+              child: Text(
+                "Aktywne filtry: ${filteredReleves.length} wyników",
+                style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12),
               ),
             ),
-          ),
           Expanded(
             child: filteredReleves.isEmpty
-                ? const Center(child: Text("Brak obszarów. Kliknij przycisk poniżej, aby dodać."))
+                ? const Center(child: Text("Brak obszarów spełniających kryteria."))
                 : ListView.builder(
               itemCount: filteredReleves.length,
-              padding: const EdgeInsets.only(bottom: 80), // Miejsce na FAB
+              padding: const EdgeInsets.only(bottom: 80),
               itemBuilder: (context, index) {
                 final r = filteredReleves[index];
-                List<Releve> subareas = [];
-                if (r.type == "Obszar") {
-                  subareas = allReleves.where((sub) => sub.parentId == r.id).toList();
-                }
-                Releve? parentArea;
-                if (r.type == "Podobszar" && r.parentId != null) {
-                  try { parentArea = allReleves.firstWhere((p) => p.id == r.parentId); } catch (_) {}
-                }
+
+                // Logika zliczania podobszarów i znajdowania rodzica
+                List<Releve> subareas = releveVm.allReleves.where((sub) => sub.parentId == r.id).toList();
+                Releve? parentArea = r.parentId != null
+                    ? releveVm.allReleves.firstWhere((p) => p.id == r.parentId, orElse: () => r)
+                    : null;
 
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -95,7 +127,8 @@ class _ReleveListMapScreenState extends State<ReleveListMapScreen> {
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: r.type == "Obszar" ? Colors.indigo.shade100 : Colors.blue.shade100,
-                      child: Icon(r.type == "Obszar" ? Icons.map : Icons.layers, color: r.type == "Obszar" ? Colors.indigo : Colors.blue),
+                      child: Icon(r.type == "Obszar" ? Icons.map : Icons.layers,
+                          color: r.type == "Obszar" ? Colors.indigo : Colors.blue),
                     ),
                     title: Text(r.commonName, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Column(
@@ -103,13 +136,18 @@ class _ReleveListMapScreenState extends State<ReleveListMapScreen> {
                       children: [
                         Text("Typ: ${r.type}"),
                         if (r.type == "Obszar" && subareas.isNotEmpty)
-                          Text("Podobszary: ${subareas.length}", style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 12)),
-                        if (r.type == "Podobszar" && parentArea != null)
-                          Text("Należy do: ${parentArea.commonName}", style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 12)),
+                          Text("Podobszary: ${subareas.length}",
+                              style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 12)),
+                        if (r.type == "Podobszar" && parentArea != null && parentArea != r)
+                          Text("Należy do: ${parentArea.commonName}",
+                              style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 12)),
                       ],
                     ),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReleveDetailsScreen(releve: r))),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => ReleveDetailsScreen(releve: r)),
+                    ),
                   ),
                 );
               },
