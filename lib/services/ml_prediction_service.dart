@@ -46,7 +46,6 @@ class MlPredictionService {
     if (h.exposure != null) features[h.exposure!] = 1.0;
     if (h.canopyCover != null) features[h.canopyCover!] = 1.0;
     if (h.waterDynamics != null) features[h.waterDynamics!] = 1.0;
-    if (h.soilDepth != null) features[h.soilDepth!] = 1.0;
     if (h.slopeAngle != null) features[h.slopeAngle!] = 1.0;
     if (h.litterThickness != null) features[h.litterThickness!] = 1.0;
     if (h.distanceToWater != null) features[h.distanceToWater!] = 1.0;

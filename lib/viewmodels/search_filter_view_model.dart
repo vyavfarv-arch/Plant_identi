@@ -38,7 +38,35 @@ class SearchFilterViewModel extends ChangeNotifier {
   List<String> get selectedReleveTypes => _selectedReleveTypes;
   String? get soughtPlantLatinName => _soughtPlantLatinName;
   bool get habitatMatchMode => _habitatMatchMode;
+  String? areaFilterType;
+  String? areaFilterCanopy;
+  String? areaFilterWater;
+  String? areaFilterSlope;
+  List<String> areaFilterSubstrates = [];
+  RangeValues areaFilterPh = const RangeValues(3.0, 9.0);
 
+  void updateAreaFilters({
+    String? type, String? canopy, String? water, String? slope,
+    List<String>? substrates, RangeValues? ph
+  }) {
+    areaFilterType = type;
+    areaFilterCanopy = canopy;
+    areaFilterWater = water;
+    areaFilterSlope = slope;
+    if (substrates != null) areaFilterSubstrates = List.from(substrates);
+    if (ph != null) areaFilterPh = ph;
+    notifyListeners();
+  }
+
+  void resetAreaFilters() {
+    areaFilterType = null;
+    areaFilterCanopy = null;
+    areaFilterWater = null;
+    areaFilterSlope = null;
+    areaFilterSubstrates.clear();
+    areaFilterPh = const RangeValues(3.0, 9.0);
+    notifyListeners();
+  }
   void setFilterDateRange(DateTimeRange? range) {
     _filterDateRange = range;
     notifyListeners();

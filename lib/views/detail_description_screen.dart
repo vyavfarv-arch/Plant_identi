@@ -22,8 +22,6 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
   final Map<String, TextEditingController> _controllers = {};
   String? _selectedCertainty;
   List<HarvestSeason> _selectedSeasons = [];
-
-  // Magia DRY - Jeden elegancki kontroler zamiast 7 list i 30 funkcji!
   final EcologicalDataController _ecoController = EcologicalDataController();
 
   @override
@@ -58,10 +56,9 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       _controllers['localName']!.text = s.polishName;
       _controllers['usage']!.text = s.plantUsage ?? "";
       _controllers['cultivation']!.text = s.cultivation ?? "";
-      _selectedSeasons = List.from(s.harvestSeasons); // Wczytanie z bazy
+      _selectedSeasons = List.from(s.harvestSeasons);
     });
 
-    // Autouzupełnianie logiki ML jednym poleceniem
     _ecoController.updateData(
       newPhMin: s.prefPhMin, newPhMax: s.prefPhMax, newAreaTypes: s.prefAreaTypes,
       newExposures: s.prefExposures, newCanopyCovers: s.prefCanopyCovers,
@@ -72,38 +69,89 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Edytuj dane gatunku")),
-      body: ListView(
-        padding: const EdgeInsets.all(12),
+      appBar: AppBar(
+        title: const Text("Edycja Wiedzy o Gatunku"),
+        backgroundColor: Colors.teal.shade700,
+        foregroundColor: Colors.white,
+      ),
+      body: Column(
+        children: [
+          // SEKCJA 1: KONTEKST OKAZU (Tylko do odczytu)
+          _buildSpecimenReferenceHeader(),
+
+          const Divider(height: 1),
+
+          // SEKCJA 2: FORMULARZ GATUNKU (Przewijalny)
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              children: [
+                _sectionHeader("TAKSONOMIA I IDENTYFIKACJA", Icons.account_tree),
+                _buildNamingAndCertaintySection(),
+
+                _sectionHeader("SUROWCE I ZBIORY", Icons.shopping_basket_outlined),
+                _buildHarvestSection(),
+
+                _sectionHeader("AMPLITUDA EKOLOGICZNA", Icons.landscape),
+                _buildEnvironmentalSection(),
+
+                _sectionHeader("WYKORZYSTANIE I HODOWLA", Icons.menu_book),
+                _buildUsageSection(),
+
+                const SizedBox(height: 30),
+                _buildSaveButton(),
+                const SizedBox(height: 50),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- WIDGETY SEKCJI ---
+
+  Widget _buildSpecimenReferenceHeader() {
+    final obs = widget.observation;
+    return Container(
+      color: Colors.blueGrey.shade50,
+      child: ExpansionTile(
+        initiallyExpanded: true,
+        leading: const Icon(Icons.remove_red_eye, color: Colors.blueGrey),
+        title: Text("KONTEKST OKAZU: ${obs.localName ?? 'Brak nazwy'}",
+            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey, fontSize: 14)),
+        subtitle: const Text("Dane zebrane w terenie", style: TextStyle(fontSize: 11)),
         children: [
           _buildCapturedPhotosPreview(),
-          _buildNamingAndCertaintySection(),
-
-          // NASZ NOWY WIDGET W AKCJI:
-          ExpansionTile(
-            title: const Text("Amplituda ekologiczna (ML)", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
-            children: [ Padding(padding: const EdgeInsets.all(12), child: EcologicalAmplitudePicker(controller: _ecoController)) ],
-          ),
-          ExpansionTile(
-            title: const Text("Surowce i Zbiory", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: HarvestSeasonPicker(
-                  initialSeasons: _selectedSeasons,
-                  onChanged: (seasons) => setState(() => _selectedSeasons = List.from(seasons)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _infoBadge("Witalność", obs.vitality, Colors.orange),
+                    _infoBadge("Obfitość", obs.abundance, Colors.blue),
+                    _infoBadge("Pokrycie", obs.coverage, Colors.purple),
+                  ],
                 ),
-              )
-            ],
+                const SizedBox(height: 12),
+                const Text("Cechy morfologiczne okazu:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 6,
+                  children: obs.characteristics.entries.expand((e) =>
+                      e.value.map((v) => Chip(
+                        label: Text("${e.key}: $v", style: const TextStyle(fontSize: 11)),
+                        visualDensity: VisualDensity.compact,
+                        backgroundColor: Colors.white,
+                      ))
+                  ).toList(),
+                ),
+              ],
+            ),
           ),
-          _buildUsageSection(),
-          const SizedBox(height: 30),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 15)),
-            onPressed: _saveAndGoBack,
-            child: const Text("ZAPISZ I AKTUALIZUJ SŁOWNIK", style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-          const SizedBox(height: 50),
         ],
       ),
     );
@@ -111,77 +159,146 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
 
   Widget _buildNamingAndCertaintySection() {
     final obsVm = context.watch<ObservationViewModel>();
-    return ExpansionTile(
-      initiallyExpanded: true,
-      title: const Text("Taksonomia i Pewność", style: TextStyle(fontWeight: FontWeight.bold)),
+    return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(10.0),
-          child: Autocomplete<String>(
-            optionsBuilder: (val) => val.text.isEmpty ? const Iterable<String>.empty() : obsVm.allLatinNames.where((s) => s.toLowerCase().contains(val.text.toLowerCase())),
-            onSelected: (selection) {
-              _controllers['latinName']!.text = selection;
-              final found = obsVm.findSpeciesByLatinName(selection);
-              if (found != null) _applySpeciesData(found);
-            },
-            fieldViewBuilder: (ctx, ctrl, node, onSub) {
-              if (_controllers['latinName']!.text.isNotEmpty && ctrl.text.isEmpty) ctrl.text = _controllers['latinName']!.text;
-              return TextField(controller: ctrl, focusNode: node, decoration: const InputDecoration(labelText: "Nazwa Łacińska", border: OutlineInputBorder(), prefixIcon: Icon(Icons.search)), onChanged: (v) => _controllers['latinName']!.text = v);
-            },
-          ),
+        Autocomplete<String>(
+          optionsBuilder: (val) => val.text.isEmpty ? const Iterable<String>.empty() : obsVm.allLatinNames.where((s) => s.toLowerCase().contains(val.text.toLowerCase())),
+          onSelected: (selection) {
+            _controllers['latinName']!.text = selection;
+            final found = obsVm.findSpeciesByLatinName(selection);
+            if (found != null) _applySpeciesData(found);
+          },
+          fieldViewBuilder: (ctx, ctrl, node, onSub) {
+            if (_controllers['latinName']!.text.isNotEmpty && ctrl.text.isEmpty) ctrl.text = _controllers['latinName']!.text;
+            return _inputField(ctrl, "Nazwa Łacińska", icon: Icons.search, focus: node);
+          },
         ),
         _inputField(_controllers['localName']!, "Nazwa polska"),
         _inputField(_controllers['family']!, "Rodzina"),
         _inputField(_controllers['subspecies']!, "Odmiana/Podgatunek"),
-        const Divider(),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          child: DropdownButtonFormField<String>(
-            value: _selectedCertainty, items: ['Wysoka', 'Średnia', 'Niska'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-            onChanged: (v) => setState(() => _selectedCertainty = v), decoration: const InputDecoration(labelText: "Pewność identyfikacji", border: OutlineInputBorder()),
-          ),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<String>(
+          value: _selectedCertainty,
+          items: ['Wysoka', 'Średnia', 'Niska'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+          onChanged: (v) => setState(() => _selectedCertainty = v),
+          decoration: const InputDecoration(labelText: "Pewność identyfikacji (Twoja)", border: OutlineInputBorder()),
         ),
-        _inputField(_controllers['idDoubts']!, "Wątpliwości/Uwagi", isLong: true),
+        _inputField(_controllers['idDoubts']!, "Wątpliwości co do tego okazu", isLong: true),
       ],
     );
   }
 
+  Widget _buildHarvestSection() {
+    return HarvestSeasonPicker(
+      initialSeasons: _selectedSeasons,
+      onChanged: (seasons) => _selectedSeasons = seasons,
+    );
+  }
+
+  Widget _buildEnvironmentalSection() {
+    return EcologicalAmplitudePicker(controller: _ecoController);
+  }
+
   Widget _buildUsageSection() {
-    return ExpansionTile(
-      title: const Text("Wykorzystanie i Hodowla"),
+    return Column(
       children: [
-        _inputField(_controllers['usage']!, "Zastosowanie", isLong: true),
-        _inputField(_controllers['cultivation']!, "Hodowla", isLong: true),
+        _inputField(_controllers['usage']!, "Ogólne zastosowanie gatunku", isLong: true),
+        _inputField(_controllers['cultivation']!, "Wymagania hodowlane", isLong: true),
       ],
+    );
+  }
+
+  // --- POMOCNICZE ---
+
+  Widget _sectionHeader(String title, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24, bottom: 12),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.teal, size: 20),
+          const SizedBox(width: 8),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal, letterSpacing: 1.2)),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoBadge(String label, String? value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 9, color: Colors.grey)),
+        Text(value ?? "-", style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),
+      ],
+    );
+  }
+
+  Widget _inputField(TextEditingController controller, String label, {bool isLong = false, IconData? icon, FocusNode? focus}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: TextField(
+        controller: controller,
+        focusNode: focus,
+        maxLines: isLong ? null : 1,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: icon != null ? Icon(icon) : null,
+          border: const OutlineInputBorder(),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        ),
+      ),
     );
   }
 
   Widget _buildCapturedPhotosPreview() {
     final photos = widget.observation.photoPaths;
     if (photos.isEmpty) return const SizedBox.shrink();
-    return Container(
-      height: 120, margin: const EdgeInsets.only(bottom: 10),
+    return SizedBox(
+      height: 100,
       child: ListView.builder(
-        scrollDirection: Axis.horizontal, itemCount: photos.length,
-        itemBuilder: (context, index) => GestureDetector(
-          onTap: () => showDialog(context: context, builder: (_) => Dialog(backgroundColor: Colors.transparent, child: InteractiveViewer(child: Image.file(File(photos[index]))))),
-          child: Padding(padding: const EdgeInsets.only(right: 10), child: ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(File(photos[index]), width: 100, height: 100, fit: BoxFit.cover))),
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        itemCount: photos.length,
+        itemBuilder: (context, index) => Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.file(File(photos[index]), width: 80, height: 80, fit: BoxFit.cover),
+          ),
         ),
       ),
     );
   }
 
-  Widget _inputField(TextEditingController controller, String label, {bool isLong = false}) {
-    return Padding(padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 10), child: TextField(controller: controller, maxLines: isLong ? null : 1, decoration: InputDecoration(labelText: label, border: const OutlineInputBorder())));
+  Widget _buildSaveButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        icon: const Icon(Icons.save),
+        label: const Text("ZAPISZ DO ATLASU GATUNKÓW"),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.teal,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        onPressed: _saveAndGoBack,
+      ),
+    );
   }
 
   void _saveAndGoBack() {
-    if (_controllers['localName']!.text.isEmpty) return;
+    // Twoja logika zapisu...
+    _saveLogic();
+    Navigator.pop(context);
+  }
 
+  void _saveLogic() {
+    // Kopia Twojej logiki zapisu z poprzedniego kodu
     final obsVm = context.read<ObservationViewModel>();
     final remVm = context.read<ReminderViewModel>();
 
-    // NAPRAWA BŁĘDU: Używamy startDate zamiast months
+    // Obsługa przypomnień
     for (var season in _selectedSeasons) {
       if (season.reminderEnabled && season.startDate != null) {
         remVm.addHarvestReminder(
@@ -203,12 +320,9 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       subspecies: _controllers['subspecies']!.text,
       certainty: _selectedCertainty,
       doubts: _controllers['idDoubts']!.text,
-      keyTraits: _controllers['keyTraits']!.text,
-      confusing: _controllers['confusing']!.text,
-      characteristic: _controllers['characteristic']!.text,
       usage: _controllers['usage']!.text,
       cultivation: _controllers['cultivation']!.text,
-      harvestSeasons: _selectedSeasons, // Wysyłamy nową strukturę Od-Do
+      harvestSeasons: _selectedSeasons,
       prefPhMin: _ecoController.phMin,
       prefPhMax: _ecoController.phMax,
       prefAreaTypes: _ecoController.areaTypes,
@@ -217,6 +331,5 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       prefWaterDynamics: _ecoController.waterDynamics,
       prefSoilDepths: _ecoController.soilDepths,
     );
-    Navigator.pop(context);
   }
 }

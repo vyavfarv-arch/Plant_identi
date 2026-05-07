@@ -19,24 +19,20 @@ class _HabitatDetailsScreenState extends State<HabitatDetailsScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final TextEditingController _commonNameController = TextEditingController();
-  final TextEditingController _phytoNameController = TextEditingController();
-  String _selectedType = "Obszar"; // NOWY PODZIAŁ HIERARCHII
-
   final TextEditingController _phController = TextEditingController();
-  final List<String> _selectedSubstrates = [];
-  double _moisture = 1.0;
 
-  // NOWE KRYTYCZNE ZMIENNE EKOLOGICZNE
+  String _selectedType = "Obszar";
+  double _moisture = 1.0;
+  final List<String> _selectedSubstrates = [];
+
+  // Zmienne stanowe formularza
   String? _areaType;
+  String? _exposure;
   String? _canopyCover;
   String? _waterDynamics;
+  String? _slopeAngle;
   String? _litterThickness;
-
-  final List<String> _moistureLabels = ["Sucho", "Świeżo", "Wilgotno", "Mokro"];
-  final List<String> _areaTypeOptions = ["Las", "Łąka", "Mokradło", "Zarośla", "Pole", "Pobocze drogi", "Teren miejski", "Skraj lasu"];
-  final List<String> _canopyCoverOptions = ["Otwarte (0-25%)", "Półotwarte (25-60%)", "Zacienione (60-85%)", "Gęste (>85%)"];
-  final List<String> _waterDynamicsOptions = ["Stale wilgotne", "Sezonowo zalewane", "Sezonowo wysychające", "Stale suche"];
-  final List<String> _litterThicknessOptions = ["Brak", "Cienka (<2cm)", "Umiarkowana (2-10cm)", "Gruba (>10cm)"];
+  String? _distanceToWater;
 
   @override
   Widget build(BuildContext context) {
@@ -49,11 +45,10 @@ class _HabitatDetailsScreenState extends State<HabitatDetailsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("1. Informacje ogólne", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
-              const SizedBox(height: 15),
+              _sectionTitle("1. Informacje ogólne"),
               TextFormField(
                 controller: _commonNameController,
-                decoration: const InputDecoration(labelText: "Nazwa zwyczajowa (np. Polana)", border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: "Nazwa zwyczajowa ", border: OutlineInputBorder()),
                 validator: (v) => v!.isEmpty ? "To pole jest wymagane" : null,
               ),
               const SizedBox(height: 12),
@@ -65,37 +60,42 @@ class _HabitatDetailsScreenState extends State<HabitatDetailsScreen> {
               ),
 
               const SizedBox(height: 30),
-              const Text("2. Parametry Siedliska", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
-              const Divider(),
+              _sectionTitle("2. Parametry Krytyczne (Wysokie znaczenie)"),
+              _buildDropdown("Typ obszaru", HabitatInfo.areaTypeOptions, _areaType, (v) => setState(() => _areaType = v)),
+              _buildDropdown("Zwarcie koron", HabitatInfo.canopyCoverOptions, _canopyCover, (v) => setState(() => _canopyCover = v)),
+              _buildDropdown("Dynamika wody", HabitatInfo.waterDynamicsOptions, _waterDynamics, (v) => setState(() => _waterDynamics = v)),
+              _buildDropdown("Ekspozycja stoku", HabitatInfo.exposureOptions, _exposure, (v) => setState(() => _exposure = v)),
 
+              const SizedBox(height: 20),
+              _sectionTitle("3. Parametry Ważne (Średnie znaczenie)"),
+              _buildDropdown("Kąt nachylenia stoku", HabitatInfo.slopeAngleOptions, _slopeAngle, (v) => setState(() => _slopeAngle = v)),
+              _buildDropdown("Grubość ściółki", HabitatInfo.litterThicknessOptions, _litterThickness, (v) => setState(() => _litterThickness = v)),
+              _buildDropdown("Odległość do wody", HabitatInfo.distanceToWaterOptions, _distanceToWater, (v) => setState(() => _distanceToWater = v)),
+
+              const SizedBox(height: 20),
+              _sectionTitle("4. Parametry Glebowe"),
               TextFormField(
                 controller: _phController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: "Wartość pH gleby", border: OutlineInputBorder(), hintText: "np. 6.5"),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 15),
+              _buildMultiSelect("Typ podłoża:", HabitatInfo.substrateOptions, _selectedSubstrates),
 
-              _buildMultiSelect("Typ podłoża:", ["Piasek", "Glina", "Torf", "Skała wapienna", "Skała krzemianowa"], _selectedSubstrates),
-              const SizedBox(height: 20),
-
-              _buildDropdown("Typ obszaru", _areaTypeOptions, _areaType, (v) => setState(() => _areaType = v)),
-              _buildDropdown("Zwarcie koron (nasłonecznienie)", _canopyCoverOptions, _canopyCover, (v) => setState(() => _canopyCover = v)),
-              _buildDropdown("Dynamika wody", _waterDynamicsOptions, _waterDynamics, (v) => setState(() => _waterDynamics = v)),
-              _buildDropdown("Grubość warstwy ściółki", _litterThicknessOptions, _litterThickness, (v) => setState(() => _litterThickness = v)),
-
-              _buildSlider("Chwilowa wilgotność gleby:", _moisture, 3, _moistureLabels, (v) => setState(() => _moisture = v)),
+              const SizedBox(height: 15),
+              _buildSlider("Chwilowa wilgotność gleby:", _moisture, HabitatInfo.moistureLabels, (v) => setState(() => _moisture = v)),
 
               const SizedBox(height: 40),
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 55,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
                   onPressed: _saveAll,
                   child: const Text("ZAPISZ OBSZAR", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 30),
             ],
           ),
         ),
@@ -103,24 +103,34 @@ class _HabitatDetailsScreenState extends State<HabitatDetailsScreen> {
     );
   }
 
+  // --- WIDGETY POMOCNICZE ---
+
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15, top: 10),
+      child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
+    );
+  }
+
   Widget _buildDropdown(String label, List<String> options, String? value, Function(String?) onChanged) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.only(bottom: 12),
       child: DropdownButtonFormField<String>(
         value: value,
-        decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
-        items: options.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+        isExpanded: true,
+        decoration: InputDecoration(labelText: label, border: const OutlineInputBorder(), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+        items: options.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 14)))).toList(),
         onChanged: onChanged,
       ),
     );
   }
 
-  Widget _buildSlider(String title, double value, int divisions, List<String> labels, Function(double) onChanged) {
+  Widget _buildSlider(String title, double value, List<String> labels, Function(double) onChanged) {
+    int divisions = labels.length - 1;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 10),
-        Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
         Slider(
           value: value, min: 0, max: divisions.toDouble(), divisions: divisions,
           label: labels[value.round()], onChanged: onChanged,
@@ -134,14 +144,15 @@ class _HabitatDetailsScreenState extends State<HabitatDetailsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 10),
-        Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        const SizedBox(height: 8),
         Wrap(
           spacing: 8,
           children: options.map((opt) {
             final isSelected = targetList.contains(opt);
             return FilterChip(
-              label: Text(opt), selected: isSelected,
+              label: Text(opt, style: const TextStyle(fontSize: 12)),
+              selected: isSelected,
               onSelected: (s) => setState(() => s ? targetList.add(opt) : targetList.remove(opt)),
             );
           }).toList(),
@@ -153,26 +164,31 @@ class _HabitatDetailsScreenState extends State<HabitatDetailsScreen> {
   void _saveAll() {
     if (!_formKey.currentState!.validate()) return;
 
+    final habitat = HabitatInfo(
+      areaType: _areaType,
+      exposure: _exposure,
+      canopyCover: _canopyCover,
+      waterDynamics: _waterDynamics,
+      slopeAngle: _slopeAngle,
+      litterThickness: _litterThickness,
+      distanceToWater: _distanceToWater,
+      substrateType: List.from(_selectedSubstrates),
+      moisture: _moisture,
+      ph: double.tryParse(_phController.text),
+    );
+
     final newReleve = Releve(
       id: const Uuid().v4(),
       commonName: _commonNameController.text,
-      phytosociologicalName: _phytoNameController.text,
+      phytosociologicalName: "",
       type: _selectedType,
       points: widget.points,
       date: DateTime.now(),
-      habitat: HabitatInfo(
-        substrateType: _selectedSubstrates,
-        moisture: _moisture,
-        ph: double.tryParse(_phController.text),
-        areaType: _areaType,
-        canopyCover: _canopyCover,
-        waterDynamics: _waterDynamics,
-        litterThickness: _litterThickness,
-      ),
+      habitat: habitat,
     );
 
     context.read<ReleveViewModel>().saveNewReleve(newReleve);
     Navigator.of(context).popUntil((route) => route.isFirst);
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Obszar został zapisany!")));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Obszar i siedlisko zostały zapisane!")));
   }
 }

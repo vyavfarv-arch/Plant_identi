@@ -43,12 +43,9 @@ class DataExportService {
             "${_escapeCsvField(h.canopyCover)},"
             "${_escapeCsvField(h.waterDynamics)},"
             "${_escapeCsvField(h.areaType)},"
-            "${_escapeCsvField(h.soilDepth)},"
             "${_escapeCsvField(h.slopeAngle)},"
             "${_escapeCsvField(h.litterThickness)},"
             "${_escapeCsvField(h.distanceToWater)},"
-            "${_escapeCsvField(h.deadWood)},"
-            "${_escapeCsvField(h.landUseHistory)},"
             "${_escapeCsvField(h.substrateType.join(';'))},"
             "${_escapeCsvField(species.latinName)},"
             "${_escapeCsvField(species.polishName)}\n";

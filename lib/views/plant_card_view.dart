@@ -15,7 +15,6 @@ class PlantCardView {
     final obsVm = context.read<ObservationViewModel>();
     final species = obsVm.getSpeciesById(obs.speciesId);
 
-    // Pobieramy kalendarz: najpierw indywidualny okazu, jeśli pusty - z gatunku
     final harvestData = obs.customHarvestSeasons.isNotEmpty
         ? obs.customHarvestSeasons
         : (species?.harvestSeasons ?? []);
@@ -37,7 +36,8 @@ class PlantCardView {
               _buildHandle(),
               const SizedBox(height: 20),
               _buildHeader(obs),
-              Text(species?.latinName ?? "Brak nazwy łacińskiej", style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey)),
+              Text(species?.latinName ?? "Brak nazwy łacińskiej",
+                  style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey)),
               const Divider(),
               _buildPhotoGallery(obs),
               const SizedBox(height: 20),
@@ -46,28 +46,85 @@ class PlantCardView {
               _infoItem(Icons.account_tree, "Rodzina", species?.family ?? "-"),
               _infoItem(Icons.subtitles, "Podgatunek/Odmiana", obs.subspecies ?? "-"),
 
-              _sectionHeader("2. Ocena surowca i kondycja"),
-              _infoItem(Icons.category, "Typ surowca", species?.biologicalType ?? "-"),
+              _sectionHeader("2. Ocena okazu i kondycja"),
+              _infoItem(Icons.category, "Typ biologiczny", species?.biologicalType ?? "-"),
               _infoItem(Icons.filter_vintage, "Etap fenologiczny", obs.phenologicalStage ?? "-"),
               _infoItem(Icons.analytics, "Ilościowość", obs.abundance ?? "-"),
+              _infoItem(Icons.favorite, "Witalność", obs.vitality ?? "-"),
 
-              // NOWA SEKCJA: KALENDARZ ZBIORÓW
-              _sectionHeader("3. Terminy zbioru surowców"),
+              // NOWA SEKCJA: CECHY MORFOLOGICZNE OKAZU
+              _sectionHeader("3. Zaobserwowane cechy"),
+              if (obs.characteristics.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.only(left: 35),
+                  child: Text("Brak szczegółowych cech morfologicznych.",
+                      style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
+                )
+              else
+                _buildCharacteristicsGrid(obs),
+
+              _sectionHeader("4. Terminy zbioru surowców"),
               if (harvestData.isEmpty)
-                const Padding(padding: EdgeInsets.only(left: 35), child: Text("Brak zdefiniowanych terminów.", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)))
+                const Padding(
+                    padding: EdgeInsets.only(left: 35),
+                    child: Text("Brak zdefiniowanych terminów.",
+                        style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)))
               else
                 ...harvestData.map((h) => _harvestItem(h)),
 
-              _sectionHeader("4. Amplituda ekologiczna (ML)"),
-              _infoItem(Icons.science, "Zakres pH", "${species?.prefPhMin?.toStringAsFixed(1) ?? '?'} - ${species?.prefPhMax?.toStringAsFixed(1) ?? '?'}"),
+              _sectionHeader("5. Amplituda ekologiczna (ML)"),
+              _infoItem(Icons.science, "Zakres pH",
+                  "${species?.prefPhMin?.toStringAsFixed(1) ?? '?'} - ${species?.prefPhMax?.toStringAsFixed(1) ?? '?'}"),
               _infoItem(Icons.landscape, "Typy obszaru", _joinList(species?.prefAreaTypes)),
 
-              _sectionHeader("5. Lokalizacja w płatach"),
+              _sectionHeader("6. Lokalizacja w płatach"),
               _buildReleveLinks(context, obs),
               const SizedBox(height: 30),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // Pomocniczy widget do renderowania mapy cech (klucz: [wartości])
+  static Widget _buildCharacteristicsGrid(PlantObservation obs) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 10, top: 5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: obs.characteristics.entries.map((e) => Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.label_important_outline, size: 18, color: Colors.blueGrey),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(e.key, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blueGrey)),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: e.value.map((val) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.blueGrey.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.blueGrey.shade100),
+                        ),
+                        child: Text(val, style: const TextStyle(fontSize: 12)),
+                      )).toList(),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        )).toList(),
       ),
     );
   }

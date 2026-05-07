@@ -98,8 +98,15 @@ class ReminderListScreen extends StatelessWidget {
                 children: [
                   Text(r.body),
                   const SizedBox(height: 5),
-                  if (isPending) _CountdownText(targetDate: r.scheduledTime, endDate: r.endDate)
-                  else Text("Zakończono: ${_formatDate(r.scheduledTime)}", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                  if (isPending)
+                    _CountdownText(
+                        targetDate: r.scheduledTime,
+                        endDate: r.endDate,
+                        type: r.type
+                    )
+                  else
+                    Text("Zakończono: ${_formatDate(r.scheduledTime)}",
+                        style: const TextStyle(color: Colors.grey, fontSize: 12)),
                 ],
               ),
 
@@ -129,7 +136,14 @@ class ReminderListScreen extends StatelessWidget {
 class _CountdownText extends StatefulWidget {
   final DateTime targetDate; // Start
   final DateTime? endDate;   // Koniec
-  const _CountdownText({required this.targetDate, this.endDate});
+  final String type;         // NOWOŚĆ: Typ powiadomienia (RECIPE lub HARVEST)
+
+  const _CountdownText({
+    required this.targetDate,
+    this.endDate,
+    required this.type
+  });
+
   @override
   State<_CountdownText> createState() => _CountdownTextState();
 }
@@ -150,14 +164,23 @@ class _CountdownTextState extends State<_CountdownText> {
     final now = DateTime.now();
     DateTime activeTarget;
 
+    // 1. Logika przed rozpoczęciem (np. oczekiwanie na start zbiorów lub start minutnika)
     if (now.isBefore(widget.targetDate)) {
-      _label = "Pozostało do zbioru: ";
+      _label = "Pozostały czas: "; // ZMIANA: Uniwersalna etykieta zgodnie z prośbą
       activeTarget = widget.targetDate;
-    } else if (widget.endDate != null && now.isBefore(widget.endDate!)) {
-      _label = "Do końca sezonu: ";
+    }
+    // 2. Logika w trakcie trwania (tylko dla zbiorów, które mają endDate)
+    else if (widget.endDate != null && now.isBefore(widget.endDate!)) {
+      _label = widget.type == 'RECIPE' ? "Pozostały czas procesu: " : "Do końca sezonu: ";
       activeTarget = widget.endDate!;
-    } else {
-      setState(() => _timeLeft = "SEZON ZAKOŃCZONY");
+    }
+    // 3. Logika po zakończeniu
+    else {
+      setState(() {
+        // ZMIANA: Rozróżnienie komunikatu końcowego
+        _timeLeft = widget.type == 'RECIPE' ? "PROCES ZAKOŃCZONY" : "SEZON ZAKOŃCZONY";
+        _label = "";
+      });
       return;
     }
 
@@ -167,15 +190,26 @@ class _CountdownTextState extends State<_CountdownText> {
   }
 
   @override
-  void dispose() { _timer.cancel(); super.dispose(); }
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(_label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        Text(_timeLeft, style: const TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.bold)),
+        if (_label.isNotEmpty)
+          Text(_label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Text(
+            _timeLeft,
+            style: TextStyle(
+              // Wizualne wyróżnienie zakończonego procesu
+                color: _timeLeft.contains("ZAKOŃCZONY") ? Colors.grey : Colors.deepOrange,
+                fontWeight: FontWeight.bold
+            )
+        ),
       ],
     );
   }
