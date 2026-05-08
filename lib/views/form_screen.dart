@@ -77,31 +77,52 @@ class _FormScreenState extends State<FormScreen> {
               final isSelected = _selectedValues[subTitle]?.contains(opt) ?? false;
               final hasImage = category.referenceImages?.containsKey(opt) ?? false;
               final imagePath = hasImage ? category.referenceImages![opt]! : "";
+              // Pobranie opisu ze schematu
+              final description = category.imageDescriptions?[opt] ?? "Brak szczegółowego opisu dla tej cechy.";
 
-              return GestureDetector(
-                onLongPress: () { if (hasImage) _showImagePreview(context, imagePath, opt); },
-                onTap: () {
-                  setState(() {
-                    if (_selectedValues[subTitle] == null) _selectedValues[subTitle] = [];
-                    if (isSelected) _selectedValues[subTitle]!.remove(opt); else _selectedValues[subTitle]!.add(opt);
-                  });
-                },
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (hasImage)
-                      Container(
-                        width: 80, height: 60, margin: const EdgeInsets.only(bottom: 4),
-                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(4), border: Border.all(color: isSelected ? Colors.green : Colors.transparent, width: 3)),
-                        child: ClipRRect(borderRadius: BorderRadius.circular(2), child: Image.asset(imagePath, fit: BoxFit.cover, errorBuilder: (c, e, s) => Container(color: Colors.grey.shade300, child: const Icon(Icons.broken_image, color: Colors.grey, size: 30)))),
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (hasImage)
+                    GestureDetector(
+                      // ZMIANA: Krótkie naciśnięcie na zdjęcie otwiera podgląd z opisem
+                      onTap: () => _showImagePreview(context, imagePath, opt, description),
+                      child: Container(
+                        width: 85, height: 65, margin: const EdgeInsets.only(bottom: 4),
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: isSelected ? Colors.green : Colors.grey.shade300, width: 2)
+                        ),
+                        child: ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: Image.asset(imagePath, fit: BoxFit.cover,
+                                errorBuilder: (c, e, s) => const Icon(Icons.broken_image, color: Colors.grey))
+                        ),
                       ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(color: isSelected ? Colors.green : Colors.grey.shade200, borderRadius: BorderRadius.circular(8), border: Border.all(color: isSelected ? Colors.green : Colors.grey.shade400)),
-                      child: Text(opt, style: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontSize: 12)),
                     ),
-                  ],
-                ),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        if (_selectedValues[subTitle] == null) _selectedValues[subTitle] = [];
+                        if (isSelected) _selectedValues[subTitle]!.remove(opt);
+                        else _selectedValues[subTitle]!.add(opt);
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                          color: isSelected ? Colors.green : Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: isSelected ? Colors.green : Colors.grey.shade400)
+                      ),
+                      child: Text(opt, style: TextStyle(
+                          color: isSelected ? Colors.white : Colors.black87,
+                          fontSize: 11,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
+                      )),
+                    ),
+                  ),
+                ],
               );
             }).toList(),
           ),
@@ -110,17 +131,42 @@ class _FormScreenState extends State<FormScreen> {
     );
   }
 
-  void _showImagePreview(BuildContext context, String imagePath, String title) {
+// Zaktualizowane okno podglądu wyświetlające opis pod zdjęciem
+  void _showImagePreview(BuildContext context, String imagePath, String title, String description) {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)), clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppBar(title: Text(title, style: const TextStyle(fontSize: 16)), automaticallyImplyLeading: false, actions: [IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx))]),
-            Image.asset(imagePath, fit: BoxFit.contain, errorBuilder: (c, e, s) => const Padding(padding: EdgeInsets.all(40.0), child: Text("Brak pliku w folderze assets/ref/", textAlign: TextAlign.center))),
-            const Padding(padding: EdgeInsets.all(8.0), child: Text("Zdjęcie poglądowe", style: TextStyle(color: Colors.grey)))
+            AppBar(
+              title: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              backgroundColor: Colors.green.shade700,
+              foregroundColor: Colors.white,
+              automaticallyImplyLeading: false,
+              actions: [IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx))],
+            ),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.4),
+              child: Image.asset(imagePath, fit: BoxFit.contain),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Text("Opis cechy:",
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  Text(description,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 14, height: 1.4)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
           ],
         ),
       ),
