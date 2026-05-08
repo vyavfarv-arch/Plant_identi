@@ -22,11 +22,14 @@ class PlantSpecies {
   final List<String> prefCanopyCovers;
   final List<String> prefWaterDynamics;
   final List<String> prefSoilDepths;
-  final List<String> prefSlopeAngles;
   final List<String> prefLitterThicknesses;
   final List<String> prefDistancesToWater;
   final List<String> prefDeadWood;
   final List<String> prefLandUseHistory;
+  final List<String> prefAreaTypes;
+  final List<String> prefWaterDynamics;
+  final List<String> prefLightLevels;
+  final List<String> prefSoilTypes;
 
   // Zastosowanie
   final String? plantUsage;
@@ -40,7 +43,8 @@ class PlantSpecies {
   PlantSpecies({
     required this.speciesID, required this.latinName, required this.polishName, required this.family, required this.biologicalType,
     this.prefPhMin, this.prefPhMax, this.prefSubstrate = const [], this.prefMoisture, this.prefSunlight,
-
+    this.prefAreaTypes = const [],
+    this.prefWaterDynamics = const [],
     this.prefAreaTypes = const [], this.prefExposures = const [], this.prefCanopyCovers = const [],
     this.prefWaterDynamics = const [], this.prefSoilDepths = const [], this.prefSlopeAngles = const [],
     this.prefLitterThicknesses = const [], this.prefDistancesToWater = const [], this.prefDeadWood = const [],
@@ -60,7 +64,10 @@ class PlantSpecies {
     'prefCanopyCoversJson': jsonEncode(prefCanopyCovers),
     'prefWaterDynamicsJson': jsonEncode(prefWaterDynamics),
     'prefSoilDepthsJson': jsonEncode(prefSoilDepths),
-    'prefSlopeAnglesJson': jsonEncode(prefSlopeAngles),
+    'prefAreaTypesJson': jsonEncode(prefAreaTypes),
+    'prefWaterDynamicsJson': jsonEncode(prefWaterDynamics),
+    'prefLightLevelsJson': jsonEncode(prefLightLevels),
+    'prefSoilTypesJson': jsonEncode(prefSoilTypes),
     'prefLitterThicknessesJson': jsonEncode(prefLitterThicknesses),
     'prefDistancesToWaterJson': jsonEncode(prefDistancesToWater),
     'prefDeadWoodJson': jsonEncode(prefDeadWood),
