@@ -6,7 +6,8 @@ class SoughtPlant {
   final String id;
   final String polishName;
   final String latinName;
-
+  final List<String> prefLightLevels; // NOWE
+  final List<String> prefSoilTypes;
   final double? prefPhMin;
   final double? prefPhMax;
   final List<String> prefSubstrate;
@@ -34,7 +35,8 @@ class SoughtPlant {
     this.prefWaterDynamics = const [], this.prefSoilDepths = const [], this.prefSlopeAngles = const [],
     this.prefLitterThicknesses = const [], this.prefDistancesToWater = const [], this.prefDeadWood = const [],
     this.prefLandUseHistory = const [],
-    this.harvestSeasons = const [], // ZMIANA
+    this.harvestSeasons = const [], this.prefLightLevels = const [],
+    this.prefSoilTypes = const [],
   });
 
   Map<String, dynamic> toMap() => {
