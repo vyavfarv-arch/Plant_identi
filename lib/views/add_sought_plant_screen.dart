@@ -54,8 +54,8 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
                     newPhMax: species.prefPhMax,
                     newAreaTypes: species.prefAreaTypes,
                     newWaterDynamics: species.prefWaterDynamics,
-                    newLightLevels: species.prefLightLevels, // ZMIANA
-                    newSoilTypes: species.prefSoilTypes,      // ZMIANA
+                    newLightLevels: species.prefLightLevels,
+                    newSoilTypes: species.prefSoilTypes,
                   );
                 }
               },
@@ -107,15 +107,14 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
       id: soughtId,
       polishName: _nameController.text,
       latinName: _latinController.text,
-      harvestSeasons: _selectedSeasons, // Zapisywanie zaawansowanego kalendarza
+      harvestSeasons: _selectedSeasons,
 
       prefPhMin: _ecoController.phMin,
       prefPhMax: _ecoController.phMax,
       prefAreaTypes: _ecoController.areaTypes,
-      prefExposures: _ecoController.exposures,
-      prefCanopyCovers: _ecoController.canopyCovers,
       prefWaterDynamics: _ecoController.waterDynamics,
-      prefSoilDepths: _ecoController.soilDepths,
+      prefLightLevels: _ecoController.lightLevels, // ZMIANA
+      prefSoilTypes: _ecoController.soilTypes,     // ZMIANA
     );
 
     await DatabaseHelper().insertSoughtPlant(sought);
