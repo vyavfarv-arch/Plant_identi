@@ -132,18 +132,14 @@ class ObservationViewModel extends ChangeNotifier {
     String? cultivation,
     double? prefPhMin,
     double? prefPhMax,
-    double? prefMoisture,
-    double? prefSunlight,
-    List<String>? prefSubstrate,
-    // ZMIANA: Listy kalendarzy zamiast mapy
+    // ZMIANA: Listy kalendarzy
     List<HarvestSeason>? harvestSeasons,
     List<HarvestSeason>? customHarvestSeasons,
-    // NOWE LISTY Z UI
+    // NOWE LISTY ZGODNE Z MODELEM SPECIES
     List<String>? prefAreaTypes,
-    List<String>? prefExposures,
-    List<String>? prefCanopyCovers,
     List<String>? prefWaterDynamics,
-    List<String>? prefSoilDepths,
+    List<String>? prefLightLevels,
+    List<String>? prefSoilTypes,
   }) async {
 
     final index = _observations.indexWhere((o) => o.id == id);
@@ -152,7 +148,7 @@ class ObservationViewModel extends ChangeNotifier {
 
     final String targetSpeciesId = old.speciesId ?? const Uuid().v4();
 
-    // 1. Zapisujemy gatunek (Wiedza teoretyczna)
+    // 1. Zapisujemy gatunek (Wiedza teoretyczna - Biologiczna)
     final species = PlantSpecies(
       speciesID: targetSpeciesId,
       latinName: latinName,
@@ -163,15 +159,11 @@ class ObservationViewModel extends ChangeNotifier {
       cultivation: cultivation,
       prefPhMin: prefPhMin,
       prefPhMax: prefPhMax,
-      prefSubstrate: prefSubstrate ?? [],
-      prefMoisture: prefMoisture,
-      prefSunlight: prefSunlight,
-      harvestSeasons: harvestSeasons ?? [], // Przekazujemy listę kalendarzy domyślnych
+      harvestSeasons: harvestSeasons ?? [],
       prefAreaTypes: prefAreaTypes ?? [],
-      prefExposures: prefExposures ?? [],
-      prefCanopyCovers: prefCanopyCovers ?? [],
       prefWaterDynamics: prefWaterDynamics ?? [],
-      prefSoilDepths: prefSoilDepths ?? [],
+      prefLightLevels: prefLightLevels ?? [], // ZMIANA: Nowe pole świetlne
+      prefSoilTypes: prefSoilTypes ?? [],    // ZMIANA: Nowe pole glebowe
     );
     await _db.insertSpecies(species);
 
@@ -198,7 +190,7 @@ class ObservationViewModel extends ChangeNotifier {
       keyMorphologicalTraits: keyTraits,
       confusingSpecies: confusing,
       characteristicFeature: characteristic,
-      customHarvestSeasons: customHarvestSeasons ?? [], // Przekazujemy ew. indywidualny kalendarz
+      customHarvestSeasons: customHarvestSeasons ?? [],
     );
 
     _observations[index] = updatedObs;
