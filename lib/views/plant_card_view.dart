@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/plant_observation.dart';
 import '../models/harvest_season.dart';
+import '../models/description_schema.dart'; // DODANY IMPORT
 import '../viewmodels/releve_view_model.dart';
 import '../viewmodels/observation_view_model.dart';
 import '../services/spatial_service.dart';
@@ -15,6 +16,11 @@ class PlantCardView {
     final obsVm = context.read<ObservationViewModel>();
     final species = obsVm.getSpeciesById(obs.speciesId);
 
+    // Ustalamy typ biologiczny i pobieramy odpowiedni schemat opisu
+    final biologicalType = species?.biologicalType ?? obs.tempBiologicalType ?? "Zielne";
+    final schema = SchemaGenerator.getForType(biologicalType);
+
+    // Pobieramy kalendarz: najpierw indywidualny okazu, jeśli pusty - z gatunku
     final harvestData = obs.customHarvestSeasons.isNotEmpty
         ? obs.customHarvestSeasons
         : (species?.harvestSeasons ?? []);
@@ -47,34 +53,23 @@ class PlantCardView {
               _infoItem(Icons.subtitles, "Podgatunek/Odmiana", obs.subspecies ?? "-"),
 
               _sectionHeader("2. Ocena okazu i kondycja"),
-              _infoItem(Icons.category, "Typ biologiczny", species?.biologicalType ?? "-"),
+              _infoItem(Icons.category, "Typ biologiczny", biologicalType),
               _infoItem(Icons.filter_vintage, "Etap fenologiczny", obs.phenologicalStage ?? "-"),
               _infoItem(Icons.analytics, "Ilościowość", obs.abundance ?? "-"),
               _infoItem(Icons.favorite, "Witalność", obs.vitality ?? "-"),
 
-              // NOWA SEKCJA: CECHY MORFOLOGICZNE OKAZU
+              // NOWA SEKCJA: ZGRUPOWANE CECHY MORFOLOGICZNE
               _sectionHeader("3. Zaobserwowane cechy"),
-              if (obs.characteristics.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.only(left: 35),
-                  child: Text("Brak szczegółowych cech morfologicznych.",
-                      style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
-                )
-              else
-                _buildCharacteristicsGrid(obs),
+              _buildGroupedCharacteristics(obs, schema),
 
               _sectionHeader("4. Terminy zbioru surowców"),
               if (harvestData.isEmpty)
-                const Padding(
-                    padding: EdgeInsets.only(left: 35),
-                    child: Text("Brak zdefiniowanych terminów.",
-                        style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)))
+                const Padding(padding: EdgeInsets.only(left: 35), child: Text("Brak zdefiniowanych terminów.", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)))
               else
                 ...harvestData.map((h) => _harvestItem(h)),
 
               _sectionHeader("5. Amplituda ekologiczna (ML)"),
-              _infoItem(Icons.science, "Zakres pH",
-                  "${species?.prefPhMin?.toStringAsFixed(1) ?? '?'} - ${species?.prefPhMax?.toStringAsFixed(1) ?? '?'}"),
+              _infoItem(Icons.science, "Zakres pH", "${species?.prefPhMin?.toStringAsFixed(1) ?? '?'} - ${species?.prefPhMax?.toStringAsFixed(1) ?? '?'}"),
               _infoItem(Icons.landscape, "Typy obszaru", _joinList(species?.prefAreaTypes)),
 
               _sectionHeader("6. Lokalizacja w płatach"),
@@ -87,46 +82,55 @@ class PlantCardView {
     );
   }
 
-  // Pomocniczy widget do renderowania mapy cech (klucz: [wartości])
-  static Widget _buildCharacteristicsGrid(PlantObservation obs) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 10, top: 5),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: obs.characteristics.entries.map((e) => Padding(
-          padding: const EdgeInsets.only(bottom: 8.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(Icons.label_important_outline, size: 18, color: Colors.blueGrey),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(e.key, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blueGrey)),
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: e.value.map((val) => Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.blueGrey.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.blueGrey.shade100),
-                        ),
-                        child: Text(val, style: const TextStyle(fontSize: 12)),
-                      )).toList(),
+  // Metoda grupująca cechy według Tytułu (np. System korzeniowy: palowy, kłącza)
+  static Widget _buildGroupedCharacteristics(PlantObservation obs, List<DescriptionCategory> schema) {
+    List<Widget> groupedRows = [];
+
+    for (var category in schema) {
+      List<String> values = [];
+
+      // Przeszukujemy cechy okazu pod kątem kluczy należących do tej kategorii
+      for (var subTitle in category.subCategories.keys) {
+        if (obs.characteristics.containsKey(subTitle)) {
+          values.addAll(obs.characteristics[subTitle]!);
+        }
+      }
+
+      if (values.isNotEmpty) {
+        groupedRows.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.check_circle_outline, color: Colors.green, size: 20),
+                const SizedBox(width: 15),
+                Expanded(
+                  child: RichText(
+                    text: TextSpan(
+                      style: const TextStyle(color: Colors.black, fontSize: 14),
+                      children: [
+                        TextSpan(text: "${category.title}: ", style: const TextStyle(fontWeight: FontWeight.bold)),
+                        TextSpan(text: values.join(", ")),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        )).toList(),
-      ),
-    );
+        );
+      }
+    }
+
+    if (groupedRows.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.only(left: 35),
+        child: Text("Brak szczegółowych cech morfologicznych.", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
+      );
+    }
+
+    return Column(children: groupedRows);
   }
 
   static Widget _harvestItem(HarvestSeason h) {

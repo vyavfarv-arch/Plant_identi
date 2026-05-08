@@ -159,14 +159,22 @@ class SchemaGenerator {
           "Typ pnia": ["jednopniowy", "wielopniowy", "pochylony"],
           "Wysokość (szacowana)": ["niskie (do 10m)", "średnie (10-20m)", "wysokie (powyżej 20m)"],
         },
+          referenceImages: {
+
+          }
       ),
       DescriptionCategory(
         number: "2",
         title: "Kora",
         subCategories: {
-          "Struktura": ["gładka", "spękana podłużnie", "łuszcząca się płatami", "z przetchlinkami", "korkowata"],
+          "Struktura": ["gładka","spękana", "spękana podłużnie", "łuszcząca się płatami", "z przetchlinkami"],
           "Barwa": ["biała", "szara", "brunatna", "czarniawa", "miedziana"],
         },
+          referenceImages: {
+            "gładka": "assets/ref/zielne/korzen/kora_gladka.png","łuszcząca się płatami": "assets/ref/zielne/korzen/kora_odchadzaca.png",
+            "spękana": "assets/ref/zielne/korzen/kora_spekana.png","z przetchlinkami": "assets/ref/zielne/korzen/kora_z_przetchlinakmi.png",
+            "spękana podłużnie": "assets/ref/zielne/korzen/kora_spekana_podluznie.png"
+          }
       ),
       DescriptionCategory(
         number: "3",
@@ -194,13 +202,11 @@ class SchemaGenerator {
           number: "1",
           title: "System korzeniowy",
           subCategories: {
-            "Typ": ["palowy", "wiązkowy", "sercowaty", "kłączowy"],
-            "Głębokość": ["płytki", "średni", "głęboki"],
-            "Organy ziemne": ["bulwy", "kłącza", "cebule", "brak"],
+            "Typ": ["palowy", "wiązkowy", "kłączowy","bulwy", "cebula"],
+            "Głębokość": ["płytki", "średni", "głęboki"]
           },
           referenceImages: {
-           "palowy": "assets/ref/korzen_palowy.png"
-
+           "palowy": "assets/ref/zielne/korzen/korzen_palowy.png","wiązkowy": "assets/ref/zielne/korzen/korzen_wiazkowy.png", "kłączowy": "assets/ref/zielne/korzen/korzen_palowy.png","bulwy": "assets/ref/zielne/korzen//korzen_bulwa.png","cebula": "assets/ref/zielne/korzen/korzen_cebula.png"
           }
       ),
       DescriptionCategory(
@@ -212,6 +218,7 @@ class SchemaGenerator {
           "Powierzchnia": ["gładka", "owłosiona", "szorstka", "lepka", "woskowa"],
           "Włoski": ["proste", "gruczołowe", "haczykowate", "kutnerowate"],
           "Barwa": ["zielona", "brunatna", "czerwonawa", "sina"],
+          "Mleczko": ["przezroczyste", "białe"],
         },
       ),
       DescriptionCategory(
@@ -219,11 +226,10 @@ class SchemaGenerator {
           title: "Liście",
           subCategories: {
             "Ulistnienie": ["skrętoległe", "naprzeciwległe", "okółkowe"],
-            "Typ liścia": ["pojedynczy", "pierzasty", "dłoniasty"],
-            "Kształt blaszki": ["igiełkowy", "równowąski", "lancetowaty", "eliptyczny", "jajowaty", "sercowaty", "łopatowaty", "owalny", "odwrotnie jajowaty", "strzałkowaty", "nerkowy"], // Zmieniłem wielkość liter dla spójności
+            "Typ liścia": ["niepodzielne","wrębne", "dzielne", "klapowate", "sieczne", "pierzasty", "dłoniasty"],
+            "Kształt blaszki": ["igiełkowy", "równowąski", "lancetowaty", "eliptyczny", "jajowaty", "sercowaty", "łopatowaty", "owalny", "odwrotnie jajowaty", "strzałkowaty", "nerkowy"],
             "Brzeg Liścia": ["całobrzegi", "piłkowany", "ząbkowany", "karbowany", "falisty", "kolczasty"],
             "Unerwienie": ["pierzaste", "dłoniaste", "równoległe"],
-            "Wcięcie": ["wrębne", "dzielne", "klapowate", "sieczne"],
           },
           referenceImages: {
 
@@ -233,10 +239,14 @@ class SchemaGenerator {
         number: "4",
         title: "Kwiatostany",
         subCategories: {
-          "Obecność": ["brak", "obecne", "obecne nierozwinięte"],
-          "Typ Kwiatostanu": ["grono", "wiecha", "baldach", "koszyczek", "kłos", "główka"],
+          "Typ Kwiatostanu": ["grono","baldachogrono", "wiecha", "baldach", "koszyczek", "kłos", "główka","baldach podwójny","kłos złożony","sierpik","wachlarz","wiechotka", "wiechotka złożona"],
           "Zapach": ["brak", "słaby", "intensywny"],
         },
+          referenceImages: {
+            "grono": "assets/ref/zielne/kwiat/grono.png","baldachogrono": "assets/ref/zielne/kwiat/baldachogrono.png","baldach podwójny": "assets/ref/zielne/kwiat/kwiat_baldach_podwojny.png",
+            "baldach": "assets/ref/zielne/kwiat/kwiat_baldach.png","główka": "assets/ref/zielne/kwiat/kwiat_glowka.png","kłos": "assets/ref/zielne/kwiat/kwiat_klos.png","kłos złożony": "assets/ref/zielne/kwiat/kwiat_klos_zlozony.png",
+            "koszyczek": "assets/ref/zielne/kwiat/kwiat_koszyk.png","sierpik": "assets/ref/zielne/kwiat/kwiat_sierpik.png","wachlarz": "assets/ref/zielne/kwiat/kwiat_wachlarz.png","wiecha": "assets/ref/zielne/kwiat/kwiat_wiecha.png","wiechotka": "assets/ref/zielne/kwiat/kwiat_wiechotka.png","wiechotka złożona": "assets/ref/zielne/kwiat/kwiat_wiechotka_wielo.png",
+          }
       ),
       DescriptionCategory(
         number: "5",
@@ -245,6 +255,10 @@ class SchemaGenerator {
           "Typ owocu": ["jagoda", "orzech", "torebka", "niełupka", "strąk"],
           "Smak": ["gorzki", "słodki", "cierpki", "słony", "pikantny"],
         },
+          referenceImages: {
+            "jagoda": "assets/ref/zielne/owoce/owoce_jagoda.png","orzech": "assets/ref/zielne/owoce/owoce_orzech.png","torebka": "assets/ref/zielne/owoce/owoce_torebka.png",
+            "niełupka": "assets/ref/zielne/owoce/owoce_nielupka.png","strąk": "assets/ref/zielne/owoce/owoce_strak.png"
+        }
       ),
     ];
   }
