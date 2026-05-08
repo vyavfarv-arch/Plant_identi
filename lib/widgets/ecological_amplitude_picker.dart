@@ -11,10 +11,12 @@ class EcologicalDataController extends ChangeNotifier {
   List<String> exposures = [];   // Tylko dla trybu obszaru
 
   void updateData({
-    double? newPhMin, double? newPhMax,
-    List<String>? newAreaTypes, List<String>? newWaterDynamics,
-    List<String>? newLightLevels, List<String>? newSoilTypes,
-    List<String>? newExposures,
+    double? newPhMin,
+    double? newPhMax,
+    List<String>? newAreaTypes,
+    List<String>? newWaterDynamics,
+    List<String>? newLightLevels,
+    List<String>? newSoilTypes,
   }) {
     if (newPhMin != null) phMin = newPhMin;
     if (newPhMax != null) phMax = newPhMax;
@@ -22,7 +24,6 @@ class EcologicalDataController extends ChangeNotifier {
     if (newWaterDynamics != null) waterDynamics = List.from(newWaterDynamics);
     if (newLightLevels != null) lightLevels = List.from(newLightLevels);
     if (newSoilTypes != null) soilTypes = List.from(newSoilTypes);
-    if (newExposures != null) exposures = List.from(newExposures);
     notifyListeners();
   }
 

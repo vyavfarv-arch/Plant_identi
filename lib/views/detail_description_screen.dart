@@ -60,9 +60,12 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
     });
 
     _ecoController.updateData(
-      newPhMin: s.prefPhMin, newPhMax: s.prefPhMax, newAreaTypes: s.prefAreaTypes,
-      newExposures: s.prefExposures, newCanopyCovers: s.prefCanopyCovers,
-      newWaterDynamics: s.prefWaterDynamics, newSoilDepths: s.prefSoilDepths,
+      newPhMin: species.prefPhMin,
+      newPhMax: species.prefPhMax,
+      newAreaTypes: species.prefAreaTypes,
+      newWaterDynamics: species.prefWaterDynamics,
+      newLightLevels: species.prefLightLevels, // ZMIANA
+      newSoilTypes: species.prefSoilTypes,      // ZMIANA
     );
   }
 

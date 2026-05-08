@@ -50,9 +50,12 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
                     _selectedSeasons = List.from(species.harvestSeasons); // Wczytanie domyślnych kalendarzy!
                   });
                   _ecoController.updateData(
-                    newPhMin: species.prefPhMin, newPhMax: species.prefPhMax, newAreaTypes: species.prefAreaTypes,
-                    newExposures: species.prefExposures, newCanopyCovers: species.prefCanopyCovers,
-                    newWaterDynamics: species.prefWaterDynamics, newSoilDepths: species.prefSoilDepths,
+                    newPhMin: species.prefPhMin,
+                    newPhMax: species.prefPhMax,
+                    newAreaTypes: species.prefAreaTypes,
+                    newWaterDynamics: species.prefWaterDynamics,
+                    newLightLevels: species.prefLightLevels, // ZMIANA
+                    newSoilTypes: species.prefSoilTypes,      // ZMIANA
                   );
                 }
               },
@@ -126,7 +129,6 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
               plantName: _nameController.text,
               material: season.material,
               startDate: season.startDate!,
-              // Jeśli użytkownik nie wybrał daty końcowej, domyślnie dajemy miesiąc na zbiory
               endDate: season.endDate ?? season.startDate!.add(const Duration(days: 30)),
               relatedId: soughtId
           );
