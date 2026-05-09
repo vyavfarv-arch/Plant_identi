@@ -25,7 +25,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'planticator.db');
     return await openDatabase(
       path,
-      version: 19,
+      version: 20, // ZMIANA: Podniesienie wersji na 20
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
@@ -40,16 +40,17 @@ class DatabaseHelper {
         habitatJson TEXT, mlPredictionsJson TEXT, FOREIGN KEY (parentId) REFERENCES releves (id) ON DELETE SET NULL
       )
     ''');
+
+    // Zaktualizowana struktura tabeli plant_species dla nowych instalacji
     await db.execute('''
       CREATE TABLE plant_species (
         speciesID TEXT PRIMARY KEY, latinName TEXT, polishName TEXT, family TEXT, biologicalType TEXT,
-        prefPhMin REAL, prefPhMax REAL, prefSubstrateJson TEXT, prefMoisture REAL, prefSunlight REAL,
-        prefAreaTypesJson TEXT, prefExposuresJson TEXT, prefCanopyCoversJson TEXT, prefWaterDynamicsJson TEXT,
-        prefSoilDepthsJson TEXT, prefSlopeAnglesJson TEXT, prefLitterThicknessesJson TEXT,
-        prefDistancesToWaterJson TEXT, prefDeadWoodJson TEXT, prefLandUseHistoryJson TEXT,
+        prefPhMin REAL, prefPhMax REAL, prefAreaTypesJson TEXT, prefWaterDynamicsJson TEXT, 
+        prefLightLevelsJson TEXT, prefSoilTypesJson TEXT,
         plantUsage TEXT, cultivation TEXT, properties TEXT, associatedSyntaxaJson TEXT, harvestSeasonsJson TEXT
       )
     ''');
+
     await db.execute('''
       CREATE TABLE observations (
         id TEXT PRIMARY KEY, releveId TEXT, speciesId TEXT, localName TEXT, subspecies TEXT,
@@ -60,13 +61,12 @@ class DatabaseHelper {
         FOREIGN KEY (releveId) REFERENCES releves (id) ON DELETE CASCADE, FOREIGN KEY (speciesId) REFERENCES plant_species (speciesID) ON DELETE SET NULL
       )
     ''');
+
+    // Zaktualizowana struktura tabeli sought_plants
     await db.execute('''
       CREATE TABLE sought_plants (
         id TEXT PRIMARY KEY, polishName TEXT, latinName TEXT, prefPhMin REAL, prefPhMax REAL,
-        prefSubstrateJson TEXT, prefMoisture REAL, prefSunlight REAL, prefAreaTypesJson TEXT,
-        prefExposuresJson TEXT, prefCanopyCoversJson TEXT, prefWaterDynamicsJson TEXT, prefSoilDepthsJson TEXT,
-        prefSlopeAnglesJson TEXT, prefLitterThicknessesJson TEXT, prefDistancesToWaterJson TEXT,
-        prefDeadWoodJson TEXT, prefLandUseHistoryJson TEXT, targetMaterial TEXT, reminderMonthsJson TEXT,
+        prefAreaTypesJson TEXT, prefWaterDynamicsJson TEXT, prefLightLevelsJson TEXT, prefSoilTypesJson TEXT,
         harvestSeasonsJson TEXT
       )
     ''');
@@ -78,7 +78,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // ZMIANA: Zaktualizowane tworzenie tabeli o kolumny z v19
     await db.execute('''
       CREATE TABLE app_reminders (
         id TEXT PRIMARY KEY, title TEXT, body TEXT, scheduledTime TEXT,
@@ -88,11 +87,9 @@ class DatabaseHelper {
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // ZMIANA: Chronologiczne ułożenie migracji (v16 -> v18 -> v19)
     if (oldVersion < 16) {
       try {
         await db.execute('ALTER TABLE recipes ADD COLUMN timersJson TEXT');
-        // W starszej wersji tworzyliśmy tabelę bez endDate i isMuted, zostanie to naprawione w bloku v19 poniżej
         await db.execute('''
           CREATE TABLE IF NOT EXISTS app_reminders (
             id TEXT PRIMARY KEY, title TEXT, body TEXT, scheduledTime TEXT,
@@ -112,9 +109,22 @@ class DatabaseHelper {
         await db.execute('ALTER TABLE app_reminders ADD COLUMN isMuted INTEGER DEFAULT 0');
       } catch (e) { print("Błąd migracji do v19: $e"); }
     }
+
+    // NOWA MIGRACJA: Dodanie brakujących kolumn ekologicznych
+    if (oldVersion < 20) {
+      try {
+        // Aktualizacja plant_species
+        await db.execute('ALTER TABLE plant_species ADD COLUMN prefLightLevelsJson TEXT');
+        await db.execute('ALTER TABLE plant_species ADD COLUMN prefSoilTypesJson TEXT');
+
+        // Aktualizacja sought_plants
+        await db.execute('ALTER TABLE sought_plants ADD COLUMN prefLightLevelsJson TEXT');
+        await db.execute('ALTER TABLE sought_plants ADD COLUMN prefSoilTypesJson TEXT');
+      } catch (e) { print("Błąd migracji do v20: $e"); }
+    }
   }
 
-  // --- STANDARDOWY CRUD ---
+  // --- CRUD METODY ---
   Future<void> insertReleve(Releve releve) async { final db = await database; await db.insert('releves', releve.toMap(), conflictAlgorithm: ConflictAlgorithm.replace); }
   Future<List<Releve>> getReleves() async { final db = await database; final maps = await db.query('releves'); return List.generate(maps.length, (i) => Releve.fromMap(maps[i])); }
   Future<void> deleteReleve(String id) async { final db = await database; await db.delete('releves', where: 'id = ?', whereArgs: [id]); }
@@ -125,6 +135,7 @@ class DatabaseHelper {
 
   Future<void> insertSpecies(PlantSpecies species) async { final db = await database; await db.insert('plant_species', species.toMap(), conflictAlgorithm: ConflictAlgorithm.replace); }
   Future<List<PlantSpecies>> getSpecies() async { final db = await database; final maps = await db.query('plant_species'); return List.generate(maps.length, (i) => PlantSpecies.fromMap(maps[i])); }
+  Future<void> deleteSpecies(String id) async { final db = await database; await db.delete('plant_species', where: 'speciesID = ?', whereArgs: [id]); }
 
   Future<void> insertSoughtPlant(SoughtPlant plant) async { final db = await database; await db.insert('sought_plants', plant.toMap(), conflictAlgorithm: ConflictAlgorithm.replace); }
   Future<List<SoughtPlant>> getSoughtPlants() async { final db = await database; final maps = await db.query('sought_plants'); return List.generate(maps.length, (i) => SoughtPlant.fromMap(maps[i])); }
@@ -137,14 +148,6 @@ class DatabaseHelper {
   Future<void> insertReminder(AppReminder reminder) async { final db = await database; await db.insert('app_reminders', reminder.toMap(), conflictAlgorithm: ConflictAlgorithm.replace); }
   Future<List<AppReminder>> getReminders() async { final db = await database; final maps = await db.query('app_reminders', orderBy: 'scheduledTime ASC'); return List.generate(maps.length, (i) => AppReminder.fromMap(maps[i])); }
   Future<void> updateReminderStatus(String id, bool isCompleted) async { final db = await database; await db.update('app_reminders', {'isCompleted': isCompleted ? 1 : 0}, where: 'id = ?', whereArgs: [id]); }
-
-  Future<void> updateReminderMuteStatus(String id, bool isMuted) async {
-    final db = await database;
-    await db.update('app_reminders', {'isMuted': isMuted ? 1 : 0}, where: 'id = ?', whereArgs: [id]);
-  }
-  Future<void> deleteSpecies(String id) async {
-    final db = await database;
-    await db.delete('plant_species', where: 'speciesID = ?', whereArgs: [id]);
-  }
+  Future<void> updateReminderMuteStatus(String id, bool isMuted) async { final db = await database; await db.update('app_reminders', {'isMuted': isMuted ? 1 : 0}, where: 'id = ?', whereArgs: [id]); }
   Future<void> deleteReminder(String id) async { final db = await database; await db.delete('app_reminders', where: 'id = ?', whereArgs: [id]); }
 }

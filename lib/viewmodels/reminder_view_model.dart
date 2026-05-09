@@ -13,7 +13,9 @@ class ReminderViewModel extends ChangeNotifier {
   List<AppReminder> get reminders => _reminders;
 
   Future<void> loadFromDisk() async {
-    _reminders = await _db.getReminders();
+    final fetchedReminders = await _db.getReminders();
+    fetchedReminders.sort((a, b) => a.scheduledTime.compareTo(b.scheduledTime));
+    _reminders = fetchedReminders;
     notifyListeners();
   }
 

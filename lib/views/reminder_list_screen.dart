@@ -83,10 +83,11 @@ class ReminderListScreen extends StatelessWidget {
       itemBuilder: (context, index) {
         final r = list[index];
         final isRecipe = r.type == 'RECIPE';
-
+        final isUrgent = r.scheduledTime.isBefore(DateTime.now().add(const Duration(hours: 24))) && !r.isCompleted;
         return GestureDetector(
           onLongPress: () => _handleLongPress(context, r),
           child: Card(
+            color: isUrgent ? Colors.orange.shade50 : null,
             margin: const EdgeInsets.only(bottom: 12),
             child: ListTile(
               leading: Icon(isRecipe ? Icons.science : Icons.spa, color: isRecipe ? Colors.purple : Colors.green),
