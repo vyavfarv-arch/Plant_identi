@@ -120,6 +120,10 @@ class SearchFilterViewModel extends ChangeNotifier {
     _habitatMatchMode = latinName != null;
     notifyListeners();
   }
+  Future<void> deleteSoughtPlant(String id) async {
+    await _db.deleteSoughtPlant(id);
+    await loadSoughtPlants(); // Odświeża listę
+  }
 
   void resetAllFilters() {
     _filterDateRange = null;

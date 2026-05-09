@@ -138,11 +138,13 @@ class DatabaseHelper {
   Future<List<AppReminder>> getReminders() async { final db = await database; final maps = await db.query('app_reminders', orderBy: 'scheduledTime ASC'); return List.generate(maps.length, (i) => AppReminder.fromMap(maps[i])); }
   Future<void> updateReminderStatus(String id, bool isCompleted) async { final db = await database; await db.update('app_reminders', {'isCompleted': isCompleted ? 1 : 0}, where: 'id = ?', whereArgs: [id]); }
 
-  // ZMIANA: Dodana metoda dla wyciszania zgodnie z dobrymi praktykami architektury!
   Future<void> updateReminderMuteStatus(String id, bool isMuted) async {
     final db = await database;
     await db.update('app_reminders', {'isMuted': isMuted ? 1 : 0}, where: 'id = ?', whereArgs: [id]);
   }
-
+  Future<void> deleteSpecies(String id) async {
+    final db = await database;
+    await db.delete('plant_species', where: 'speciesID = ?', whereArgs: [id]);
+  }
   Future<void> deleteReminder(String id) async { final db = await database; await db.delete('app_reminders', where: 'id = ?', whereArgs: [id]); }
 }

@@ -34,40 +34,7 @@ class ObservationViewModel extends ChangeNotifier {
   List<PlantObservation> get incompleteObservations => _observations.where((obs) => !obs.isComplete).toList();
   List<PlantObservation> get completeObservations => _observations.where((obs) => obs.isComplete).toList();
 
-  // --- LOGIKA INTELIGENTNEGO WYSZUKIWANIA I AUTO-UZUPEŁNIANIA ---
-
-  List<String> get allLatinNames {
-    return _speciesDictionary.map((s) => s.latinName).where((name) => name.isNotEmpty).toList();
-  }
-
-  PlantSpecies? findSpeciesByLatinName(String latinName) {
-    try {
-      return _speciesDictionary.firstWhere(
-              (s) => s.latinName.toLowerCase() == latinName.toLowerCase().trim()
-      );
-    } catch (e) {
-      return null;
-    }
-  }
-
-  PlantSpecies? getSpeciesById(String? speciesId) {
-    if (speciesId == null) return null;
-    try {
-      return _speciesDictionary.firstWhere((s) => s.speciesID == speciesId);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  List<String> get uniquePlantNames {
-    return _speciesDictionary.map((s) => s.polishName.isNotEmpty ? s.polishName : s.latinName).toSet().toList();
-  }
-
-  List<String> get uniqueFamilies {
-    return _speciesDictionary.map((s) => s.family).where((f) => f.isNotEmpty).toSet().toList();
-  }
-
-  // --- ŁADOWANIE BAZY DANYCH ---
+  // --- ŁADOWANIE I INICJALIZACJA ---
 
   Future<void> loadFromDisk() async {
     _observations = await _db.getObservations();
@@ -89,6 +56,8 @@ class ObservationViewModel extends ChangeNotifier {
     }
   }
 
+  // --- ZDJĘCIA ---
+
   Future<void> takePhoto() async {
     if (!canTakePhoto) return;
     final path = await _cameraService.takePicture();
@@ -106,15 +75,58 @@ class ObservationViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --- OPERACJE NA OBSERWACJACH (PRZYWRÓCONE I POPRAWIONE) ---
+
+  // Metoda dodawania, której brakowało w Twoim błędzie
   Future<void> addObservation(PlantObservation obs) async {
     await _db.insertObservation(obs);
     await loadFromDisk();
   }
 
+  // Ulepszone usuwanie: czyści słownik, jeśli to był ostatni okaz gatunku
   Future<void> deleteObservation(String id) async {
-    await _db.deleteObservation(id);
-    await loadFromDisk();
+    try {
+      final obs = _observations.firstWhere((o) => o.id == id);
+      final String? sId = obs.speciesId;
+
+      await _db.deleteObservation(id);
+
+      if (sId != null) {
+        // Sprawdzamy, czy w bazie są jeszcze inne obserwacje tego gatunku
+        final allObs = await _db.getObservations();
+        final hasInstances = allObs.any((o) => o.speciesId == sId);
+
+        if (!hasInstances) {
+          // Jeśli to był ostatni okaz, usuwamy gatunek ze słownika bazy
+          await _db.deleteSpecies(sId);
+        }
+      }
+      await loadFromDisk();
+    } catch (e) {
+      debugPrint("Błąd podczas usuwania: $e");
+    }
   }
+
+  // --- WYSZUKIWANIE ---
+
+  List<String> get allLatinNames => _speciesDictionary.map((s) => s.latinName).where((name) => name.isNotEmpty).toList();
+
+  PlantSpecies? findSpeciesByLatinName(String latinName) {
+    try {
+      return _speciesDictionary.firstWhere((s) => s.latinName.toLowerCase() == latinName.toLowerCase().trim());
+    } catch (_) { return null; }
+  }
+
+  PlantSpecies? getSpeciesById(String? speciesId) {
+    if (speciesId == null) return null;
+    try {
+      return _speciesDictionary.firstWhere((s) => s.speciesID == speciesId);
+    } catch (_) { return null; }
+  }
+
+  List<String> get uniqueFamilies => _speciesDictionary.map((s) => s.family).where((f) => f.isNotEmpty).toSet().toList();
+
+  // --- AKTUALIZACJA SZCZEGÓŁOWA ---
 
   Future<void> updateObservationDetailed({
     required String id,
@@ -125,9 +137,9 @@ class ObservationViewModel extends ChangeNotifier {
     String? subspecies,
     String? certainty,
     String? doubts,
-    String? keyTraits,       // DODANE
-    String? confusing,       // DODANE
-    String? characteristic,  // DODANE
+    String? keyTraits,
+    String? confusing,
+    String? characteristic,
     String? usage,
     String? cultivation,
     double? prefPhMin,
@@ -136,16 +148,14 @@ class ObservationViewModel extends ChangeNotifier {
     List<HarvestSeason>? customHarvestSeasons,
     List<String>? prefAreaTypes,
     List<String>? prefWaterDynamics,
-    List<String>? prefLightLevels, // NOWE (zamiast zwarcia)
-    List<String>? prefSoilTypes,    // NOWE (zamiast głębokości)
+    List<String>? prefLightLevels,
+    List<String>? prefSoilTypes,
   }) async {
     final index = _observations.indexWhere((o) => o.id == id);
     if (index == -1) return;
     final old = _observations[index];
-
     final String targetSpeciesId = old.speciesId ?? const Uuid().v4();
 
-    // 1. Zapisujemy wiedzę o gatunku
     final species = PlantSpecies(
       speciesID: targetSpeciesId,
       latinName: latinName,
@@ -164,7 +174,6 @@ class ObservationViewModel extends ChangeNotifier {
     );
     await _db.insertSpecies(species);
 
-    // 2. Aktualizujemy konkretny okaz w terenie
     final updatedObs = PlantObservation(
       id: old.id,
       releveId: old.releveId,
@@ -184,13 +193,12 @@ class ObservationViewModel extends ChangeNotifier {
       vitality: old.vitality,
       certainty: certainty,
       idDoubts: doubts,
-      keyMorphologicalTraits: keyTraits,      // TERAZ PRZEKAZYWANE
-      confusingSpecies: confusing,            // TERAZ PRZEKAZYWANE
-      characteristicFeature: characteristic,  // TERAZ PRZEKAZYWANE
+      keyMorphologicalTraits: keyTraits,
+      confusingSpecies: confusing,
+      characteristicFeature: characteristic,
       customHarvestSeasons: customHarvestSeasons ?? [],
     );
 
-    _observations[index] = updatedObs;
     await _db.insertObservation(updatedObs);
     await loadFromDisk();
   }

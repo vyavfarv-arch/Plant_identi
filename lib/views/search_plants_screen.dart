@@ -43,35 +43,61 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
   // LOGIKA PRZYTRZYMANIA (LONG PRESS)
   void _handleLongPress(BuildContext context, _SearchListItem item) {
     final obsVm = context.read<ObservationViewModel>();
+    final filterVm = context.read<SearchFilterViewModel>();
 
-    if (!item.isSought) {
-      // Jeśli to roślina z magazynu, znajdź dowolną obserwację tego gatunku, by pokazać kartę
-      try {
-        final obs = obsVm.allObservations.firstWhere((o) => o.speciesId == item.id);
-        PlantCardView.show(context, obs);
-      } catch (_) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Brak szczegółowych danych obserwacji dla tego gatunku.")));
-      }
-    } else {
-      // Jeśli to poszukiwana, otwórz dialog (podobnie jak w Terminarzu)
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(item.name),
-          content: const Text("To jest roślina poszukiwana. Czy chcesz przejść do edycji jej wymagań?"),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Anuluj")),
-            ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const AddSoughtPlantScreen()));
-                },
-                child: const Text("EDYTUJ")
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(item.name),
+        content: Text(item.isSought
+            ? "To jest roślina poszukiwana. Co chcesz zrobić?"
+            : "Ten gatunek znajduje się w Magazynie. Usunięcie go spowoduje wyczyszczenie wszystkich powiązanych danych."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("ANULUJ")),
+
+          // PRZYCISK PODGLĄDU - Rozwiązuje błąd 'unused import'
+          if (!item.isSought)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                try {
+                  final obs = obsVm.allObservations.firstWhere((o) => o.speciesId == item.id);
+                  PlantCardView.show(context, obs); // UŻYCIE IMPORTU
+                } catch (_) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Brak szczegółów obserwacji.")));
+                }
+              },
+              child: const Text("POKAŻ KARTĘ"),
             ),
-          ],
-        ),
-      );
-    }
+
+          // PRZYCISK USUWANIA
+          TextButton(
+            onPressed: () async {
+              if (item.isSought) {
+                await filterVm.deleteSoughtPlant(item.id);
+              } else {
+                final toDelete = obsVm.allObservations.where((o) => o.speciesId == item.id).toList();
+                for (var obs in toDelete) { await obsVm.deleteObservation(obs.id); }
+              }
+              if (context.mounted) {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Usunięto pomyślnie.")));
+              }
+            },
+            child: const Text("USUŃ", style: TextStyle(color: Colors.red)),
+          ),
+
+          if (item.isSought)
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const AddSoughtPlantScreen()));
+              },
+              child: const Text("EDYTUJ"),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
