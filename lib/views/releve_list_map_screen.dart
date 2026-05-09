@@ -93,7 +93,7 @@ class _ReleveListMapScreenState extends State<ReleveListMapScreen> {
         icon: const Icon(Icons.add_location_alt),
         label: const Text("NOWY OBSZAR"),
       ),
-      body: Column(
+      body: SafeArea(child:  Column(
         children: [
           // Pasek informacyjny o aktywnych filtrach
           if (_isAnyFilterActive(filterVm))
@@ -154,7 +154,7 @@ class _ReleveListMapScreenState extends State<ReleveListMapScreen> {
             ),
           ),
         ],
-      ),
+      ),),
     );
   }
 }

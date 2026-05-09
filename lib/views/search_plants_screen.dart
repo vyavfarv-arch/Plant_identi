@@ -104,7 +104,7 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text("Znajdź Obszary (ML)"), actions: [IconButton(icon: const Icon(Icons.add), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddSoughtPlantScreen())))]),
-      body: Column(
+      body: SafeArea(child:  Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -131,7 +131,7 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
           ),
           if (_selectedPlantId != null) _buildActionFooter(allItems.firstWhere((p) => p.id == _selectedPlantId), releveVm),
         ],
-      ),
+      ),),
     );
   }
 

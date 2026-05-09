@@ -73,7 +73,7 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
           ),
         ],
       ),
-      body: ListView(
+      body: SafeArea(child:  ListView(
         children: [
           // SEKCJA AKCJI I STRUKTURY (Zaktualizowana)
           _buildActionSection(context, currentReleve, childrenAreas),
@@ -122,7 +122,7 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
             ),
           const SizedBox(height: 50),
         ],
-      ),
+      ),),
     );
   }
 
@@ -130,7 +130,7 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
     return Container(padding: const EdgeInsets.all(16), color: color, child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)));
   }
 
-  // NOWA METODA: Zamiast starej sekcji hierarchii
+
   Widget _buildActionSection(BuildContext context, Releve currentReleve, List<Releve> children) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

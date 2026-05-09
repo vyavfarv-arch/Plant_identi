@@ -48,7 +48,7 @@ class _AreaFilterScreenState extends State<AreaFilterScreen> {
           )
         ],
       ),
-      body: ListView(
+      body:SafeArea( child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           _buildDropdown("Typ obszaru", HabitatInfo.areaTypeOptions, _tmpType, (v) => setState(() => _tmpType = v)),
@@ -114,7 +114,7 @@ class _AreaFilterScreenState extends State<AreaFilterScreen> {
           ),
           const SizedBox(height: 40),
         ],
-      ),
+      ),),
     );
   }
 

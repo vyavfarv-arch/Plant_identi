@@ -54,7 +54,7 @@ class _HabitatFormScreenState extends State<HabitatFormScreen> {
         backgroundColor: Colors.brown.shade700,
         foregroundColor: Colors.white,
       ),
-      body: ListView(
+      body: SafeArea(child:  ListView(
         padding: const EdgeInsets.all(16),
         children: [
           _sectionTitle("1. Parametry Krytyczne (Wysokie znaczenie)"),
@@ -106,7 +106,7 @@ class _HabitatFormScreenState extends State<HabitatFormScreen> {
           ),
           const SizedBox(height: 30),
         ],
-      ),
+      ),),
     );
   }
 

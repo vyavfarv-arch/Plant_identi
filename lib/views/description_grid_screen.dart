@@ -11,7 +11,7 @@ class DescriptionGridScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Opisz Spotkane Rośliny')),
-      body: Consumer<ObservationViewModel>(
+      body: SafeArea(child: Consumer<ObservationViewModel>(
         builder: (context, plantsVm, child) {
           final list = plantsVm.incompleteObservations;
 
@@ -54,7 +54,7 @@ class DescriptionGridScreen extends StatelessWidget {
             },
           );
         },
-      ),
+      ),),
     );
   }
 }

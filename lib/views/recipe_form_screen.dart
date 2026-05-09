@@ -104,7 +104,7 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Kreator Przepisu")),
-      body: ListView(
+      body: SafeArea(child:  ListView(
         padding: const EdgeInsets.all(16),
         children: [
           TextField(controller: _titleCtrl, decoration: const InputDecoration(labelText: "Tytuł przepisu", border: OutlineInputBorder())),
@@ -192,7 +192,7 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
           ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 15)), onPressed: _save, child: const Text("ZAPISZ")),
           const SizedBox(height: 50),
         ],
-      ),
+      ),),
     );
   }
 }

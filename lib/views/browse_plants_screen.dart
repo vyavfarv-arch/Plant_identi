@@ -82,7 +82,7 @@ class BrowsePlantsScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Builder(
+      body: SafeArea(child:  Builder(
         builder: (context) {
           if (plants.isEmpty) {
             return const Center(child: Text("Brak roślin spełniających kryteria filtrów."));
@@ -119,7 +119,7 @@ class BrowsePlantsScreen extends StatelessWidget {
             }).toList(),
           );
         },
-      ),
+      ),),
     );
   }
 

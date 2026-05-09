@@ -31,9 +31,10 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text("Nowe Poszukiwanie")),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text("Identyfikacja", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
@@ -94,7 +95,7 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
             const SizedBox(height: 30),
           ],
         ),
-      ),
+          ),),
     );
   }
 

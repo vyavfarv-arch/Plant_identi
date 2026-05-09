@@ -42,7 +42,7 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Klasyfikacja")),
-      body: SingleChildScrollView(
+      body: SafeArea(child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,7 +81,7 @@ class _ClassificationScreenState extends State<ClassificationScreen> {
             ),
           ],
         ),
-      ),
+      ),),
     );
   }
 

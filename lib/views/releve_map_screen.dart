@@ -44,7 +44,7 @@ class _ReleveMapScreenState extends State<ReleveMapScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text("Wyznacz nowy obszar")),
-      body: Stack(
+      body: SafeArea(child:  Stack(
         children: [
           GoogleMap(
             initialCameraPosition: CameraPosition(target: _initialPosition, zoom: 15),
@@ -97,7 +97,7 @@ class _ReleveMapScreenState extends State<ReleveMapScreen> {
               ),
             ),
         ],
-      ),
+      ),),
     );
   }
 }

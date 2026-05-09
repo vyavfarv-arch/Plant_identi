@@ -23,7 +23,7 @@ class FilteredAreasMapScreen extends StatelessWidget {
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
-      body: GoogleMap(
+      body: SafeArea(child:  GoogleMap(
         initialCameraPosition: CameraPosition(target: initialTarget, zoom: 14),
         mapType: MapType.hybrid,
         myLocationEnabled: true,
@@ -41,7 +41,7 @@ class FilteredAreasMapScreen extends StatelessWidget {
             ),
           );
         }).toSet(),
-      ),
+      ),),
     );
   }
 }

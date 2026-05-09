@@ -24,7 +24,7 @@ class RecipeListScreen extends StatelessWidget {
           IconButton(icon: const Icon(Icons.add), tooltip: "Nowy przepis", onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RecipeFormScreen()))),
         ],
       ),
-      body: recipes.isEmpty
+      body: SafeArea(child:  recipes.isEmpty
           ? const Center(child: Text("Brak przepisów. Kliknij + aby dodać."))
           : ListView.builder(
         itemCount: recipes.length,
@@ -113,7 +113,7 @@ class RecipeListScreen extends StatelessWidget {
             ),
           );
         },
-      ),
+      ),),
     );
   }
 

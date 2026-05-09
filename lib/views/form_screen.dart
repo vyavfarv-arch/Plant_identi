@@ -23,7 +23,7 @@ class _FormScreenState extends State<FormScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text('Opis: ${widget.observation.tempBiologicalType ?? ""}')),
-      body: Column(
+      body: SafeArea(child:  Column(
         children: [
           Consumer<ObservationViewModel>(
             builder: (context, obsVm, child) {
@@ -59,7 +59,7 @@ class _FormScreenState extends State<FormScreen> {
             child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.green), onPressed: _zapiszFinalnie, child: const Text("ZAPISZ OBSERWACJĘ TERENOWĄ", style: TextStyle(color: Colors.white))),
           ),
         ],
-      ),
+      ),),
     );
   }
 

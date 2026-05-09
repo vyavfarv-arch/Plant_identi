@@ -60,7 +60,7 @@ class ReminderListScreen extends StatelessWidget {
           backgroundColor: Colors.amber.shade800,
           bottom: const TabBar(tabs: [Tab(text: "W TOKU"), Tab(text: "HISTORIA")]),
         ),
-        body: Consumer<ReminderViewModel>(
+        body: SafeArea(child:  Consumer<ReminderViewModel>(
           builder: (context, vm, child) {
             final pending = vm.reminders.where((r) => !r.isCompleted).toList();
             final completed = vm.reminders.where((r) => r.isCompleted).toList();
@@ -70,7 +70,7 @@ class ReminderListScreen extends StatelessWidget {
             ]);
           },
         ),
-      ),
+        ),),
     );
   }
 

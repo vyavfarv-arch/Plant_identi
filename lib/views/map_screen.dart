@@ -72,13 +72,13 @@ class _MapScreenState extends State<MapScreen> {
           )
         ],
       ),
-      body: GoogleMap(
+      body: SafeArea(child:  GoogleMap(
         initialCameraPosition: const CameraPosition(target: LatLng(52.23, 21.01), zoom: 10),
         markers: markers,
         polygons: polygons,
         mapType: MapType.hybrid,
         myLocationEnabled: true,
-      ),
+      ),),
     );
   }
 }

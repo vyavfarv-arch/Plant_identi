@@ -20,8 +20,9 @@ class HomeScreen extends StatelessWidget {
         title: const Text('Plantifikator'),
         elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             const SizedBox(height: 20),
@@ -88,7 +89,7 @@ class HomeScreen extends StatelessWidget {
             ),
           ],
         ),
-      ),
+      ),),
     );
   }
 

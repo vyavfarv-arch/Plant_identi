@@ -38,7 +38,7 @@ class _HabitatDetailsScreenState extends State<HabitatDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Szczegóły nowego obszaru")),
-      body: Form(
+      body: SafeArea(child:  Form(
         key: _formKey,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -99,7 +99,7 @@ class _HabitatDetailsScreenState extends State<HabitatDetailsScreen> {
             ],
           ),
         ),
-      ),
+      ),),
     );
   }
 

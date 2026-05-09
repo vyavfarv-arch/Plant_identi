@@ -290,18 +290,30 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
     );
   }
 
-  void _saveAndGoBack() {
-    // Twoja logika zapisu...
-    _saveLogic();
-    Navigator.pop(context);
+  void _saveAndGoBack() async {
+    final polskaNazwa = _controllers['localName']!.text.trim();
+    final lacinskaNazwa = _controllers['latinName']!.text.trim();
+    if (polskaNazwa.isEmpty || lacinskaNazwa.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Błąd: Musisz podać nazwę polską oraz łacińską przed zapisem."),
+          backgroundColor: Colors.redAccent,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    await _saveLogic();
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 
   Future<void> _saveLogic() async {
-    // Kopia Twojej logiki zapisu z poprzedniego kodu
     final obsVm = context.read<ObservationViewModel>();
     final remVm = context.read<ReminderViewModel>();
 
-    // Obsługa przypomnień
     for (var season in _selectedSeasons) {
       if (season.reminderEnabled && season.startDate != null) {
         remVm.addHarvestReminder(
@@ -323,6 +335,9 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       subspecies: _controllers['subspecies']!.text,
       certainty: _selectedCertainty,
       doubts: _controllers['idDoubts']!.text,
+      keyTraits: _controllers['keyTraits']!.text,
+      confusing: _controllers['confusing']!.text,
+      characteristic: _controllers['characteristic']!.text,
       usage: _controllers['usage']!.text,
       cultivation: _controllers['cultivation']!.text,
       harvestSeasons: _selectedSeasons,

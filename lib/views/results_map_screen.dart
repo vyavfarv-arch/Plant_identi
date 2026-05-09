@@ -122,12 +122,12 @@ class _ResultsMapScreenState extends State<ResultsMapScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text('Szukaj: ${widget.plantName}')),
-      body: GoogleMap(
+      body: SafeArea(child:  GoogleMap(
         initialCameraPosition: CameraPosition(target: initialTarget, zoom: 14),
         polygons: _polygons,
         mapType: MapType.hybrid,
         myLocationEnabled: true,
-      ),
+      ),),
     );
   }
 }
