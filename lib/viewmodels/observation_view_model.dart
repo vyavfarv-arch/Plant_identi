@@ -125,30 +125,27 @@ class ObservationViewModel extends ChangeNotifier {
     String? subspecies,
     String? certainty,
     String? doubts,
-    String? keyTraits,
-    String? confusing,
-    String? characteristic,
+    String? keyTraits,       // DODANE
+    String? confusing,       // DODANE
+    String? characteristic,  // DODANE
     String? usage,
     String? cultivation,
     double? prefPhMin,
     double? prefPhMax,
-    // ZMIANA: Listy kalendarzy
     List<HarvestSeason>? harvestSeasons,
     List<HarvestSeason>? customHarvestSeasons,
-    // NOWE LISTY ZGODNE Z MODELEM SPECIES
     List<String>? prefAreaTypes,
     List<String>? prefWaterDynamics,
-    List<String>? prefLightLevels,
-    List<String>? prefSoilTypes,
+    List<String>? prefLightLevels, // NOWE (zamiast zwarcia)
+    List<String>? prefSoilTypes,    // NOWE (zamiast głębokości)
   }) async {
-
     final index = _observations.indexWhere((o) => o.id == id);
     if (index == -1) return;
     final old = _observations[index];
 
     final String targetSpeciesId = old.speciesId ?? const Uuid().v4();
 
-    // 1. Zapisujemy gatunek (Wiedza teoretyczna - Biologiczna)
+    // 1. Zapisujemy wiedzę o gatunku
     final species = PlantSpecies(
       speciesID: targetSpeciesId,
       latinName: latinName,
@@ -162,12 +159,12 @@ class ObservationViewModel extends ChangeNotifier {
       harvestSeasons: harvestSeasons ?? [],
       prefAreaTypes: prefAreaTypes ?? [],
       prefWaterDynamics: prefWaterDynamics ?? [],
-      prefLightLevels: prefLightLevels ?? [], // ZMIANA: Nowe pole świetlne
-      prefSoilTypes: prefSoilTypes ?? [],    // ZMIANA: Nowe pole glebowe
+      prefLightLevels: prefLightLevels ?? [],
+      prefSoilTypes: prefSoilTypes ?? [],
     );
     await _db.insertSpecies(species);
 
-    // 2. Aktualizujemy konkretny OKAZ (Stan faktyczny w terenie)
+    // 2. Aktualizujemy konkretny okaz w terenie
     final updatedObs = PlantObservation(
       id: old.id,
       releveId: old.releveId,
@@ -187,9 +184,9 @@ class ObservationViewModel extends ChangeNotifier {
       vitality: old.vitality,
       certainty: certainty,
       idDoubts: doubts,
-      keyMorphologicalTraits: keyTraits,
-      confusingSpecies: confusing,
-      characteristicFeature: characteristic,
+      keyMorphologicalTraits: keyTraits,      // TERAZ PRZEKAZYWANE
+      confusingSpecies: confusing,            // TERAZ PRZEKAZYWANE
+      characteristicFeature: characteristic,  // TERAZ PRZEKAZYWANE
       customHarvestSeasons: customHarvestSeasons ?? [],
     );
 

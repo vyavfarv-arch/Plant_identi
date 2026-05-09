@@ -296,7 +296,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
     Navigator.pop(context);
   }
 
-  void _saveLogic() {
+  Future<void> _saveLogic() async {
     // Kopia Twojej logiki zapisu z poprzedniego kodu
     final obsVm = context.read<ObservationViewModel>();
     final remVm = context.read<ReminderViewModel>();
@@ -314,7 +314,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       }
     }
 
-    obsVm.updateObservationDetailed(
+    await obsVm.updateObservationDetailed(
       id: widget.observation.id,
       localName: _controllers['localName']!.text,
       latinName: _controllers['latinName']!.text,
