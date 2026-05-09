@@ -97,7 +97,6 @@ class SchemaGenerator {
     ];
   }
 
-
   static List<DescriptionCategory> _shrubSchema() {
     return [
       DescriptionCategory(
@@ -174,9 +173,27 @@ class SchemaGenerator {
           "Typ rozgałęziania": ["pęd główny dominuje", "brak wyraźnego przewodnika"],
           "Pień": ["jednopniowy", "wielopniowy", "rozwidlowany (widlasty)", "zbieżysty (mocno zwężający się)"],
         },
-          referenceImages: {
-
-          }
+        referenceImages: {
+          "stożkowata": "assets/grass.png", "kolumnowa": "assets/grass.png", "płaskokulista": "assets/grass.png",
+          "płacząca": "assets/grass.png", "parasolowata": "assets/grass.png", "jajowata": "assets/grass.png",
+          "pęd główny dominuje": "assets/grass.png", "brak wyraźnego przewodnika": "assets/grass.png",
+          "jednopniowy": "assets/grass.png", "wielopniowy": "assets/grass.png",
+          "rozwidlowany (widlasty)": "assets/grass.png", "zbieżysty (mocno zwężający się)": "assets/grass.png",
+        },
+        imageDescriptions: {
+          "stożkowata": "Korona o szerokiej nasadzie, wyraźnie zwężająca się ku górze, przypominająca kształt stożka (typowa dla wielu iglaków).",
+          "kolumnowa": "Korona wąska i wysoka, o zbliżonej szerokości na całej długości pnia.",
+          "płaskokulista": "Korona o zarysie kolistym, jednak wyraźnie spłaszczona w górnej części.",
+          "płacząca": "Forma, w której gałęzie i pędy boczne zwisają pionowo w dół (np. u wierzby płaczącej).",
+          "parasolowata": "Korona szeroka i płaska na szczycie, z pędami rozrastającymi się poziomo, przypominająca otwarty parasol.",
+          "jajowata": "Korona najszersza w dolnej lub środkowej części, o zaokrąglonym dole i szczycie.",
+          "pęd główny dominuje": "Wzrost monopodialny, gdzie główny pień (przewodnik) rośnie pionowo i dominuje nad cieńszymi gałęziami bocznymi.",
+          "brak wyraźnego przewodnika": "Pień rozwidla się nisko na kilka niemal równorzędnych konarów, tworząc rozłożystą strukturę bez pędu głównego.",
+          "jednopniowy": "Drzewo wykształca tylko jeden, wyraźny pień główny wyrastający bezpośrednio z ziemi.",
+          "wielopniowy": "Roślina posiada kilka pni o podobnej grubości, wyrastających obok siebie z tego samego systemu korzeniowego.",
+          "rozwidlowany (widlasty)": "Pień, który na pewnej wysokości dzieli się na dwa główne, symetryczne ramiona (widły).",
+          "zbieżysty (mocno zwężający się)": "Cecha pnia, którego średnica bardzo gwałtownie maleje wraz z wysokością (pienność zbieżysta).",
+        },
       ),
       DescriptionCategory(
         number: "2",
@@ -238,9 +255,13 @@ class SchemaGenerator {
         referenceImages: {
           "palowy": "assets/ref/zielne/korzen/korzen_palowy.png",
           "wiązkowy": "assets/ref/zielne/korzen/korzen_wiazkowy.png",
-          "kłączowy": "assets/ref/zielne/korzen/korzen_palowy.png",
+          "kłączowy": "assets/ref/zielne/korzen/korzen_klacze.png",
           "bulwy": "assets/ref/zielne/korzen/korzen_bulwa.png",
-          "cebula": "assets/ref/zielne/korzen/korzen_cebula.png"
+          "cebula": "assets/ref/zielne/korzen/korzen_cebula.png",
+          // Dodane dla głębokości (dummy picture)
+          "płytki": "assets/grass.png",
+          "średni": "assets/grass.png",
+          "głęboki": "assets/grass.png",
         },
         imageDescriptions: {
           "palowy": "System z jednym wyraźnym korzeniem głównym rosnącym pionowo w dół i mniejszymi korzeniami bocznymi.",
@@ -248,6 +269,10 @@ class SchemaGenerator {
           "kłączowy": "Podziemny pęd rosnący poziomo, pełniący funkcję spichrzową, z którego wyrastają korzenie przybyszowe.",
           "bulwy": "Zgrubiałe części podziemne (pędu lub korzenia) magazynujące substancje zapasowe.",
           "cebula": "Podziemny organ spichrzowy o silnie skróconej łodydze i mięsistych liściach (np. u czosnku lub tulipana).",
+
+          "płytki": "System korzeniowy rozwijający się głównie w wierzchniej warstwie gleby (do ok. 15-20 cm). Roślina jest łatwa do wyrwania, ale wrażliwa na przesuszenie powierzchni gruntu.",
+          "średni": "Korzenie sięgające umiarkowanej głębokości profilu glebowego (ok. 20-50 cm), zapewniające stabilne zakotwiczenie i dostęp do wilgoci.",
+          "głęboki": "Korzenie penetrujące glebę na głębokość powyżej 50 cm. Pozwala to roślinie przetrwać susze dzięki dostępowi do głębszych zasobów wody podziemnej.",
         },
       ),
       DescriptionCategory(
@@ -261,6 +286,39 @@ class SchemaGenerator {
           "Barwa": ["zielona", "brunatna", "czerwonawa", "sina"],
           "Mleczko": ["przezroczyste", "białe"],
         },
+        referenceImages: {
+          "zielna": "assets/grass.png", "zdrewniała": "assets/grass.png", "półzdrewniała": "assets/grass.png",
+          "okrągły": "assets/grass.png", "kanciasty": "assets/grass.png", "bruzdowany": "assets/grass.png", "spłaszczony": "assets/grass.png",
+          "gładka": "assets/grass.png", "owłosiona": "assets/grass.png", "szorstka": "assets/grass.png", "lepka": "assets/grass.png", "woskowa": "assets/grass.png",
+          "proste": "assets/grass.png", "gruczołowe": "assets/grass.png", "haczykowate": "assets/grass.png", "kutnerowate": "assets/grass.png",
+          "zielona": "assets/grass.png", "brunatna": "assets/grass.png", "czerwonawa": "assets/grass.png", "sina": "assets/grass.png",
+          "przezroczyste": "assets/grass.png", "białe": "assets/grass.png",
+        },
+        imageDescriptions: {
+          "zielna": "Łodyga miękka, soczysta, zwykle zielona, obumierająca po zakończeniu sezonu wegetacyjnego.",
+          "zdrewniała": "Twarda łodyga pokryta warstwą korka lub kory, charakterystyczna dla krzewów i drzew.",
+          "półzdrewniała": "Łodyga, której dolna część drewnieje i jest trwała, natomiast górna pozostaje zielna i obumiera na zimę.",
+          "okrągły": "Przekrój poprzeczny łodygi o kształcie zbliżonym do koła, bez wyraźnych krawędzi.",
+          "kanciasty": "Obecność wyraźnych podłużnych krawędzi (np. łodyga czworokątna u roślin jasnotowatych).",
+          "bruzdowany": "Powierzchnia łodygi z wyraźnymi, podłużnymi wgłębieniami i rynienkami.",
+          "spłaszczony": "Łodyga wyraźnie szersza w jednej osi, często o formie wstęgowatej.",
+          "gładka": "Powierzchnia pozbawiona włosków, brodawek i innych wyraźnych nierówności.",
+          "owłosiona": "Pokryta różnego rodzaju włoskami (epidermą), które mogą pełnić funkcję ochronną.",
+          "szorstka": "Nieprzyjemna w dotyku przez obecność sztywnych włosków lub wysycenie krzemionką.",
+          "lepka": "Pokryta wydzieliną gruczołowatą, która klei się przy dotyku (często bariera dla owadów).",
+          "woskowa": "Pokryta warstwą matowego nalotu (kutikuli), który można zetrzeć palcem; chroni przed parowaniem.",
+          "proste": "Pojedyncze, nierozgałęzione włoski wyrastające z powierzchni łodygi.",
+          "gruczołowe": "Włoski zakończone główką wydzielniczą, często zawierającą olejki eteryczne.",
+          "haczykowate": "Sztywne włoski zakrzywione na końcach, ułatwiające roślinie wspinanie się lub czepianie.",
+          "kutnerowate": "Bardzo gęste, splątane i miękkie włoski tworzące warstwę przypominającą filc.",
+          "zielona": "Naturalna barwa łodygi wynikająca z obecności chlorofilu w tkankach.",
+          "brunatna": "Ciemne zabarwienie, często pojawiające się u starszych roślin lub przy nasadzie pędu.",
+          "czerwonawa": "Zabarwienie spowodowane obecnością antocyjanów, często reakcja na silne nasłonecznienie.",
+          "sina": "Niebieskawo-zielony lub szary odcień nadany przez grubą warstwę wosku.",
+          "przezroczyste": "Wypływający po uszkodzeniu bezbarwny, wodnisty sok roślinny.",
+          "białe": "Gęsty, nieprzezroczysty płyn (lateks) wypływający z rurek mlecznych po przerwaniu tkanki.",
+        },
+
       ),
       DescriptionCategory(
           number: "3",
@@ -271,37 +329,143 @@ class SchemaGenerator {
             "Kształt blaszki": ["igiełkowy", "równowąski", "lancetowaty", "eliptyczny", "jajowaty", "sercowaty", "łopatowaty", "owalny", "odwrotnie jajowaty", "strzałkowaty", "nerkowy"],
             "Brzeg Liścia": ["całobrzegi", "piłkowany", "ząbkowany", "karbowany", "falisty", "kolczasty","podwójnie pikowany","podwójnie ząbkowany", "podwójnie karbowany"],
             "Unerwienie": ["pierzaste", "dłoniaste", "równoległe"],
-          },
-          referenceImages: {
-            "skrętoległe": "assets/ref/zielne/liscie/lisc_skretolegly.png","naprzeciwległe": "assets/ref/zielne/liscie/liscie_naprzeciwlegle.png","okółkowe": "assets/ref/zielne/liscie/lisc_okolkowe.png",
-            "pierzaste": "assets/ref/zielne/liscie/lisc_pierzasty.png","równoległe": "assets/ref/zielne/liscie/lisc_rownolegly.png","dłoniaste": "assets/ref/zielne/liscie/lisc_dloniasty.png",
-          }
+          },referenceImages: {
+        // Ulistnienie
+        "skrętoległe": "assets/ref/zielne/liscie/lisc_skretolegly.png",
+        "naprzeciwległe": "assets/ref/zielne/liscie/liscie_naprzeciwlegle.png",
+        "okółkowe": "assets/ref/zielne/liscie/lisc_okolkowe.png",
+
+        // Typ liścia (używamy dostępnych lub dummy)
+        "niepodzielne": "assets/grass.png", "wrębne": "assets/grass.png", "dzielne": "assets/grass.png",
+        "klapowate": "assets/grass.png", "sieczne": "assets/grass.png",
+        "pierzasty": "assets/ref/zielne/liscie/lisc_pierzasty.png",
+        "dłoniasty": "assets/ref/zielne/liscie/lisc_dloniasty.png",
+
+        // Kształt blaszki (dummy)
+        "igiełkowy": "assets/grass.png", "równowąski": "assets/grass.png", "lancetowaty": "assets/grass.png",
+        "eliptyczny": "assets/grass.png", "jajowaty": "assets/grass.png", "sercowaty": "assets/grass.png",
+        "łopatowaty": "assets/grass.png", "owalny": "assets/grass.png", "odwrotnie jajowaty": "assets/grass.png",
+        "strzałkowaty": "assets/grass.png", "nerkowy": "assets/grass.png",
+
+        // Brzeg (dummy)
+        "całobrzegi": "assets/grass.png", "piłkowany": "assets/grass.png", "ząbkowany": "assets/grass.png",
+        "karbowany": "assets/grass.png", "falisty": "assets/grass.png", "kolczasty": "assets/grass.png",
+        "podwójnie pikowany": "assets/grass.png", "podwójnie ząbkowany": "assets/grass.png", "podwójnie karbowany": "assets/grass.png",
+
+        // Unerwienie
+        "pierzaste": "assets/ref/zielne/liscie/lisc_pierzasty.png",
+        "dłoniaste": "assets/ref/zielne/liscie/lisc_dloniasty.png",
+        "równoległe": "assets/ref/zielne/liscie/lisc_rownolegly.png",
+      },
+        imageDescriptions: {
+          // Ulistnienie
+          "skrętoległe": "Liście wyrastają pojedynczo z węzłów, tworząc spiralę wokół łodygi.",
+          "naprzeciwległe": "Z jednego węzła wyrastają dwa liście położone po przeciwnych stronach łodygi.",
+          "okółkowe": "Z jednego węzła wyrastają co najmniej trzy liście, tworząc pierścień (okółek) dookoła pędu.",
+
+          // Typ liścia
+          "niepodzielne": "Blaszka liściowa o ciągłym obrysie, bez głębokich wcięć sięgających nerwu głównego.",
+          "wrębne": "Wcięcia w blaszce są płytkie, sięgają nie dalej niż do 1/4 odległości od brzegu do nerwu głównego.",
+          "dzielne": "Głębokie wcięcia sięgające do około połowy szerokości blaszki liściowej.",
+          "klapowate": "Wcięcia blaszki sięgają głębiej niż u liścia wrębnego, ale nie dochodzą do połowy blaszki.",
+          "sieczne": "Bardzo głębokie wcięcia sięgające niemal do samego nerwu głównego lub nasady liścia.",
+          "pierzasty": "Liść złożony z mniejszych listków wyrastających parami wzdłuż wspólnej osi (ogonka pomocniczego).",
+          "dłoniasty": "Listki lub klapy liścia wyrastają promieniście z jednego wspólnego punktu u nasady ogonka.",
+
+          // Kształt blaszki
+          "igiełkowy": "Liście bardzo wąskie, sztywne i zwykle ostro zakończone, przypominające igły (np. u iglaków).",
+          "równowąski": "Liść o niemal stałej szerokości na całej długości, znacznie dłuższy niż szerszy.",
+          "lancetowaty": "Kształt wydłużony, najszerszy poniżej środka, zwężający się ku obu końcom (jak grot lancy).",
+          "eliptyczny": "Kształt regularnej elipsy, najszerszy w połowie długości liścia.",
+          "jajowaty": "Obrys przypominający jajko, z szerszą nasadą i węższym szczytem.",
+          "sercowaty": "Blaszka z głębokim wcięciem u nasady, o kształcie przypominającym serce.",
+          "łopatowaty": "Szeroki i zaokrąglony u szczytu, stopniowo zwężający się w stronę nasady.",
+          "owalny": "Szeroko zaokrąglony kształt o długości nieco większej od szerokości.",
+          "odwrotnie jajowaty": "Podobny do jajowatego, ale szerszy u góry (przy szczycie) niż przy nasadzie.",
+          "strzałkowaty": "Nasada liścia posiada ostre klapy skierowane w dół, przypominając grot strzały.",
+          "nerkowy": "Szeroki, zaokrąglony liść z głębokim, łagodnym wcięciem u nasady.",
+
+          // Brzeg liścia
+          "całobrzegi": "Krawędź blaszki liściowej jest całkowicie gładka, bez żadnych wycięć.",
+          "piłkowany": "Brzeg z ostrymi ząbkami skierowanymi wyraźnie w stronę szczytu liścia.",
+          "ząbkowany": "Ząbki o równych bokach, skierowane prostopadle do krawędzi liścia.",
+          "karbowany": "Brzeg z zaokrąglonymi ząbkami (karbami).",
+          "falisty": "Brzeg nie tworzy ząbków, lecz faluje w płaszczyźnie blaszki.",
+          "kolczasty": "Ząbki na brzegu liścia są zakończone sztywnymi, kłującymi wyrostkami.",
+          "podwójnie pikowany": "Większe ząbki piłkowane posiadają na sobie dodatkowe, mniejsze ząbki.",
+          "podwójnie ząbkowany": "System zębów, gdzie każdy ząb główny jest dodatkowo powcinany.",
+          "podwójnie karbowany": "Krawędź z dużymi karbami, które same są dodatkowo delikatnie karbowane.",
+
+          // Unerwienie
+          "pierzaste": "Jeden wyraźny nerw główny przebiega przez środek, a od niego odchodzą nerwy boczne.",
+          "dłoniaste": "Kilka głównych nerwów o podobnej grubości rozchodzi się promieniście od nasady blaszki.",
+          "równoległe": "Liczne, drobne nerwy biegną wzdłuż liścia niemal równolegle do siebie (typowe dla traw).",
+        },
       ),
       DescriptionCategory(
         number: "4",
         title: "Kwiatostany",
         subCategories: {
-          "Typ Kwiatostanu": ["grono","baldachogrono", "wiecha", "baldach", "koszyczek", "kłos", "główka","baldach podwójny","kłos złożony","sierpik","wachlarz","wiechotka", "wiechotka złożona"],
+          "Typ Kwiatostanu": ["grono", "baldachogrono", "wiecha", "baldach", "koszyczek", "kłos", "główka", "baldach podwójny", "kłos złożony", "sierpik", "wachlarz", "wiechotka", "wiechotka złożona"],
           "Zapach": ["brak", "słaby", "intensywny"],
         },
-          referenceImages: {
-            "grono": "assets/ref/zielne/kwiat/grono.png","baldachogrono": "assets/ref/zielne/kwiat/baldachogrono.png","baldach podwójny": "assets/ref/zielne/kwiat/kwiat_baldach_podwojny.png",
-            "baldach": "assets/ref/zielne/kwiat/kwiat_baldach.png","główka": "assets/ref/zielne/kwiat/kwiat_glowka.png","kłos": "assets/ref/zielne/kwiat/kwiat_klos.png","kłos złożony": "assets/ref/zielne/kwiat/kwiat_klos_zlozony.png",
-            "koszyczek": "assets/ref/zielne/kwiat/kwiat_koszyk.png","sierpik": "assets/ref/zielne/kwiat/kwiat_sierpik.png","wachlarz": "assets/ref/zielne/kwiat/kwiat_wachlarz.png","wiecha": "assets/ref/zielne/kwiat/kwiat_wiecha.png","wiechotka": "assets/ref/zielne/kwiat/kwiat_wiechotka.png","wiechotka złożona": "assets/ref/zielne/kwiat/kwiat_wiechotka_wielo.PNG",
-          }
+        referenceImages: {
+          "grono": "assets/ref/zielne/kwiat/grono.png",
+          "baldachogrono": "assets/ref/zielne/kwiat/baldachogrono.png",
+          "baldach podwójny": "assets/ref/zielne/kwiat/kwiat_baldach_podwojny.png",
+          "baldach": "assets/ref/zielne/kwiat/kwiat_baldach.png",
+          "główka": "assets/ref/zielne/kwiat/kwiat_glowka.png",
+          "kłos": "assets/ref/zielne/kwiat/kwiat_klos.png",
+          "kłos złożony": "assets/ref/zielne/kwiat/kwiat_klos_zlozony.png",
+          "koszyczek": "assets/ref/zielne/kwiat/kwiat_koszyk.png",
+          "sierpik": "assets/ref/zielne/kwiat/kwiat_sierpik.png",
+          "wachlarz": "assets/ref/zielne/kwiat/kwiat_wachlarz.png",
+          "wiecha": "assets/ref/zielne/kwiat/kwiat_wiecha.png",
+          "wiechotka": "assets/ref/zielne/kwiat/kwiat_wiechotka.png",
+          "wiechotka złożona": "assets/ref/zielne/kwiat/kwiat_wiechotka_wielo.PNG",
+          // Dodane dla zapachu (dummy picture)
+          "brak": "assets/grass.png",
+          "słaby": "assets/grass.png",
+          "intensywny": "assets/grass.png",
+        },
+        imageDescriptions: {
+          "grono": "Kwiaty osadzone na szypułkach o podobnej długości wzdłuż wydłużonej osi głównej (np. u konwalii).",
+          "baldachogrono": "Odmiana grona, w której dolne szypułki są znacznie dłuższe od górnych, przez co wszystkie kwiaty znajdują się niemal na jednej wysokości.",
+          "wiecha": "Złożony kwiatostan o rozgałęzionej osi głównej, gdzie odgałęzienia boczne są gronami lub kolejnymi wiechami.",
+          "baldach": "Wszystkie szypułki kwiatowe wyrastają z jednego punktu na szczycie osi, przypominając pręty parasola (np. u czosnku).",
+          "koszyczek": "Kwiaty siedzące osadzone na silnie skróconej, rozszerzonej osi tworzącej dno kwiatostanowe (charakterystyczny dla roślin astrowatych).",
+          "kłos": "Kwiaty bezszypułkowe (siedzące) osadzone bezpośrednio wzdłuż wydłużonej osi głównej.",
+          "główka": "Kwiaty siedzące lub na bardzo krótkich szypułkach, gęsto skupione na skróconej, kulistej osi (np. u koniczyny).",
+          "baldach podwójny": "Z osi głównej wyrastają baldaszki (baldachy mniejszego rzędu) zamiast pojedynczych kwiatów (typowy dla selerowatych).",
+          "kłos złożony": "Na osi głównej zamiast pojedynczych kwiatów osadzone są mniejsze kłoski (charakterystyczny dla traw).",
+          "sierpik": "Kwiatostan wierzchotkowy, w którym kolejne osie boczne wyrastają zawsze po jednej stronie, zwijając się na kształt sierpa.",
+          "wachlarz": "Odmiana wierzchotki, w której kwiaty wyrastają naprzemiennie po obu stronach osi, tworząc płaską strukturę przypominającą wachlarz.",
+          "wiechotka": "Kwiatostan, w którym oś główna kończy się kwiatem, a poniżej wyrastają jedna lub dwie osie boczne (również zakończone kwiatami).",
+          "wiechotka złożona": "Rozbudowana struktura wierzchotkowa z wielokrotnymi odgałęzieniami bocznymi.",
+          "brak": "Kwiaty nie wydzielają wyczuwalnego aromatu.",
+          "słaby": "Zapach delikatny, wyczuwalny jedynie z bliskiej odległości.",
+          "intensywny": "Silna woń wyczuwalna wyraźnie nawet z pewnej odległości od rośliny.",
+        },
       ),
       DescriptionCategory(
         number: "5",
         title: "Owoce",
         subCategories: {
-          "Typ owocu": ["jagoda", "torebka", "niełupka", "strąk"],
+          "Typ owocu": ["jagoda", "orzech", "torebka", "niełupka", "strąk"],
           "Smak": ["gorzki", "słodki", "cierpki", "słony", "pikantny"],
         },
         referenceImages: {
           "jagoda": "assets/ref/zielne/owoce/owoce_jagoda.png",
+          "orzech": "assets/ref/zielne/owoce/owoc_orzech.png",
           "torebka": "assets/ref/zielne/owoce/owoc_torebka.png",
           "niełupka": "assets/ref/zielne/owoce/owoc_nielupka.png",
           "strąk": "assets/ref/zielne/owoce/owoc_strak.png",
+          // Zdjęcia zastępcze dla smaków
+          "gorzki": "assets/grass.png",
+          "słodki": "assets/grass.png",
+          "cierpki": "assets/grass.png",
+          "słony": "assets/grass.png",
+          "pikantny": "assets/grass.png",
         },
         imageDescriptions: {
           "jagoda": "Owoc mięsisty, wielonasienny, o cienkiej skórce (np. borówka).",
@@ -309,6 +473,12 @@ class SchemaGenerator {
           "torebka": "Owoc suchy, pękający, wielonasienny.",
           "niełupka": "Owoc suchy, jednonasienny, o skórzastej owocni (np. słonecznik).",
           "strąk": "Owoc suchy, pękający dwoma szwami (np. fasola).",
+          // Opisy smaków
+          "gorzki": "Smak wywołujący wrażenie goryczy, często związany z obecnością alkaloidów lub glikozydów.",
+          "słodki": "Przyjemny smak kojarzony z obecnością cukrów, często zachęcający zwierzęta do zjadania owoców i rozsiewania nasion.",
+          "cierpki": "Wrażenie ściągania w ustach, typowe dla owoców bogatych w garbniki lub kwasy organiczne.",
+          "słony": "Smak rzadko spotykany u owoców, charakterystyczny dla wysokiej zawartości soli mineralnych.",
+          "pikantny": "Piekące lub ostre wrażenie na języku, wywołane specyficznymi substancjami obronnymi rośliny (np. kapsaicyną).",
         },
       ),
     ];
