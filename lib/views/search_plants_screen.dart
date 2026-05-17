@@ -4,12 +4,12 @@ import 'package:provider/provider.dart';
 import '../viewmodels/observation_view_model.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../viewmodels/search_filter_view_model.dart';
-import '../services/ml_prediction_service.dart';
+import '../services/ecological_matching_service.dart'; // ZMIANA: Nowy import matrycy ekologicznej
 import 'add_sought_plant_screen.dart';
 import 'results_map_screen.dart';
 import '../models/sought_plant.dart';
 import '../models/releve.dart';
-import 'plant_card_view.dart'; // IMPORT KARTY
+import 'plant_card_view.dart';
 
 class _SearchListItem {
   final String id;
@@ -31,16 +31,14 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
   String? _selectedPlantId;
   String _searchQuery = "";
   String _filterType = "Wszystkie";
-  final MlPredictionService _mlService = MlPredictionService();
 
   @override
   void initState() {
     super.initState();
-    _mlService.loadModel();
+    // ZMIANA: Usunięto ładowanie starego modelu JSON
     Future.microtask(() => context.read<SearchFilterViewModel>().loadSoughtPlants());
   }
 
-  // LOGIKA PRZYTRZYMANIA (LONG PRESS)
   void _handleLongPress(BuildContext context, _SearchListItem item) {
     final obsVm = context.read<ObservationViewModel>();
     final filterVm = context.read<SearchFilterViewModel>();
@@ -54,23 +52,19 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
             : "Ten gatunek znajduje się w Magazynie. Usunięcie go spowoduje wyczyszczenie wszystkich powiązanych danych."),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("ANULUJ")),
-
-          // PRZYCISK PODGLĄDU - Rozwiązuje błąd 'unused import'
           if (!item.isSought)
             TextButton(
               onPressed: () {
                 Navigator.pop(ctx);
                 try {
                   final obs = obsVm.allObservations.firstWhere((o) => o.speciesId == item.id);
-                  PlantCardView.show(context, obs); // UŻYCIE IMPORTU
+                  PlantCardView.show(context, obs);
                 } catch (_) {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Brak szczegółów obserwacji.")));
                 }
               },
               child: const Text("POKAŻ KARTĘ"),
             ),
-
-          // PRZYCISK USUWANIA
           TextButton(
             onPressed: () async {
               if (item.isSought) {
@@ -86,7 +80,6 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
             },
             child: const Text("USUŃ", style: TextStyle(color: Colors.red)),
           ),
-
           if (item.isSought)
             ElevatedButton(
               onPressed: () {
@@ -116,7 +109,7 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
     for (var s in filterVm.soughtPlants) {
       final nameKey = s.latinName.isNotEmpty ? s.latinName.toLowerCase() : s.polishName.toLowerCase();
       if (!uniqueItemsMap.containsKey(nameKey)) {
-        uniqueItemsMap[nameKey] = _SearchListItem(id: s.id, name: s.polishName.isNotEmpty ? s.polishName : s.latinName, subtitle: "Poszukiwana (Tylko ML)", isSought: true, originalObject: s);
+        uniqueItemsMap[nameKey] = _SearchListItem(id: s.id, name: s.polishName.isNotEmpty ? s.polishName : s.latinName, subtitle: "Poszukiwana", isSought: true, originalObject: s);
       }
     }
 
@@ -129,19 +122,26 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
     }).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Znajdź Obszary (ML)"), actions: [IconButton(icon: const Icon(Icons.add), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddSoughtPlantScreen())))]),
-      body: SafeArea(child:  Column(
+      appBar: AppBar(
+        title: const Text("Znajdź Obszary Matrycą"),
+        actions: [
+          IconButton(icon: const Icon(Icons.add), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddSoughtPlantScreen())))
+        ],
+      ),
+      body: SafeArea(child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextField(decoration: const InputDecoration(hintText: "Szukaj...", prefixIcon: Icon(Icons.search), border: OutlineInputBorder()), onChanged: (v) => setState(() => _searchQuery = v)),
           ),
           Expanded(
-            child: ListView.builder(
+            child: filteredItems.isEmpty
+                ? const Center(child: Text("Brak wyników."))
+                : ListView.builder(
               itemCount: filteredItems.length,
               itemBuilder: (context, index) {
                 final item = filteredItems[index];
-                return GestureDetector( // OPAKOWANIE W GESTURE DETECTOR
+                return GestureDetector(
                   onLongPress: () => _handleLongPress(context, item),
                   child: RadioListTile<String>(
                     activeColor: Colors.deepOrange,
@@ -161,7 +161,6 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
     );
   }
 
-  // ... (metoda _buildActionFooter pozostaje bez zmian jak ostatnio)
   Widget _buildActionFooter(_SearchListItem item, ReleveViewModel releveVm) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -172,41 +171,42 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
           SizedBox(
             width: double.infinity, height: 55,
             child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange, foregroundColor: Colors.white),
-              onPressed: () async {
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepOrange,
+                  foregroundColor: Colors.white
+              ),
+              onPressed: () {
                 SoughtPlant targetPlant;
-                String? knownSpeciesId;
+
+                // 1. Unifikacja obiektów do typu SoughtPlant
                 if (item.originalObject is SoughtPlant) {
                   targetPlant = item.originalObject;
                 } else {
+                  // Jeśli obiekt pochodzi z Magazynu (PlantSpecies), konwertujemy go na SoughtPlant
                   final sp = item.originalObject;
-                  knownSpeciesId = sp.speciesID;
-                  targetPlant = SoughtPlant(id: sp.speciesID, polishName: sp.polishName, latinName: sp.latinName, prefPhMin: sp.prefPhMin, prefPhMax: sp.prefPhMax, prefAreaTypes: sp.prefAreaTypes, prefExposures: sp.prefExposures, prefCanopyCovers: sp.prefCanopyCovers, prefWaterDynamics: sp.prefWaterDynamics, prefSoilDepths: sp.prefSoilDepths);
+                  targetPlant = SoughtPlant(
+                      id: sp.speciesID,
+                      polishName: sp.polishName,
+                      latinName: sp.latinName,
+                      prefPhMin: sp.prefPhMin,
+                      prefPhMax: sp.prefPhMax,
+                      prefAreaTypes: sp.prefAreaTypes,
+                      prefWaterDynamics: sp.prefWaterDynamics,
+                      prefLightLevels: sp.prefLightLevels,
+                      prefSoilTypes: sp.prefSoilTypes
+                  );
                 }
-                final resultsIds = _mlService.getMatchingAreas(targetPlant, releveVm.allReleves);
-                final matchingObjects = releveVm.allReleves.where((r) => resultsIds.contains(r.id)).toList();
-                if (matchingObjects.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Brak dopasowań ML.")));
-                  return;
-                }
-                Navigator.push(context, MaterialPageRoute(builder: (_) => ResultsMapScreen(matchingAreas: matchingObjects, plantName: item.name, speciesId: knownSpeciesId)));
+
+                // 2. Otwarcie mapy z jednym, poprawnym parametrem
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => ResultsMapScreen(targetPlant: targetPlant)
+                  ),
+                );
               },
-              icon: const Icon(Icons.map), label: const Text("POKAŻ POTENCJALNE OBSZARY ML"),
-            ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity, height: 45,
-            child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(foregroundColor: Colors.deepOrange, side: const BorderSide(color: Colors.deepOrange)),
-              onPressed: () {
-                final allAreas = List<Releve>.from(releveVm.allReleves);
-                if (allAreas.isEmpty) return;
-                allAreas.shuffle();
-                final randomAreas = allAreas.take(3).toList();
-                Navigator.push(context, MaterialPageRoute(builder: (_) => ResultsMapScreen(matchingAreas: randomAreas, plantName: item.name)));
-              },
-              icon: const Icon(Icons.bug_report), label: const Text("TEST MAPY (3 LOSOWE)"),
+              icon: const Icon(Icons.map),
+              label: const Text("POKAŻ WYNIKI NA MAPIE"),
             ),
           ),
         ],

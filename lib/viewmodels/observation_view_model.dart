@@ -202,6 +202,46 @@ class ObservationViewModel extends ChangeNotifier {
     await _db.insertObservation(updatedObs);
     await loadFromDisk();
   }
+  // lib/viewmodels/observation_view_model.dart
+
+  Future<void> updateObservationCoordinates(String id, double lat, double lng) async {
+    try {
+      final index = _observations.indexWhere((o) => o.id == id);
+      if (index == -1) return;
+      final old = _observations[index];
+
+      final updatedObs = PlantObservation(
+        id: old.id,
+        releveId: old.releveId,
+        speciesId: old.speciesId,
+        localName: old.localName,
+        subspecies: old.subspecies,
+        tempBiologicalType: old.tempBiologicalType,
+        photoPaths: old.photoPaths,
+        latitude: lat, // Nowa szerokość
+        longitude: lng, // Nowa długość
+        timestamp: old.timestamp,
+        characteristics: old.characteristics,
+        observationDate: old.observationDate,
+        phenologicalStage: old.phenologicalStage,
+        abundance: old.abundance,
+        coverage: old.coverage,
+        vitality: old.vitality,
+        certainty: old.certainty,
+        idDoubts: old.idDoubts,
+        keyMorphologicalTraits: old.keyMorphologicalTraits,
+        confusingSpecies: old.confusingSpecies,
+        characteristicFeature: old.characteristicFeature,
+        customHarvestSeasons: old.customHarvestSeasons,
+      );
+
+      _observations[index] = updatedObs;
+      await _db.insertObservation(updatedObs); // Nadpisanie rekordu w bazie przez ConflictAlgorithm.replace
+      await loadFromDisk();
+    } catch (e) {
+      debugPrint("Błąd podczas zmiany lokalizacji okazu: $e");
+    }
+  }
 
   void reset() {
     _currentPhotoPaths = [];

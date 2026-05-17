@@ -223,7 +223,7 @@ class SchemaGenerator {
         subCategories: {
           "Trwałość": ["sezonowe (zrzucane)", "zimozielone"],
           "Ulistnienie": ["skrętoległe", "naprzeciwległe", "okółkowe"],
-          "Typ liścia": ["niepodzielne","wrębne", "dzielne", "klapowate", "sieczne", "pierzasty", "dłoniasty"],
+          "Typ liścia": ["niepodzielne","wrębne", "dzielne", "klapowate", "sieczne", "złożone"],
           "Kształt blaszki": ["igiełkowy", "równowąski", "lancetowaty", "eliptyczny", "jajowaty", "sercowaty", "łopatowaty", "owalny", "odwrotnie jajowaty", "strzałkowaty", "nerkowy"],
           "Brzeg Liścia": ["całobrzegi", "piłkowany", "ząbkowany", "karbowany", "falisty", "kolczasty"],
           "Unerwienie": ["pierzaste", "dłoniaste", "równoległe"],
@@ -258,7 +258,6 @@ class SchemaGenerator {
           "kłączowy": "assets/ref/zielne/korzen/korzen_klacze.png",
           "bulwy": "assets/ref/zielne/korzen/korzen_bulwa.png",
           "cebula": "assets/ref/zielne/korzen/korzen_cebula.png",
-          // Dodane dla głębokości (dummy picture)
           "płytki": "assets/grass.png",
           "średni": "assets/grass.png",
           "głęboki": "assets/grass.png",
@@ -269,7 +268,6 @@ class SchemaGenerator {
           "kłączowy": "Podziemny pęd rosnący poziomo, pełniący funkcję spichrzową, z którego wyrastają korzenie przybyszowe.",
           "bulwy": "Zgrubiałe części podziemne (pędu lub korzenia) magazynujące substancje zapasowe.",
           "cebula": "Podziemny organ spichrzowy o silnie skróconej łodydze i mięsistych liściach (np. u czosnku lub tulipana).",
-
           "płytki": "System korzeniowy rozwijający się głównie w wierzchniej warstwie gleby (do ok. 15-20 cm). Roślina jest łatwa do wyrwania, ale wrażliwa na przesuszenie powierzchni gruntu.",
           "średni": "Korzenie sięgające umiarkowanej głębokości profilu glebowego (ok. 20-50 cm), zapewniające stabilne zakotwiczenie i dostęp do wilgoci.",
           "głęboki": "Korzenie penetrujące glebę na głębokość powyżej 50 cm. Pozwala to roślinie przetrwać susze dzięki dostępowi do głębszych zasobów wody podziemnej.",
@@ -284,7 +282,7 @@ class SchemaGenerator {
           "Powierzchnia": ["gładka", "owłosiona", "szorstka", "lepka", "woskowa"],
           "Włoski": ["proste", "gruczołowe", "haczykowate", "kutnerowate"],
           "Barwa": ["zielona", "brunatna", "czerwonawa", "sina"],
-          "Mleczko": ["przezroczyste", "białe"],
+          "Mleczko": ["przezroczyste", "białe","inne"],
         },
         referenceImages: {
           "zielna": "assets/grass.png", "zdrewniała": "assets/grass.png", "półzdrewniała": "assets/grass.png",
@@ -325,7 +323,7 @@ class SchemaGenerator {
           title: "Liście",
           subCategories: {
             "Ulistnienie": ["skrętoległe", "naprzeciwległe", "okółkowe"],
-            "Typ liścia": ["niepodzielne","wrębne", "dzielne", "klapowate", "sieczne", "pierzasty", "dłoniasty"],
+            "Typ liścia": ["niepodzielne","wrębne", "dzielne", "klapowate", "sieczne"],
             "Kształt blaszki": ["igiełkowy", "równowąski", "lancetowaty", "eliptyczny", "jajowaty", "sercowaty", "łopatowaty", "owalny", "odwrotnie jajowaty", "strzałkowaty", "nerkowy"],
             "Brzeg Liścia": ["całobrzegi", "piłkowany", "ząbkowany", "karbowany", "falisty", "kolczasty","podwójnie pikowany","podwójnie ząbkowany", "podwójnie karbowany"],
             "Unerwienie": ["pierzaste", "dłoniaste", "równoległe"],

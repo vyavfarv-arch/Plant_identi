@@ -1,18 +1,36 @@
 // lib/models/habitat_info.dart
 
 class HabitatInfo {
-  // --- STATYCZNE LISTY OPCJI (Źródło prawdy dla UI) ---
-  static const List<String> areaTypeOptions = ["Las", "Łąka", "Mokradło", "Zarośla", "Pole", "Pobocze drogi", "Ugór"];
+  // --- ZUNIFIKOWANE I UPROSZCZONE OPCJE (Źródło prawdy dla całej aplikacji) ---
+  static const List<String> areaTypeOptions = [
+    "Las", "Łąka", "Mokradło", "Zarośla", "Pole", "Pobocze drogi", "Nadrzecze / Brzeg", "Skraj lasu"
+  ];
+
+  static const List<String> canopyCoverOptions = [
+    "Otwarte", "Częściowo otwarte", "Częściowo zacienione", "Zacienione"
+  ];
+
+  static const List<String> waterDynamicsOptions = [
+    "Stale wilgotne", "Sezonowo zalewane", "Sezonowo wysychające", "Stale suche"
+  ];
+
+  // Uproszczona gleba: Użytkownik ocenia strukturę wizualnie i dotykiem
+  static const List<String> substrateOptions = [
+    "Ziemia leśna / Próchniczna (żyzna, liściowa)",
+    "Piaszczysta / Luźna (sucha, przepuszczalna)",
+    "Gliniasta / Zbita (zwięzła, lepiąca się)",
+    "Torfowa / Bagienna (gąbczasta, ciemna)",
+    "Kamienista / Gruz (kamienie, płytka gleba)"
+  ];
+
+  // Stałe pomocnicze dla ekspozycji i ukształtowania
   static const List<String> exposureOptions = ["N", "S", "E", "W", "Płasko"];
-  static const List<String> canopyCoverOptions = ["Otwarte (0-25%)", "Półotwarte (25-60%)", "Zacienione (60-85%)", "Gęste (>85%)"];
-  static const List<String> waterDynamicsOptions = ["Stale wilgotne", "Sezonowo zalewane", "Sezonowo wysychające", "Stale suche"];
   static const List<String> slopeAngleOptions = ["Płaski (0-2°)", "Łagodny (2-10°)", "Umiarkowany (10-25°)", "Stromy (>25°)"];
   static const List<String> litterThicknessOptions = ["Brak", "Cienka (<2cm)", "Umiarkowana (2-10cm)", "Gruba (>10cm)"];
   static const List<String> distanceToWaterOptions = ["Do 5m", "5-50m", "Powyżej 50m"];
-  static const List<String> substrateOptions = ["Piasek", "Glina", "Torf", "Skała wapienna", "Skała krzemianowa"];
   static const List<String> moistureLabels = ["Sucho", "Świeżo", "Wilgotno", "Mokro"];
 
-  // --- POLA MODELU ---
+  // Pola modelu bez zmian...
   final String? areaType;
   final String? exposure;
   final String? canopyCover;
@@ -20,7 +38,6 @@ class HabitatInfo {
   final String? slopeAngle;
   final String? litterThickness;
   final String? distanceToWater;
-
   final List<String> substrateType;
   final double moisture;
   final double? ph;

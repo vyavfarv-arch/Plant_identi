@@ -5,11 +5,11 @@ import '../models/releve.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../viewmodels/observation_view_model.dart';
 import '../viewmodels/search_filter_view_model.dart';
-import '../services/ml_prediction_service.dart';
+import '../services/ecological_matching_service.dart'; // ZMIANA: Nowy import zamiast ML
 import '../services/spatial_service.dart';
 import 'plant_card_view.dart';
 import 'habitat_form_screen.dart';
-import 'filtered_areas_map_screen.dart'; // DODANY IMPORT
+import 'filtered_areas_map_screen.dart';
 
 class ReleveDetailsScreen extends StatefulWidget {
   final Releve releve;
@@ -28,16 +28,13 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
     final obsVm = context.watch<ObservationViewModel>();
     final filterVm = context.watch<SearchFilterViewModel>();
 
-    // Pobranie najświeższej wersji płatu z bazy
     final currentReleve = releveVm.allReleves.firstWhere(
             (r) => r.id == widget.releve.id,
         orElse: () => widget.releve
     );
 
-    // Znajdowanie roślin, których lokalizacja (GPS) wpada w granice tego płatu
     final actualPlants = SpatialService.getPlantsInArea(obsVm.completeObservations, currentReleve);
 
-    // Budowanie listy nazw roślin znanych (z magazynu i poszukiwanych) dla potrzeb ML
     final knownNames = <String>{};
     for (var s in obsVm.speciesDictionary) {
       if (s.latinName.isNotEmpty) knownNames.add(s.latinName.toLowerCase());
@@ -48,13 +45,11 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
       if (s.polishName.isNotEmpty) knownNames.add(s.polishName.toLowerCase());
     }
 
-    // Filtracja wyników ML - pokazuj tylko te z wysokim prawdopodobieństwem i znane systemowi
     final potentialPlants = currentReleve.mlPredictions.entries.where((e) {
       if (e.value < 0.6) return false;
       return knownNames.contains(e.key.toLowerCase());
     }).toList();
 
-    // Pobieramy tylko dzieci (podobszary), ignorujemy system rodzica
     final childrenAreas = releveVm.getChildren(currentReleve.id);
 
     return Scaffold(
@@ -73,11 +68,9 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
           ),
         ],
       ),
-      body: SafeArea(child:  ListView(
+      body: SafeArea(child: ListView(
         children: [
-          // SEKCJA AKCJI I STRUKTURY (Zaktualizowana)
           _buildActionSection(context, currentReleve, childrenAreas),
-
           const Divider(),
 
           _buildSectionHeader("Gatunki w płacie (${actualPlants.length}):", Colors.grey[100]!),
@@ -97,7 +90,7 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
             ...potentialPlants.map((entry) => ListTile(
               leading: const Icon(Icons.auto_awesome, color: Colors.purple),
               title: Text(entry.key),
-              subtitle: Text("Prawdopodobieństwo: ${(entry.value * 100).toStringAsFixed(0)}%"),
+              subtitle: Text("Dopasowanie siedliskowe: ${(entry.value * 100).toStringAsFixed(0)}%"),
             )).toList(),
           ],
 
@@ -113,7 +106,8 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
                 ),
-                onPressed: _isAnalyzing ? null : () => _runMLAnalysis(currentReleve, releveVm, obsVm, filterVm),
+                // ZMIANA: Wywołanie poprawnej metody _runEcologicalAnalysis
+                onPressed: _isAnalyzing ? null : () => _runEcologicalAnalysis(currentReleve, releveVm, obsVm),
                 icon: _isAnalyzing
                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                     : const Icon(Icons.psychology),
@@ -130,13 +124,11 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
     return Container(padding: const EdgeInsets.all(16), color: color, child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)));
   }
 
-
   Widget _buildActionSection(BuildContext context, Releve currentReleve, List<Releve> children) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Column(
         children: [
-          // PRZYCISK 1: Wyświetl obszar na mapie
           ListTile(
             leading: const Icon(Icons.map, color: Colors.indigo),
             title: const Text("Wyświetl obszar na mapie", style: TextStyle(fontWeight: FontWeight.bold)),
@@ -147,8 +139,6 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
               MaterialPageRoute(builder: (_) => FilteredAreasMapScreen(filteredAreas: [currentReleve])),
             ),
           ),
-
-          // PRZYCISK 2: Informacje o siedlisku
           ListTile(
             leading: const Icon(Icons.landscape, color: Colors.brown),
             title: const Text("Informacje o siedlisku"),
@@ -156,8 +146,6 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HabitatFormScreen(releve: currentReleve))),
           ),
-
-          // SEKCJA PODLEGŁYCH OBSZARÓW
           if (children.isNotEmpty)
             ExpansionTile(
               leading: const Icon(Icons.account_tree_outlined, color: Colors.blueGrey),
@@ -173,42 +161,30 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
     );
   }
 
-  void _runMLAnalysis(Releve area, ReleveViewModel releveVm, ObservationViewModel obsVm, SearchFilterViewModel filterVm) async {
+  // ZMIANA: Implementacja nowej metody korzystającej z matrycy ekologicznej
+  void _runEcologicalAnalysis(Releve area, ReleveViewModel releveVm, ObservationViewModel obsVm) async {
     setState(() => _isAnalyzing = true);
     try {
-      final mlService = MlPredictionService();
-      await mlService.loadModel();
-      final predictions = mlService.getPlantsForArea(area);
-      await releveVm.updateRelevePredictions(area.id, predictions);
+      final potentialMatches = EcologicalMatchingService.findPotentialPlantsForArea(
+          area,
+          obsVm.speciesDictionary
+      );
 
-      final knownNames = <String>{};
-      for (var s in obsVm.speciesDictionary) {
-        if (s.latinName.isNotEmpty) knownNames.add(s.latinName.toLowerCase());
-        if (s.polishName.isNotEmpty) knownNames.add(s.polishName.toLowerCase());
-      }
-      for (var s in filterVm.soughtPlants) {
-        if (s.latinName.isNotEmpty) knownNames.add(s.latinName.toLowerCase());
-        if (s.polishName.isNotEmpty) knownNames.add(s.polishName.toLowerCase());
+      final Map<String, double> predictionMap = {};
+      for (var entry in potentialMatches) {
+        predictionMap[entry.key.polishName] = entry.value.score;
       }
 
-      int addedCount = predictions.entries.where((e) => e.value >= 0.6 && knownNames.contains(e.key.toLowerCase())).length;
+      await releveVm.updateRelevePredictions(area.id, predictionMap);
 
       if (mounted) {
-        if (addedCount > 0) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Analiza zakończona. Znaleziono $addedCount potencjalnych gatunków.")));
-        } else {
-          showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text("Brak dopasowań", style: TextStyle(color: Colors.orange)),
-              content: const Text("Model ML nie znalazł w tym siedlisku żadnych roślin z Twojej bazy."),
-              actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))],
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          backgroundColor: Colors.teal,
+          content: Text("Analiza zakończona. Wykryto ${potentialMatches.length} pasujących gatunków!"),
+        ));
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Błąd: $e")));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Błąd analizy: $e")));
     } finally {
       if (mounted) setState(() => _isAnalyzing = false);
     }
