@@ -2,16 +2,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import '../models/plant_observation.dart'; // DODANY IMPORT
+import '../models/plant_observation.dart';
+import '../models/plant_species.dart';
 import '../viewmodels/observation_view_model.dart';
-import '../viewmodels/search_filter_view_model.dart';
 import '../viewmodels/releve_view_model.dart';
+import '../viewmodels/search_filter_view_model.dart';
 import '../services/spatial_service.dart';
-import 'detail_description_screen.dart';
-import 'species_card_view.dart';
-import 'plant_card_view.dart';
+import 'species_details_screen.dart'; // Import nowego widoku szczegółów
 
 class BrowsePlantsScreen extends StatelessWidget {
   const BrowsePlantsScreen({super.key});
@@ -22,102 +20,98 @@ class BrowsePlantsScreen extends StatelessWidget {
     final filterVm = context.watch<SearchFilterViewModel>();
     final releveVm = context.read<ReleveViewModel>();
 
-    final filteredSpecies = obsVm.speciesDictionary.where((species) {
-      final speciesObs = obsVm.completeObservations.where((o) => o.speciesId == species.speciesID).toList();
-      if (speciesObs.isEmpty) return false;
+    // MAPOWANIE I GRUPOWANIE: Zabezpieczenie przed dublowaniem rekordów
+    final Map<String, List<PlantObservation>> groupedByCommonName = {};
+    final Map<String, PlantSpecies?> representativeSpecies = {};
 
-      if (filterVm.selectedFamilies.isNotEmpty && !filterVm.selectedFamilies.contains(species.family)) {
-        return false;
+    for (var obs in obsVm.completeObservations) {
+      final species = obsVm.getSpeciesById(obs.speciesId);
+      final String name = (species?.polishName.isNotEmpty == true ? species!.polishName : obs.displayName).trim();
+      final key = name.isEmpty ? "Nieznana roślina" : name;
+
+      // APLIKOWANIE FILTRÓW GLOBALNYCH
+      if (filterVm.selectedFamilies.isNotEmpty) {
+        if (species == null || !filterVm.selectedFamilies.contains(species.family)) continue;
+      }
+      if (filterVm.filterDateRange != null) {
+        final date = obs.observationDate ?? obs.timestamp;
+        if (date.isBefore(filterVm.filterDateRange!.start) || date.isAfter(filterVm.filterDateRange!.end.add(const Duration(days: 1)))) continue;
+      }
+      if (filterVm.filterArea != null) {
+        if (!SpatialService.isPointInPolygon(LatLng(obs.latitude, obs.longitude), filterVm.filterArea!.points)) continue;
       }
 
-      if (filterVm.filterArea != null || filterVm.filterDateRange != null) {
-        bool hasMatchingObservation = speciesObs.any((obs) {
-          if (filterVm.filterDateRange != null) {
-            final date = obs.observationDate ?? obs.timestamp;
-            if (date.isBefore(filterVm.filterDateRange!.start) || date.isAfter(filterVm.filterDateRange!.end.add(const Duration(days: 1)))) {
-              return false;
-            }
-          }
-          if (filterVm.filterArea != null) {
-            if (!SpatialService.isPointInPolygon(LatLng(obs.latitude, obs.longitude), filterVm.filterArea!.points)) {
-              return false;
-            }
-          }
-          return true;
-        });
-        if (!hasMatchingObservation) return false;
+      groupedByCommonName.putIfAbsent(key, () => []).add(obs);
+      if (species != null && !representativeSpecies.containsKey(key)) {
+        representativeSpecies[key] = species;
       }
+    }
 
-      return true;
-    }).toList();
+    final sortedKeys = groupedByCommonName.keys.toList()..sort();
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Magazyn Gatunków'),
         actions: [
-          IconButton(icon: const Icon(Icons.date_range), onPressed: () async {
-            final picked = await showDateRangePicker(context: context, firstDate: DateTime(2020), lastDate: DateTime(2100), initialDateRange: filterVm.filterDateRange);
-            filterVm.setFilterDateRange(picked);
-          }),
+          IconButton(
+            icon: const Icon(Icons.date_range),
+            onPressed: () async {
+              final picked = await showDateRangePicker(context: context, firstDate: DateTime(2020), lastDate: DateTime(2100), initialDateRange: filterVm.filterDateRange);
+              filterVm.setFilterDateRange(picked);
+            },
+          ),
           IconButton(icon: Icon(Icons.layers, color: filterVm.filterArea != null ? Colors.orange : null), onPressed: () => _showAreaFilterDialog(context, releveVm, filterVm)),
           IconButton(icon: const Icon(Icons.filter_alt_off), onPressed: () => filterVm.resetAllFilters()),
           IconButton(icon: Icon(Icons.account_tree_outlined, color: filterVm.selectedFamilies.isNotEmpty ? Colors.orange : null), onPressed: () => _showFamilyFilterDialog(context, obsVm, filterVm)),
         ],
       ),
       body: SafeArea(
-        child: filteredSpecies.isEmpty
-            ? const Center(child: Text("Brak gatunków spełniających kryteria."))
+        child: sortedKeys.isEmpty
+            ? const Center(child: Text("Brak gatunków spełniających kryteria filtrów."))
             : ListView.builder(
-          itemCount: filteredSpecies.length,
+          itemCount: sortedKeys.length,
           itemBuilder: (ctx, index) {
-            final species = filteredSpecies[index];
-            final speciesObs = obsVm.completeObservations.where((o) => o.speciesId == species.speciesID).toList();
-            final firstObsWithPhoto = speciesObs.firstWhere((o) => o.photoPaths.isNotEmpty, orElse: () => speciesObs.first);
+            final String nameKey = sortedKeys[index];
+            final List<PlantObservation> speciesObservations = groupedByCommonName[nameKey]!;
+            final PlantSpecies? speciesInfo = representativeSpecies[nameKey];
+
+            // Wybór reprezentatywnego zdjęcia dla kafelka głównego
+            final firstObsWithPhoto = speciesObservations.firstWhere((o) => o.photoPaths.isNotEmpty, orElse: () => speciesObservations.first);
 
             return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              child: ExpansionTile(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              elevation: 2,
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 leading: CircleAvatar(
                   backgroundColor: Colors.teal.shade50,
                   backgroundImage: firstObsWithPhoto.photoPaths.isNotEmpty ? FileImage(File(firstObsWithPhoto.photoPaths.first)) : null,
                   child: firstObsWithPhoto.photoPaths.isEmpty ? const Icon(Icons.eco, color: Colors.teal) : null,
                 ),
-                title: Text(species.polishName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text("${species.latinName} (${speciesObs.length} okazów)", style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 12)),
-                trailing: IconButton(
-                  icon: const Icon(Icons.analytics_outlined, color: Colors.teal),
-                  tooltip: "Skumulowany Atlas Gatunku",
-                  onPressed: () => SpeciesCardView.show(context, species, speciesObs),
+                title: Text(nameKey, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: Text(
+                    "${speciesInfo?.latinName ?? 'Brak nazwy łacińskiej'} (${speciesObservations.length} ${speciesObservations.length == 1 ? 'okaz' : 'okazów'})",
+                    style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 12, color: Colors.grey),
+                  ),
                 ),
-                children: speciesObs.map((obs) => _buildObservationDetailTile(context, obs, obsVm)).toList(),
+                trailing: const Icon(Icons.chevron_right, color: Colors.teal),
+                // NAWIGACJA DO PEŁNEGO WIDOKU MATRYCY
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SpeciesDetailsScreen(
+                      commonName: nameKey,
+                      observations: speciesObservations,
+                      species: speciesInfo,
+                    ),
+                  ),
+                ),
               ),
             );
           },
         ),
-      ),
-    );
-  }
-
-  Widget _buildObservationDetailTile(BuildContext context, PlantObservation obs, ObservationViewModel obsVm) {
-    return ListTile(
-      contentPadding: const EdgeInsets.only(left: 32, right: 16),
-      dense: true,
-      leading: const Icon(Icons.history_toggle_off, size: 18, color: Colors.blueGrey),
-      title: Text("Okaz z terenu: ${DateFormat('yyyy-MM-dd').format(obs.observationDate ?? obs.timestamp)}"),
-      subtitle: Text("Witalność: ${obs.vitality ?? '-'} | Ilość: ${obs.abundance ?? '-'}"),
-      onTap: () => PlantCardView.show(context, obs),
-      trailing: PopupMenuButton<String>(
-        onSelected: (val) {
-          if (val == 'edit') {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => DetailDescriptionScreen(observation: obs)));
-          } else if (val == 'delete') {
-            obsVm.deleteObservation(obs.id);
-          }
-        },
-        itemBuilder: (ctx) => [
-          const PopupMenuItem(value: 'edit', child: Text('Uzupełnij/Edytuj cechy')),
-          const PopupMenuItem(value: 'delete', child: Text('Usuń ten rekord')),
-        ],
       ),
     );
   }

@@ -10,7 +10,6 @@ import '../viewmodels/observation_view_model.dart';
 import '../services/database_helper.dart';
 
 class QuickAddObservationScreen extends StatefulWidget {
-  // NOWOŚĆ: Opcjonalny parametr z predefiniowanym gatunkiem z Choice Screena
   final PlantSpecies? preselectedSpecies;
 
   const QuickAddObservationScreen({super.key, this.preselectedSpecies});
@@ -23,7 +22,7 @@ class _QuickAddObservationScreenState extends State<QuickAddObservationScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _latinController = TextEditingController();
   String? _targetSpeciesId;
-  bool _isReadOnly = false; // Czy zablokować pola tekstowe
+  bool _isReadOnly = false;
 
   String? _selectedPhenology;
   String? _selectedAbundance;
@@ -46,14 +45,21 @@ class _QuickAddObservationScreenState extends State<QuickAddObservationScreen> {
     Future.microtask(() => context.read<ObservationViewModel>().init());
   }
 
-  // Sprawdzamy czy przyszły dane z Choice Screena i pre-definiujemy formularz
   void _checkPreselectedData() {
     if (widget.preselectedSpecies != null) {
       _nameController.text = widget.preselectedSpecies!.polishName;
       _latinController.text = widget.preselectedSpecies!.latinName;
       _targetSpeciesId = widget.preselectedSpecies!.speciesID;
-      _isReadOnly = true; // Blokujemy pola, to znana roślina
+      _isReadOnly = true;
     }
+  }
+
+  void _applyFoundSpecies(PlantSpecies species) {
+    setState(() {
+      _nameController.text = species.polishName;
+      _latinController.text = species.latinName;
+      _targetSpeciesId = species.speciesID;
+    });
   }
 
   @override
@@ -67,42 +73,53 @@ class _QuickAddObservationScreenState extends State<QuickAddObservationScreen> {
           foregroundColor: Colors.white
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: SingleChildScrollView( // FIX LITERÓWKI
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text("1. Identyfikacja gatunku", style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              if (!_isReadOnly)
+
+              if (!_isReadOnly) ...[
                 Autocomplete<String>(
-                  optionsBuilder: (val) => val.text.isEmpty ? const Iterable.empty() : obsVm.allLatinNames.where((s) => s.toLowerCase().contains(val.text.toLowerCase())),
+                  optionsBuilder: (val) => val.text.isEmpty
+                      ? const Iterable.empty()
+                      : obsVm.allLatinNames.where((s) => s.toLowerCase().contains(val.text.toLowerCase())),
                   onSelected: (selection) {
-                    _latinController.text = selection;
                     final species = obsVm.findSpeciesByLatinName(selection);
-                    if (species != null) {
-                      setState(() {
-                        _nameController.text = species.polishName;
-                        _targetSpeciesId = species.speciesID;
-                      });
-                    }
+                    if (species != null) _applyFoundSpecies(species);
                   },
                   fieldViewBuilder: (ctx, ctrl, node, onSub) {
                     if (_latinController.text.isNotEmpty && ctrl.text.isEmpty) ctrl.text = _latinController.text;
-                    return TextField(controller: ctrl, focusNode: node, decoration: const InputDecoration(labelText: "Wpisz nazwę łacińską", border: OutlineInputBorder(), prefixIcon: Icon(Icons.search)), onChanged: (v) => _latinController.text = v);
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: TextField(controller: ctrl, focusNode: node, decoration: const InputDecoration(labelText: "Nazwa łacińska", border: OutlineInputBorder(), prefixIcon: Icon(Icons.search)), onChanged: (v) => _latinController.text = v),
+                    );
                   },
-                )
-              else
-              // Jeśli readOnly, wyświetlamy elegancki zablokowany indykator
+                ),
+                Autocomplete<String>(
+                  optionsBuilder: (val) => val.text.isEmpty
+                      ? const Iterable.empty()
+                      : obsVm.speciesDictionary.map((s) => s.polishName).where((name) => name.toLowerCase().contains(val.text.toLowerCase())),
+                  onSelected: (selection) {
+                    try {
+                      final species = obsVm.speciesDictionary.firstWhere((s) => s.polishName.toLowerCase() == selection.toLowerCase().trim());
+                      _applyFoundSpecies(species);
+                    } catch (_) {}
+                  },
+                  fieldViewBuilder: (ctx, ctrl, node, onSub) {
+                    if (_nameController.text.isNotEmpty && ctrl.text.isEmpty) ctrl.text = _nameController.text;
+                    return TextField(controller: ctrl, focusNode: node, decoration: const InputDecoration(labelText: "Nazwa polska (zwyczajowa)", border: OutlineInputBorder(), prefixIcon: Icon(Icons.search)), onChanged: (v) => _nameController.text = v);
+                  },
+                ),
+              ] else
                 Container(
                   padding: const EdgeInsets.all(12),
                   width: double.infinity,
                   decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
-                  child: Text("Gatunek zweryfikowany: ${_latinController.text}", style: const TextStyle(fontStyle: FontStyle.italic, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                  child: Text("Gatunek zweryfikowany: ${_nameController.text} (${_latinController.text})", style: const TextStyle(fontStyle: FontStyle.italic, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
                 ),
-              const SizedBox(height: 10),
-              if (!_isReadOnly)
-                TextField(controller: _nameController, decoration: const InputDecoration(labelText: "Nazwa polska", border: OutlineInputBorder())),
 
               const Divider(height: 40),
               const Text("2. Dokumentacja foto (Wymagana)", style: TextStyle(fontWeight: FontWeight.bold)),
@@ -152,6 +169,14 @@ class _QuickAddObservationScreenState extends State<QuickAddObservationScreen> {
 
   void _handleQuickSave() async {
     final obsVm = context.read<ObservationViewModel>();
+
+    if (_targetSpeciesId == null) {
+      try {
+        final match = obsVm.speciesDictionary.firstWhere((s) => s.polishName.toLowerCase() == _nameController.text.toLowerCase().trim() || s.latinName.toLowerCase() == _latinController.text.toLowerCase().trim());
+        _targetSpeciesId = match.speciesID;
+      } catch (_) {}
+    }
+
     String finalSpeciesId = _targetSpeciesId ?? const Uuid().v4();
 
     if (_targetSpeciesId == null) {
