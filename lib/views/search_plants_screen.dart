@@ -4,12 +4,9 @@ import 'package:provider/provider.dart';
 import '../viewmodels/observation_view_model.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../viewmodels/search_filter_view_model.dart';
-import '../services/ecological_matching_service.dart'; // ZMIANA: Nowy import matrycy ekologicznej
 import 'add_sought_plant_screen.dart';
 import 'results_map_screen.dart';
 import '../models/sought_plant.dart';
-import '../models/releve.dart';
-import 'plant_card_view.dart';
 
 class _SearchListItem {
   final String id;
@@ -35,7 +32,6 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
   @override
   void initState() {
     super.initState();
-    // ZMIANA: Usunięto ładowanie starego modelu JSON
     Future.microtask(() => context.read<SearchFilterViewModel>().loadSoughtPlants());
   }
 
@@ -52,19 +48,6 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
             : "Ten gatunek znajduje się w Magazynie. Usunięcie go spowoduje wyczyszczenie wszystkich powiązanych danych."),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("ANULUJ")),
-          if (!item.isSought)
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                try {
-                  final obs = obsVm.allObservations.firstWhere((o) => o.speciesId == item.id);
-                  PlantCardView.show(context, obs);
-                } catch (_) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Brak szczegółów obserwacji.")));
-                }
-              },
-              child: const Text("POKAŻ KARTĘ"),
-            ),
           TextButton(
             onPressed: () async {
               if (item.isSought) {
@@ -171,39 +154,20 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
           SizedBox(
             width: double.infinity, height: 55,
             child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepOrange,
-                  foregroundColor: Colors.white
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange, foregroundColor: Colors.white),
               onPressed: () {
                 SoughtPlant targetPlant;
-
-                // 1. Unifikacja obiektów do typu SoughtPlant
                 if (item.originalObject is SoughtPlant) {
                   targetPlant = item.originalObject;
                 } else {
-                  // Jeśli obiekt pochodzi z Magazynu (PlantSpecies), konwertujemy go na SoughtPlant
                   final sp = item.originalObject;
                   targetPlant = SoughtPlant(
-                      id: sp.speciesID,
-                      polishName: sp.polishName,
-                      latinName: sp.latinName,
-                      prefPhMin: sp.prefPhMin,
-                      prefPhMax: sp.prefPhMax,
-                      prefAreaTypes: sp.prefAreaTypes,
-                      prefWaterDynamics: sp.prefWaterDynamics,
-                      prefLightLevels: sp.prefLightLevels,
-                      prefSoilTypes: sp.prefSoilTypes
+                      id: sp.speciesID, polishName: sp.polishName, latinName: sp.latinName,
+                      prefPhMin: sp.prefPhMin, prefPhMax: sp.prefPhMax, prefAreaTypes: sp.prefAreaTypes,
+                      prefWaterDynamics: sp.prefWaterDynamics, prefLightLevels: sp.prefLightLevels, prefSoilTypes: sp.prefSoilTypes
                   );
                 }
-
-                // 2. Otwarcie mapy z jednym, poprawnym parametrem
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => ResultsMapScreen(targetPlant: targetPlant)
-                  ),
-                );
+                Navigator.push(context, MaterialPageRoute(builder: (_) => ResultsMapScreen(targetPlant: targetPlant)));
               },
               icon: const Icon(Icons.map),
               label: const Text("POKAŻ WYNIKI NA MAPIE"),

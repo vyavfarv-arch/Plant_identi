@@ -19,7 +19,6 @@ class _AddPlantChoiceScreenState extends State<AddPlantChoiceScreen> {
   Widget build(BuildContext context) {
     final obsVm = context.watch<ObservationViewModel>();
 
-    // Filtrowanie bazy atlasu gatunków na podstawie wpisanej frazy
     final filteredSpecies = obsVm.speciesDictionary.where((s) {
       return s.polishName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           s.latinName.toLowerCase().contains(_searchQuery.toLowerCase());
@@ -34,15 +33,20 @@ class _AddPlantChoiceScreenState extends State<AddPlantChoiceScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // SEKCJA A: Nowy gatunek (Pełna ścieżka terenowa)
             Padding(
               padding: const EdgeInsets.all(12.0),
               child: Card(
                 color: Colors.green.shade50,
                 elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.green.shade200)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.green.shade200),
+                ),
                 child: ListTile(
-                  leading: CircleAvatar(backgroundColor: Colors.green.shade600, child: const Icon(Icons.photo_camera, color: Colors.white)),
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.green.shade600,
+                    child: const Icon(Icons.photo_camera, color: Colors.white),
+                  ),
                   title: const Text("Zupełnie NOWY gatunek rośliny", style: TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: const Text("Uruchamia aparat, koordynaty GPS i pełną specyfikację cech morfologicznych."),
                   trailing: const Icon(Icons.chevron_right),
@@ -59,11 +63,13 @@ class _AddPlantChoiceScreenState extends State<AddPlantChoiceScreen> {
                 children: [
                   Icon(Icons.bolt, size: 16, color: Colors.orange),
                   SizedBox(width: 6),
-                  Text("SZYBKI ZAPIS (Wybierz znany już gatunek z atlasu):", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  Text(
+                    "SZYBKI ZAPIS (Wybierz znany już gatunek z atlasu):",
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
+                  ),
                 ],
               ),
             ),
-            // Pasek wyszukiwania w atlasie
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6),
               child: TextField(
@@ -76,10 +82,15 @@ class _AddPlantChoiceScreenState extends State<AddPlantChoiceScreen> {
                 onChanged: (v) => setState(() => _searchQuery = v),
               ),
             ),
-            // Lista znanych gatunków do wyboru
             Expanded(
               child: filteredSpecies.isEmpty
-                  ? const Center(child: Text("Brak pasujących gatunków w bazie.\nUżyj opcji powyżej, aby dodać nowy.", textAlign: CenterTextAlign.center, style: TextStyle(color: Colors.grey)))
+                  ? const Center(
+                child: Text(
+                  "Brak pasujących gatunków w bazie.\nUżyj opcji powyżej, aby dodać nowy.",
+                  textAlign: TextAlign.center, // POPRAWIONE
+                  style: TextStyle(color: Colors.grey),
+                ),
+              )
                   : ListView.builder(
                 itemCount: filteredSpecies.length,
                 itemBuilder: (ctx, i) {
@@ -92,7 +103,6 @@ class _AddPlantChoiceScreenState extends State<AddPlantChoiceScreen> {
                     trailing: const Icon(Icons.flash_on, color: Colors.orange, size: 18),
                     onTap: () {
                       Navigator.pop(context);
-                      // Otwieramy QuickAdd przekazując wybrany gatunek jako parametr startowy
                       Navigator.push(context, MaterialPageRoute(
                         builder: (_) => QuickAddObservationScreen(preselectedSpecies: species),
                       ));

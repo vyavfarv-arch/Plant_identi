@@ -4,12 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../models/plant_observation.dart'; // DODANY IMPORT
 import '../viewmodels/observation_view_model.dart';
 import '../viewmodels/search_filter_view_model.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../services/spatial_service.dart';
 import 'detail_description_screen.dart';
-import 'species_card_view.dart'; // Import skumulowanego widoku
+import 'species_card_view.dart';
 import 'plant_card_view.dart';
 
 class BrowsePlantsScreen extends StatelessWidget {
@@ -21,17 +22,14 @@ class BrowsePlantsScreen extends StatelessWidget {
     final filterVm = context.watch<SearchFilterViewModel>();
     final releveVm = context.read<ReleveViewModel>();
 
-    // Filtrujemy gatunki ze słownika na podstawie kryteriów
     final filteredSpecies = obsVm.speciesDictionary.where((species) {
       final speciesObs = obsVm.completeObservations.where((o) => o.speciesId == species.speciesID).toList();
-      if (speciesObs.isEmpty) return false; // Ukrywamy puste definicje bez okazów
+      if (speciesObs.isEmpty) return false;
 
-      // Filtr rodziny
       if (filterVm.selectedFamilies.isNotEmpty && !filterVm.selectedFamilies.contains(species.family)) {
         return false;
       }
 
-      // Filtr obszaru / daty przekładany na przynajmniej jedno trafienie okazu
       if (filterVm.filterArea != null || filterVm.filterDateRange != null) {
         bool hasMatchingObservation = speciesObs.any((obs) {
           if (filterVm.filterDateRange != null) {
@@ -86,7 +84,6 @@ class BrowsePlantsScreen extends StatelessWidget {
                 ),
                 title: Text(species.polishName, style: const TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: Text("${species.latinName} (${speciesObs.length} okazów)", style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 12)),
-                // KLUCZOWA ZMIANA: Przycisk informacyjny odpala SKUMULOWANĄ WIEDZĘ
                 trailing: IconButton(
                   icon: const Icon(Icons.analytics_outlined, color: Colors.teal),
                   tooltip: "Skumulowany Atlas Gatunku",
@@ -108,7 +105,7 @@ class BrowsePlantsScreen extends StatelessWidget {
       leading: const Icon(Icons.history_toggle_off, size: 18, color: Colors.blueGrey),
       title: Text("Okaz z terenu: ${DateFormat('yyyy-MM-dd').format(obs.observationDate ?? obs.timestamp)}"),
       subtitle: Text("Witalność: ${obs.vitality ?? '-'} | Ilość: ${obs.abundance ?? '-'}"),
-      onTap: () => PlantCardView.show(context, obs), // Szczegóły danej, konkretnej wyprawy
+      onTap: () => PlantCardView.show(context, obs),
       trailing: PopupMenuButton<String>(
         onSelected: (val) {
           if (val == 'edit') {
