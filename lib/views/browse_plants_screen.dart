@@ -6,10 +6,10 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/plant_observation.dart';
 import '../models/plant_species.dart';
 import '../viewmodels/observation_view_model.dart';
-import '../viewmodels/releve_view_model.dart';
 import '../viewmodels/search_filter_view_model.dart';
+import '../viewmodels/releve_view_model.dart';
 import '../services/spatial_service.dart';
-import 'species_details_screen.dart'; // Import nowego widoku szczegółów
+import 'species_details_screen.dart';
 
 class BrowsePlantsScreen extends StatelessWidget {
   const BrowsePlantsScreen({super.key});
@@ -75,7 +75,6 @@ class BrowsePlantsScreen extends StatelessWidget {
             final List<PlantObservation> speciesObservations = groupedByCommonName[nameKey]!;
             final PlantSpecies? speciesInfo = representativeSpecies[nameKey];
 
-            // Wybór reprezentatywnego zdjęcia dla kafelka głównego
             final firstObsWithPhoto = speciesObservations.firstWhere((o) => o.photoPaths.isNotEmpty, orElse: () => speciesObservations.first);
 
             return Card(
@@ -97,13 +96,12 @@ class BrowsePlantsScreen extends StatelessWidget {
                   ),
                 ),
                 trailing: const Icon(Icons.chevron_right, color: Colors.teal),
-                // NAWIGACJA DO PEŁNEGO WIDOKU MATRYCY
+                // FIX: Usunięto niedozwolony parametr 'observations' zgodnie z nowym konstruktorem
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => SpeciesDetailsScreen(
                       commonName: nameKey,
-                      observations: speciesObservations,
                       species: speciesInfo,
                     ),
                   ),

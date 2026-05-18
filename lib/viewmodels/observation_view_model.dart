@@ -83,24 +83,35 @@ class ObservationViewModel extends ChangeNotifier {
     await loadFromDisk();
   }
 
-  // Ulepszone usuwanie: czyści słownik, jeśli to był ostatni okaz gatunku
   Future<void> deleteObservation(String id) async {
     try {
-      final obs = _observations.firstWhere((o) => o.id == id);
+      // ZAKODOWANE BEZPIECZEŃSTWO: Sprawdzamy indeks zamiast rzucać "Bad state: No element"
+      final index = _observations.indexWhere((o) => o.id == id);
+
+      if (index == -1) {
+        // Elementu nie ma w lokalnej pamięci, usuwamy bezpośrednio z SQLite dla pewności
+        await _db.deleteObservation(id);
+        await loadFromDisk();
+        return;
+      }
+
+      final obs = _observations[index];
       final String? sId = obs.speciesId;
 
+      // Usunięcie okazu z bazy danych
       await _db.deleteObservation(id);
 
       if (sId != null) {
-        // Sprawdzamy, czy w bazie są jeszcze inne obserwacje tego gatunku
+        // Sprawdzamy, czy w bazie są jeszcze inne obserwacje tego samego gatunku
         final allObs = await _db.getObservations();
         final hasInstances = allObs.any((o) => o.speciesId == sId);
 
         if (!hasInstances) {
-          // Jeśli to był ostatni okaz, usuwamy gatunek ze słownika bazy
+          // Jeśli to był ostatni okaz na świecie, trwale usuwamy gatunek z atlasu
           await _db.deleteSpecies(sId);
         }
       }
+      // Pełne przeładowanie dyskowe i rozesłanie powiadomień do słuchaczy UI
       await loadFromDisk();
     } catch (e) {
       debugPrint("Błąd podczas usuwania: $e");

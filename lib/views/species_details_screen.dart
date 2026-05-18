@@ -16,48 +16,66 @@ import 'detail_description_screen.dart';
 
 class SpeciesDetailsScreen extends StatelessWidget {
   final String commonName;
-  final List<PlantObservation> observations;
   final PlantSpecies? species;
 
   const SpeciesDetailsScreen({
     super.key,
     required this.commonName,
-    required this.observations,
     required this.species,
   });
 
   @override
   Widget build(BuildContext context) {
-    final releveVm = context.read<ReleveViewModel>();
-    final obsVm = context.read<ObservationViewModel>();
+    final obsVm = context.watch<ObservationViewModel>();
+    final releveVm = context.watch<ReleveViewModel>();
 
-    final Map<String, Set<String>> accumulatedTraits = {};
-    final List<String> allPhotoPaths = [];
+    // Pobieramy aktualne okazy z ViewModelu
+    final List<PlantObservation> currentObservations = obsVm.completeObservations.where((o) {
+      final spec = obsVm.getSpeciesById(o.speciesId);
+      final String name = (spec?.polishName.isNotEmpty == true ? spec!.polishName : o.displayName).trim();
+      final key = name.isEmpty ? "Nieznana roślina" : name;
+      return key == commonName;
+    }).toList();
+
+    // Jeśli usunięto ostatni okaz, wracamy płynnie do Magazynu
+    if (currentObservations.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+      });
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final Map<String, Map<String, Set<String>>> accumulatedTraitsByStage = {};
+    // NORMALIZACJA: Prosta mapa zamiast kłopotliwej klasy zewnętrznej
+    final List<Map<String, String>> allPhotosWithStage = [];
     final String biologicalType = species?.biologicalType ?? "Zielne";
     final schema = SchemaGenerator.getForType(biologicalType);
 
-    for (var obs in observations) {
-      if (obs.photoPaths.isNotEmpty) {
-        allPhotoPaths.addAll(obs.photoPaths);
+    for (var obs in currentObservations) {
+      final String stage = obs.phenologicalStage ?? "Nieokreślony etap";
+      for (var path in obs.photoPaths) {
+        allPhotosWithStage.add({'path': path, 'stage': stage});
       }
+      accumulatedTraitsByStage.putIfAbsent(stage, () => {});
+      final Map<String, Set<String>> stageMap = accumulatedTraitsByStage[stage]!;
       obs.characteristics.forEach((category, traits) {
-        accumulatedTraits.putIfAbsent(category, () => {}).addAll(traits);
+        stageMap.putIfAbsent(category, () => {}).addAll(traits);
       });
     }
 
     final Set<String> observedAreaIds = {};
     final List<Releve> uniqueAreas = [];
-
-    for (var obs in observations) {
-      if (obs.releveId != null) {
-        observedAreaIds.add(obs.releveId!);
-      }
+    for (var obs in currentObservations) {
+      if (obs.releveId != null) observedAreaIds.add(obs.releveId!);
       final spatialAreas = SpatialService.getAreasForPlant(releveVm.allReleves, obs);
       for (var a in spatialAreas) {
         observedAreaIds.add(a.id);
       }
     }
-
     for (var areaId in observedAreaIds) {
       try {
         final area = releveVm.allReleves.firstWhere((r) => r.id == areaId);
@@ -83,27 +101,40 @@ class SpeciesDetailsScreen extends StatelessWidget {
               ),
             const Divider(height: 30),
 
-            if (allPhotoPaths.isNotEmpty) ...[
-              _sectionHeader("BANK ZDJĘĆ GATUNKOWYCH (${allPhotoPaths.length})"),
+            if (allPhotosWithStage.isNotEmpty) ...[
+              _sectionHeader("BANK ZDJĘĆ GATUNKU W ROZWOJU"),
+              const SizedBox(height: 6),
               SizedBox(
-                height: 120,
+                height: 140,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: allPhotoPaths.length,
-                  itemBuilder: (ctx, i) => Padding(
-                    padding: const EdgeInsets.only(right: 10),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.file(File(allPhotoPaths[i]), width: 160, fit: BoxFit.cover),
-                    ),
-                  ),
+                  itemCount: allPhotosWithStage.length,
+                  itemBuilder: (ctx, i) {
+                    final item = allPhotosWithStage[i];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Stack(
+                        children: [
+                          ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(File(item['path']!), width: 150, height: 140, fit: BoxFit.cover)),
+                          Positioned(
+                            bottom: 6, left: 6, right: 6,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                              decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(4)),
+                              child: Text(item['stage']!, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+                            ),
+                          )
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
-              const SizedBox(height: 15),
+              const SizedBox(height: 20),
             ],
 
-            _sectionHeader("SKUMULOWANA SPECYFIKACJA MORFOLOGICZNA"),
-            _buildAccumulatedTraitsWidget(accumulatedTraits, schema),
+            _sectionHeader("SPECYFIKACJA MORFOLOGICZNA (ETAPY FENOLOGICZNE)"),
+            _buildPhenologicalTraitsWidget(accumulatedTraitsByStage, schema),
             const Divider(height: 40),
 
             _sectionHeader("OBSZARY (PŁATY) WYSTĘPOWANIA"),
@@ -124,7 +155,7 @@ class SpeciesDetailsScreen extends StatelessWidget {
             const Divider(height: 40),
 
             _sectionHeader("HISTORIA SPOTKANYCH OKAZÓW"),
-            ...observations.map((obs) => Card(
+            ...currentObservations.map((obs) => Card(
               margin: const EdgeInsets.symmetric(vertical: 4),
               child: ListTile(
                 leading: const Icon(Icons.history_toggle_off, color: Colors.teal),
@@ -161,49 +192,55 @@ class SpeciesDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAccumulatedTraitsWidget(Map<String, Set<String>> traits, List<DescriptionCategory> schema) {
-    List<Widget> rows = [];
-    for (var cat in schema) {
-      List<String> combinedValues = [];
-      for (var subTitle in cat.subCategories.keys) {
-        if (traits.containsKey(subTitle)) {
-          combinedValues.addAll(traits[subTitle]!);
-        }
-      }
+  static Widget _buildPhenologicalTraitsWidget(Map<String, Map<String, Set<String>>> traitsByStage, List<DescriptionCategory> schema) {
+    return Column(
+      children: traitsByStage.entries.map((stageEntry) {
+        final String stageName = stageEntry.key;
+        final Map<String, Set<String>> categoryMap = stageEntry.value;
+        List<Widget> traitRows = [];
 
-      if (combinedValues.isNotEmpty) {
-        rows.add(Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(Icons.brightness_high_outlined, color: Colors.teal, size: 18),
-              const SizedBox(width: 12),
-              Expanded(
-                child: RichText(
-                  text: TextSpan(
-                    style: const TextStyle(color: Colors.black, fontSize: 14),
-                    children: [
-                      TextSpan(text: "${cat.title}: ", style: const TextStyle(fontWeight: FontWeight.bold)),
-                      TextSpan(text: combinedValues.join(", ")),
-                    ],
-                  ),
-                ),
+        for (var cat in schema) {
+          List<String> combinedValues = [];
+          for (var subTitle in cat.subCategories.keys) {
+            if (categoryMap.containsKey(subTitle)) {
+              combinedValues.addAll(categoryMap[subTitle]!);
+            }
+          }
+          if (combinedValues.isNotEmpty) {
+            traitRows.add(Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.brightness_high_outlined, color: Colors.teal, size: 16),
+                  const SizedBox(width: 10),
+                  Expanded(child: RichText(text: TextSpan(style: const TextStyle(color: Colors.black87, fontSize: 13), children: [TextSpan(text: "${cat.title}: ", style: const TextStyle(fontWeight: FontWeight.bold)), TextSpan(text: combinedValues.join(", "))]))),
+                ],
               ),
+            ));
+          }
+        }
+
+        return Card(
+          elevation: 1, margin: const EdgeInsets.symmetric(vertical: 4), color: Colors.teal.withOpacity(0.02),
+          child: ExpansionTile(
+            initiallyExpanded: stageName == "Kwitnienie" || traitsByStage.length == 1,
+            leading: const Icon(Icons.calendar_today_outlined, size: 20, color: Colors.teal),
+            title: Text(stageName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.teal)),
+            subtitle: Text("Liczba zaobserwowanych cech: ${categoryMap.length}", style: const TextStyle(fontSize: 11, color: Colors.grey)),
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
+                child: traitRows.isEmpty
+                    ? const Text("Brak szczegółów morfologicznych dla tego etapu.", style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12, color: Colors.grey))
+                    : Column(children: traitRows),
+              )
             ],
           ),
-        ));
-      }
-    }
-
-    if (rows.isEmpty) {
-      return const Text("Brak wprowadzonych cech morfologicznych we wszystkich zebranych okazach.", style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey));
-    }
-    return Column(children: rows);
+        );
+      }).toList(),
+    );
   }
 
-  Widget _sectionHeader(String title) => Padding(
-    padding: const EdgeInsets.only(top: 10, bottom: 12),
-    child: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.teal, letterSpacing: 1.1)),
-  );
+  static Widget _sectionHeader(String title) => Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.teal, letterSpacing: 1.1)));
 }

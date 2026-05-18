@@ -56,6 +56,14 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
                 final toDelete = obsVm.allObservations.where((o) => o.speciesId == item.id).toList();
                 for (var obs in toDelete) { await obsVm.deleteObservation(obs.id); }
               }
+
+              // POPRAWKA: Czyszczenie aktywnego ID stanu, zapobiega "Bad state: No element"
+              setState(() {
+                if (_selectedPlantId == item.id) {
+                  _selectedPlantId = null;
+                }
+              });
+
               if (context.mounted) {
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Usunięto pomyślnie.")));
@@ -104,6 +112,11 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
       return matchesSearch;
     }).toList();
 
+    // DEFENSIVE CODING: Bezpieczne pobranie wybranego obiektu za pomocą any + firstWhere
+    final _SearchListItem? activeItem = (_selectedPlantId != null && allItems.any((p) => p.id == _selectedPlantId))
+        ? allItems.firstWhere((p) => p.id == _selectedPlantId)
+        : null;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Znajdź Obszary Matrycą"),
@@ -138,7 +151,7 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
               },
             ),
           ),
-          if (_selectedPlantId != null) _buildActionFooter(allItems.firstWhere((p) => p.id == _selectedPlantId), releveVm),
+          if (activeItem != null) _buildActionFooter(activeItem, releveVm),
         ],
       ),),
     );

@@ -102,25 +102,50 @@ class _AddSoughtPlantScreenState extends State<AddSoughtPlantScreen> {
   void _saveAndSetReminder() async {
     if (_nameController.text.isEmpty) return;
 
+    final obsVm = context.read<ObservationViewModel>();
+    final filterVm = context.read<SearchFilterViewModel>();
+
+    final inputPolish = _nameController.text.trim().toLowerCase();
+    final inputLatin = _latinController.text.trim().toLowerCase();
+
+    // 1. Sprawdzamy obecność w słowniku Magazynu głównego
+    bool existsInMagazyn = obsVm.speciesDictionary.any((s) =>
+    s.polishName.toLowerCase() == inputPolish ||
+        s.latinName.toLowerCase() == inputLatin);
+
+    // 2. Sprawdzamy obecność na liście aktualnych poszukiwań
+    bool existsInSought = filterVm.soughtPlants.any((s) =>
+    s.polishName.toLowerCase() == inputPolish ||
+        s.latinName.toLowerCase() == inputLatin);
+
+    if (existsInMagazyn || existsInSought) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Błąd: Ta roślina już istnieje w Magazynie głównym lub na liście poszukiwanych!"),
+          backgroundColor: Colors.redAccent,
+          duration: Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     final soughtId = const Uuid().v4();
 
     final sought = SoughtPlant(
       id: soughtId,
-      polishName: _nameController.text,
-      latinName: _latinController.text,
+      polishName: _nameController.text.trim(),
+      latinName: _latinController.text.trim(),
       harvestSeasons: _selectedSeasons,
-
       prefPhMin: _ecoController.phMin,
       prefPhMax: _ecoController.phMax,
       prefAreaTypes: _ecoController.areaTypes,
       prefWaterDynamics: _ecoController.waterDynamics,
-      prefLightLevels: _ecoController.lightLevels, // ZMIANA
-      prefSoilTypes: _ecoController.soilTypes,     // ZMIANA
+      prefLightLevels: _ecoController.lightLevels,
+      prefSoilTypes: _ecoController.soilTypes,
     );
 
     await DatabaseHelper().insertSoughtPlant(sought);
 
-    // ZAPIS FAKTYCZNYCH PRZYPOMNIEŃ DO BAZY (MÓZG SYSTEMU)
     if (mounted) {
       final remVm = context.read<ReminderViewModel>();
       for (var season in _selectedSeasons) {
