@@ -7,7 +7,6 @@ import 'package:uuid/uuid.dart';
 import '../models/plant_observation.dart';
 import '../models/plant_species.dart';
 import '../viewmodels/observation_view_model.dart';
-import '../services/database_helper.dart';
 
 class QuickAddObservationScreen extends StatefulWidget {
   final PlantSpecies? preselectedSpecies;
@@ -73,7 +72,7 @@ class _QuickAddObservationScreenState extends State<QuickAddObservationScreen> {
           foregroundColor: Colors.white
       ),
       body: SafeArea(
-        child: SingleChildScrollView( // FIX LITERÓWKI
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,6 +81,7 @@ class _QuickAddObservationScreenState extends State<QuickAddObservationScreen> {
               const SizedBox(height: 8),
 
               if (!_isReadOnly) ...[
+                // Autocomplete po nazwie Łacińskiej
                 Autocomplete<String>(
                   optionsBuilder: (val) => val.text.isEmpty
                       ? const Iterable.empty()
@@ -93,24 +93,24 @@ class _QuickAddObservationScreenState extends State<QuickAddObservationScreen> {
                   fieldViewBuilder: (ctx, ctrl, node, onSub) {
                     if (_latinController.text.isNotEmpty && ctrl.text.isEmpty) ctrl.text = _latinController.text;
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: TextField(controller: ctrl, focusNode: node, decoration: const InputDecoration(labelText: "Nazwa łacińska", border: OutlineInputBorder(), prefixIcon: Icon(Icons.search)), onChanged: (v) => _latinController.text = v),
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: TextField(controller: ctrl, focusNode: node, decoration: const InputDecoration(labelText: "Szukaj nazwy łacińskiej...", border: OutlineInputBorder(), prefixIcon: Icon(Icons.search)), onChanged: (v) => _latinController.text = v),
                     );
                   },
                 ),
+
+                // Autocomplete po nazwie Polskiej
                 Autocomplete<String>(
                   optionsBuilder: (val) => val.text.isEmpty
                       ? const Iterable.empty()
                       : obsVm.speciesDictionary.map((s) => s.polishName).where((name) => name.toLowerCase().contains(val.text.toLowerCase())),
                   onSelected: (selection) {
-                    try {
-                      final species = obsVm.speciesDictionary.firstWhere((s) => s.polishName.toLowerCase() == selection.toLowerCase().trim());
-                      _applyFoundSpecies(species);
-                    } catch (_) {}
+                    final species = obsVm.findSpeciesByPolishName(selection);
+                    if (species != null) _applyFoundSpecies(species);
                   },
                   fieldViewBuilder: (ctx, ctrl, node, onSub) {
                     if (_nameController.text.isNotEmpty && ctrl.text.isEmpty) ctrl.text = _nameController.text;
-                    return TextField(controller: ctrl, focusNode: node, decoration: const InputDecoration(labelText: "Nazwa polska (zwyczajowa)", border: OutlineInputBorder(), prefixIcon: Icon(Icons.search)), onChanged: (v) => _nameController.text = v);
+                    return TextField(controller: ctrl, focusNode: node, decoration: const InputDecoration(labelText: "Szukaj nazwy polskiej (zwyczajowej)...", border: OutlineInputBorder(), prefixIcon: Icon(Icons.search)), onChanged: (v) => _nameController.text = v);
                   },
                 ),
               ] else
@@ -170,25 +170,33 @@ class _QuickAddObservationScreenState extends State<QuickAddObservationScreen> {
   void _handleQuickSave() async {
     final obsVm = context.read<ObservationViewModel>();
 
+    // Zapobieganie powstawaniu duplikatów przy ręcznym (bądź niedokładnym) wpisaniu cech tekstowych
     if (_targetSpeciesId == null) {
-      try {
-        final match = obsVm.speciesDictionary.firstWhere((s) => s.polishName.toLowerCase() == _nameController.text.toLowerCase().trim() || s.latinName.toLowerCase() == _latinController.text.toLowerCase().trim());
-        _targetSpeciesId = match.speciesID;
-      } catch (_) {}
+      final matchByLatin = obsVm.findSpeciesByLatinName(_latinController.text);
+      final matchByPolish = obsVm.findSpeciesByPolishName(_nameController.text);
+      final foundSpecies = matchByLatin ?? matchByPolish;
+
+      if (foundSpecies != null) {
+        _targetSpeciesId = foundSpecies.speciesID;
+      }
     }
 
     String finalSpeciesId = _targetSpeciesId ?? const Uuid().v4();
 
     if (_targetSpeciesId == null) {
       final newSpecies = PlantSpecies(
-        speciesID: finalSpeciesId, latinName: _latinController.text, polishName: _nameController.text,
-        family: "Nieokreślona (Szybki zapis)", biologicalType: "Zielne",
+        speciesID: finalSpeciesId,
+        latinName: _latinController.text.trim(),
+        polishName: _nameController.text.trim(),
+        family: "Nieokreślona (Szybki zapis)",
+        biologicalType: "Zielne",
       );
-      await DatabaseHelper().insertSpecies(newSpecies);
+      // POPRAWKA MVVM: Zapis przez architekturę ViewModelu
+      await obsVm.addSpecies(newSpecies);
     }
 
     final newObs = PlantObservation(
-      id: const Uuid().v4(), speciesId: finalSpeciesId, localName: _nameController.text, subspecies: "",
+      id: const Uuid().v4(), speciesId: finalSpeciesId, localName: _nameController.text.trim(), subspecies: "",
       latitude: obsVm.currentPosition?.latitude ?? 0.0, longitude: obsVm.currentPosition?.longitude ?? 0.0,
       timestamp: DateTime.now(), observationDate: DateTime.now(),
       photoPaths: List.from(obsVm.currentPhotoPaths), characteristics: {},

@@ -116,7 +116,18 @@ class ObservationViewModel extends ChangeNotifier {
       return _speciesDictionary.firstWhere((s) => s.latinName.toLowerCase() == latinName.toLowerCase().trim());
     } catch (_) { return null; }
   }
+  PlantSpecies? findSpeciesByPolishName(String polishName) {
+    try {
+      return _speciesDictionary.firstWhere(
+              (s) => s.polishName.toLowerCase() == polishName.toLowerCase().trim()
+      );
+    } catch (_) { return null; }
+  }
 
+  Future<void> addSpecies(PlantSpecies species) async {
+    await _db.insertSpecies(species);
+    await loadFromDisk(); // Synchronizacja pamięci podręcznej z dyskiem
+  }
   PlantSpecies? getSpeciesById(String? speciesId) {
     if (speciesId == null) return null;
     try {
