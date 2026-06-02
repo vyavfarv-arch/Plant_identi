@@ -5,277 +5,149 @@ import '../models/habitat_info.dart';
 import '../models/plant_species.dart';
 import '../models/sought_plant.dart';
 
-/// Klasa reprezentująca znormalizowany profil ekologiczny (skala 0.0 - 4.0)
-class EcologicalProfile {
-  final double sunlight;    // 0 = pełen cień, 4 = pełne słońce
-  final double moisture;    // 0 = skrajnie sucho, 4 = mokradło
-  final double nitrogen;    // 0 = skrajnie ubogie, 4 = bardzo żyzne
-  final double disturbance; // 0 = nienaruszone, 4 = silna antropopresja
-  final double temperature; // 0 = bardzo chłodne, 4 = ciepłe
+class ContinuousEcologicalProfile {
+  final double sunlight;   // L
+  final double moisture;   // F
+  final double acidity;    // R
+  final double nitrogen;   // N
+  final double temperature;// T
+  final double continent;  // K
+  final double salinity;   // S
 
-  EcologicalProfile({
-    required this.sunlight,
-    required this.moisture,
-    required this.nitrogen,
-    required this.disturbance,
-    required this.temperature,
+  ContinuousEcologicalProfile({
+    required this.sunlight, required this.moisture, required this.acidity,
+    required this.nitrogen, required this.temperature, required this.continent,
+    required this.salinity,
   });
 }
 
-/// Klasa reprezentująca zakres tolerancji gatunku na dane czynniki
-class EcologicalRange {
-  final double min;
-  final double max;
+class AdvancedEcologicalTranslator {
 
-  EcologicalRange(this.min, this.max);
-
-  double get mid => (min + max) / 2.0;
-  double get tolerance => (max - min) / 2.0 == 0 ? 0.5 : (max - min) / 2.0;
-
-  /// Matematyczna funkcja odległości ekologicznej
-  double calculatePenalty(double areaValue) {
-    if (areaValue >= min && areaValue <= max) return 0.0; // Idealnie w zakresie tolerancji
-    final distance = areaValue < min ? min - areaValue : areaValue - max;
-    return distance / 4.0; // Normalizacja kary do przedziału 0.0 - 1.0 (bo max odległość to 4.0)
-  }
-}
-
-/// Wynik porównania matrycy indeksów ekologicznych
-class EcologicalMatchingResult {
-  final double score;              // Współczynnik zgodności 0.0 - 1.0 (0% - 100%)
-  final List<String> matchingTraits;
-  final List<String> missingTraits;
-
-  EcologicalMatchingResult({
-    required this.score,
-    required this.matchingTraits,
-    required this.missingTraits,
-  });
-
-  bool get isPotentialMatch => score >= 0.75;
-}
-class EcologicalTranslator {
-
-  /// TRANSLACJA OBSZARU: Konwersja HabitatInfo na EcologicalProfile (0.0 - 4.0)
-  static EcologicalProfile translateArea(HabitatInfo h) {
-    // 1. INDEKS ŚWIATŁA (sunlightIndex)
-    double sunlight = 2.0; // Punkt wyjścia
-    if (h.canopyCover != null) {
-      if (h.canopyCover!.contains("Otwarte")) sunlight = 4.0;
-      else if (h.canopyCover!.contains("Półotwarte")) sunlight = 2.5;
-      else if (h.canopyCover!.contains("Zacienione")) sunlight = 1.0;
-      else if (h.canopyCover!.contains("Gęste")) sunlight = 0.0;
-    }
-    // Modyfikacja ekspozycją stoku dla obszarów z dostępem światła
-    if (sunlight > 1.0 && h.exposure != null) {
-      if (h.exposure == "S") sunlight += 0.5;
-      if (h.exposure == "N") sunlight -= 1.0;
+  static ContinuousEcologicalProfile translateArea(HabitatInfo h) {
+    // 1. L - ŚWIATŁO (Zmienione na bezpośrednią 9-stopniową mikro-skalę okapu)
+    double sunlight = 10.0 - h.canopyDensity; // Inwersja: gęstość 1 -> Światło 9, gęstość 9 -> Światło 1
+    if (sunlight > 2.0 && h.slopeAngle != "Płaski (0-2°)") {
+      if (h.exposure == "S") sunlight += 0.8;
+      if (h.exposure == "N") sunlight -= 0.8;
     }
 
-    // 2. INDEKS WILGOTNOŚCI (moistureIndex)
-    // Mapowanie surowego suwaka chwilowego (0-3) na bazę indeksu
-    double moisture = h.moisture * 1.33; // 0.0 -> 0.0, 3.0 -> 4.0
-    if (h.waterDynamics != null) {
-      if (h.waterDynamics == "Stale wilgotne") moisture += 0.5;
-      if (h.waterDynamics == "Sezonowo zalewane") moisture += 1.0;
-      if (h.waterDynamics == "Sezonowo wysychające") moisture -= 0.5;
-      if (h.waterDynamics == "Stale suche") moisture = min(moisture, 1.0);
-    }
-    if (h.substrateType.contains("Glina")) moisture += 0.3;
-    if (h.substrateType.contains("Piasek")) moisture -= 0.5;
-    if (h.substrateType.contains("Torf")) moisture += 0.6;
-    if (h.distanceToWater == "Do 5m") moisture += 0.8;
+    // 2. F - WILGOTNOŚĆ (Reżim hydrologiczny zamiast suwaka chwilowego)
+    double moisture = 4.0; // Baza: Świeże
+    final context = h.hydrologicalContext ?? "";
+    if (context.contains("Skrajnie suche")) moisture = 1.5;
+    if (context.contains("Wilgotne")) moisture = 7.0;
+    if (context.contains("Mokre")) moisture = 9.0;
+    if (context.contains("Stale zalane")) moisture = 11.0;
 
-    // 3. INDEKS AZOTU / ŻYZNOŚCI (nitrogenIndex)
-    double nitrogen = 2.0;
-    if (h.areaType != null) {
-      if (h.areaType == "Pole") nitrogen = 3.5;
-      if (h.areaType == "Pobocze drogi") nitrogen = 3.0;
-      if (h.areaType == "Ugór") nitrogen = 2.5;
-      if (h.areaType == "Las") nitrogen = 1.8;
-      if (h.areaType == "Mokradło") nitrogen = 1.2;
-    }
-    if (h.litterThickness == "Gruba (>10cm)") nitrogen += 0.5;
-    if (h.litterThickness == "Brak") nitrogen -= 0.5;
-    if (h.substrateType.contains("Piasek")) nitrogen -= 0.7;
+    final movement = h.waterMovement ?? "";
+    if (movement.contains("Stojąca")) moisture += 1.0;
+    if (movement.contains("Źródliskowa")) moisture += 0.5;
 
-    // 4. INDEKS ZABURZENIA SŁOWISKA (disturbanceIndex)
-    double disturbance = 1.0;
-    if (h.areaType != null) {
-      if (h.areaType == "Pole") disturbance = 4.0;
-      if (h.areaType == "Pobocze drogi") disturbance = 3.5;
-      if (h.areaType == "Ugór") disturbance = 2.8;
-      if (h.areaType == "Łąka") disturbance = 1.8;
-      if (h.areaType == "Las" || h.areaType == "Mokradło") disturbance = 0.3;
+    if (h.substrateType.any((s) => s.contains("Torfowa"))) moisture += 1.5;
+    if (h.substrateType.any((s) => s.contains("Gliniasta"))) moisture += 0.4;
+    if (h.substrateType.any((s) => s.contains("Piaszczysta"))) moisture -= 1.0;
+
+    // 3. R - ODCZYN pH
+    double acidity = h.ph ?? 5.5; // Priorytet dla pomiaru kwasomierza
+    if (h.ph == null) {
+      if (h.substrateType.any((s) => s.contains("Torfowa")) && movement.contains("Stojąca")) acidity = 2.5;
+      else if (h.substrateType.any((s) => s.contains("Ziemia leśna")) && h.areaType == "Las") acidity = 4.5;
+      else if (h.substrateType.any((s) => s.contains("Gliniasta"))) acidity = 6.5;
+      if (h.humanImpact == "Składowisko odpadów / Śmietnisko") acidity = 8.0;
     }
 
-    // 5. INDEKS TEMPERATURY (temperatureIndex)
-    double temperature = 2.0; // Klimat umiarkowany
-    if (h.exposure == "S") temperature += 0.5;
-    if (h.exposure == "N") temperature -= 0.5;
-    if (h.canopyCover != null && h.canopyCover!.contains("Gęste")) temperature -= 0.4; // Mikroklimat leśny
-    if (h.areaType == "Mokradło") temperature -= 0.3; // Gleby zimne
+    // 4. N - ŻYZNOŚĆ GLEBY (Skojarzona z okrywą darniową/liściową)
+    double nitrogen = 3.0;
+    final impact = h.humanImpact ?? "";
+    if (impact.contains("Śmietnisko")) nitrogen = 8.5;
+    else if (impact.contains("Orka")) nitrogen = 7.5;
+    else if (impact.contains("Wypas")) nitrogen = 5.0;
 
-    return EcologicalProfile(
-      sunlight: sunlight.clamp(0.0, 4.0),
-      moisture: moisture.clamp(0.0, 4.0),
-      nitrogen: nitrogen.clamp(0.0, 4.0),
-      disturbance: disturbance.clamp(0.0, 4.0),
-      temperature: temperature.clamp(0.0, 4.0),
+    final cover = h.soilSurfaceCover ?? "";
+    if (cover.contains("Gruba ściółka")) nitrogen += 0.8;
+    if (cover.contains("Zwarta darń")) nitrogen += 1.2;
+    if (h.substrateType.any((s) => s.contains("Piaszczysta"))) nitrogen -= 1.0;
+
+    // 5. T - TEMPERATURA STANOWISKA
+    double temperature = 5.0;
+    if (sunlight > 6.0 && h.exposure == "S" && h.slopeAngle == "Stromy (>25°)") temperature = 6.5;
+    if (h.areaType == "Las" && h.canopyDensity >= 6) temperature -= 1.0;
+    if (movement.contains("Stojąca")) temperature -= 0.5;
+
+    // 6. K - KONTYNENTALIZM MIKROKLIMATU
+    double continent = 3.5;
+    if (h.canopyDensity <= 2 && (h.areaType == "Pole" || h.areaType == "Łąka")) continent += 0.8;
+    if (h.canopyDensity >= 6 && h.areaType == "Las") continent -= 0.5;
+
+    // 7. S - ZASOLENIE ANTROPOGENICZNE
+    double salinity = 0.0;
+    if (impact.contains("Zimowe solenie") || h.areaType == "Pobocze drogi") salinity = 2.5;
+
+    return ContinuousEcologicalProfile(
+      sunlight: sunlight.clamp(1.0, 9.0),
+      moisture: moisture.clamp(1.0, 12.0),
+      acidity: acidity.clamp(1.0, 9.0),
+      nitrogen: nitrogen.clamp(1.0, 9.0),
+      temperature: temperature.clamp(1.0, 9.0),
+      continent: continent.clamp(1.0, 9.0),
+      salinity: salinity.clamp(0.0, 9.0),
     );
   }
-
-  /// TRANSLACJA GATUNKU: Przekształcenie kryteriów wybiórczości na zakresy tolerancji
-  static Map<String, EcologicalRange> translateSpecies({
-    required List<String> lightLevels,
-    required List<String> waterDynamics,
-    required List<String> soilTypes,
-    required List<String> areaTypes,
-  }) {
-    // Domyślne pełne zakresy tolerancji (brak ograniczeń)
-    double sMin = 0.0, sMax = 4.0;
-    double mMin = 0.0, mMax = 4.0;
-    double nMin = 0.0, nMax = 4.0;
-    double dMin = 0.0, dMax = 4.0;
-
-    // Światło
-    if (lightLevels.isNotEmpty) {
-      if (lightLevels.contains("Otwarte")) { sMin = 3.0; sMax = 4.0; }
-      else if (lightLevels.contains("Częściowo otwarte")) { sMin = 2.0; sMax = 3.5; }
-      else if (lightLevels.contains("Częściowo zacienione")) { sMin = 1.0; sMax = 2.5; }
-      else if (lightLevels.contains("Zacienione")) { sMin = 0.0; sMax = 1.5; }
-    }
-
-    // Wilgotność
-    if (waterDynamics.isNotEmpty) {
-      if (waterDynamics.contains("Stale suche")) { mMin = 0.0; mMax = 1.5; }
-      else if (waterDynamics.contains("Sezonowo wysychające")) { mMin = 1.0; mMax = 2.5; }
-      else if (waterDynamics.contains("Stale wilgotne")) { mMin = 2.0; mMax = 3.5; }
-      else if (waterDynamics.contains("Sezonowo zalewane")) { mMin = 3.0; mMax = 4.0; }
-    }
-
-    // Żyzność (Azot) na podstawie typu gleby i siedliska
-    if (soilTypes.isNotEmpty) {
-      if (soilTypes.contains("Czarnoziem") || soilTypes.contains("Gliniasta")) { nMin = 2.5; nMax = 4.0; }
-      else if (soilTypes.contains("Próchniczna")) { nMin = 2.0; nMax = 3.5; }
-      else if (soilTypes.contains("Torfowa")) { nMin = 1.0; nMax = 2.5; }
-      else if (soilTypes.contains("Piaszczysta") || soilTypes.contains("Kamienista")) { nMin = 0.0; nMax = 1.5; }
-    }
-
-    // Antropopresja (Zaburzenia)
-    if (areaTypes.isNotEmpty) {
-      if (areaTypes.contains("Pole") || areaTypes.contains("Pobocze")) { dMin = 3.0; dMax = 4.0; }
-      else if (areaTypes.contains("Ugór") || areaTypes.contains("Skraj lasu")) { dMin = 1.5; dMax = 3.5; }
-      else if (areaTypes.contains("Las") || areaTypes.contains("Mokradło")) { dMin = 0.0; dMax = 1.8; }
-    }
-
-    return {
-      'sunlight': EcologicalRange(sMin, sMax),
-      'moisture': EcologicalRange(mMin, mMax),
-      'nitrogen': EcologicalRange(nMin, nMax),
-      'disturbance': EcologicalRange(dMin, dMax),
-      'temperature': EcologicalRange(1.0, 3.5), // Standardowy zakres umiarkowany dla flory PL
-    };
-  }
 }
+
 class EcologicalMatchingService {
 
-  /// MATEMATYCZNY RDZEŃ: Wylicza odchylenie punktu od optimum tolerancji gatunku
-  static EcologicalMatchingResult calculateCompatibility({
-    required double? prefPhMin,
-    required double? prefPhMax,
-    required List<String> prefAreaTypes,
-    required List<String> prefWaterDynamics,
-    required List<String> prefLightLevels,
-    required List<String> prefSoilTypes,
-    required Releve area,
-  }) {
-    final h = area.habitat;
-    if (h == null) {
-      return EcologicalMatchingResult(score: 0.0, matchingTraits: [], missingTraits: ["Obszar nie ma opisu siedliska"]);
+  // MATEMATYCZNY KOSTIUM DYSTANSU: Liczy odchylenie od optimum na podstawie wag trzystanowych
+  static double calculateAxisPenalty(double areaValue, Map<int, int> speciesMap, int minVal, int maxVal) {
+    if (speciesMap.isEmpty || !speciesMap.values.any((state) => state > 0)) {
+      return 0.0; // Brak zdefiniowanych ograniczeń = brak kary
     }
 
-    // 1. Translacja obszaru na wektor indeksów
-    final areaProfile = EcologicalTranslator.translateArea(h);
+    int closestNode = areaValue.round().clamp(minVal, maxVal);
+    int directState = speciesMap[closestNode] ?? 0;
 
-    // 2. Translacja preferencji gatunku na zakresy tolerancji
-    final speciesRanges = EcologicalTranslator.translateSpecies(
-      lightLevels: prefLightLevels,
-      waterDynamics: prefWaterDynamics,
-      soilTypes: prefSoilTypes,
-      areaTypes: prefAreaTypes,
-    );
+    if (directState == 2) return 0.0;  // Idealne trafienie w zdefiniowane Optimum
+    if (directState == 1) return 0.15; // Stan tolerowany (roślina przeżyje, drobne upośledzenie wagowe)
 
-    // 3. Obliczanie matematycznych kar za wykroczenie poza optimum amplitude
-    double pSun = speciesRanges['sunlight']!.calculatePenalty(areaProfile.sunlight);
-    double pMoi = speciesRanges['moisture']!.calculatePenalty(areaProfile.moisture);
-    double pNit = speciesRanges['nitrogen']!.calculatePenalty(areaProfile.nitrogen);
-    double pDis = speciesRanges['disturbance']!.calculatePenalty(areaProfile.disturbance);
-    double pTem = speciesRanges['temperature']!.calculatePenalty(areaProfile.temperature);
+    // Stan wyjściowy = 0 (Brak tolerancji). Szukamy najbliższego akceptowalnego punktu
+    double minDistance = double.infinity;
+    double penaltyModifier = 1.0;
 
-    // Dodatkowa tradycyjna walidacja chemiczna dla pH gleby
-    double pPh = 0.0;
-    if (prefPhMin != null && prefPhMax != null && h.ph != null) {
-      if (h.ph! < prefPhMin) pPh = ((prefPhMin - h.ph!) / 4.0).clamp(0.0, 1.0);
-      if (h.ph! > prefPhMax) pPh = ((h.ph! - prefPhMax) / 4.0).clamp(0.0, 1.0);
-    }
+    speciesMap.forEach((node, state) {
+      if (state > 0) {
+        double dist = (areaValue - node).abs();
+        if (dist < minDistance) {
+          minDistance = dist;
+          penaltyModifier = (state == 2) ? 0.75 : 1.0; // Jeśli graniczy z optimum, spadek kary jest łagodniejszy
+        }
+      }
+    });
 
-    // Wyliczenie średniej arytmetycznej kar ekologicznych
-    double averagePenalty = (pSun + pMoi + pNit + pDis + pTem + pPh) / 6.0;
-    double finalScore = 1.0 - averagePenalty;
-
-    // Budowanie komunikatów diagnostycznych dla użytkownika (UX)
-    List<String> matches = [];
-    List<String> misses = [];
-
-    _evalResult("Światło", pSun, areaProfile.sunlight, matches, misses);
-    _evalResult("Wilgotność", pMoi, areaProfile.moisture, matches, misses);
-    _evalResult("Żyzność (N)", pNit, areaProfile.nitrogen, matches, misses);
-    _evalResult("Zaburzenie", pDis, areaProfile.disturbance, matches, misses);
-    if (h.ph != null) _evalResult("Odczyn pH", pPh, h.ph!, matches, misses);
-
-    return EcologicalMatchingResult(
-      score: finalScore.clamp(0.0, 1.0),
-      matchingTraits: matches,
-      missingTraits: misses,
-    );
+    if (minDistance == double.infinity) return 1.0;
+    double maxPossibleDist = (maxVal - minVal).toDouble();
+    return ((minDistance / maxPossibleDist) * penaltyModifier).clamp(0.0, 1.0);
   }
 
-  static void _evalResult(String label, double penalty, double val, List<String> matches, List<String> misses) {
-    if (penalty == 0.0) {
-      matches.add("$label w normie optimum (Indeks: ${val.toStringAsFixed(1)})");
-    } else {
-      misses.add("$label poza zakresem (Odchylenie, Indeks: ${val.toStringAsFixed(1)})");
-    }
-  }
+  static ContinuousEcologicalMatchingResult calculateCompatibility(Releve area, PlantSpecies species) {
+    if (area.habitat == null) return ContinuousEcologicalMatchingResult(score: 0.0);
 
-  /// KIERUNEK A: Jakie rośliny mogą urosnąć w tym płacie?
-  static List<MapEntry<PlantSpecies, EcologicalMatchingResult>> findPotentialPlantsForArea(
-      Releve area, List<PlantSpecies> dictionary) {
-    final List<MapEntry<PlantSpecies, EcologicalMatchingResult>> results = [];
-    for (var species in dictionary) {
-      final match = calculateCompatibility(
-        prefPhMin: species.prefPhMin, prefPhMax: species.prefPhMax,
-        prefAreaTypes: species.prefAreaTypes, prefWaterDynamics: species.prefWaterDynamics,
-        prefLightLevels: species.prefLightLevels, prefSoilTypes: species.prefSoilTypes, area: area,
-      );
-      if (match.isPotentialMatch) results.add(MapEntry(species, match));
-    }
-    return results..sort((a, b) => b.value.score.compareTo(a.value.score));
-  }
+    final areaProfile = AdvancedEcologicalTranslator.translateArea(area.habitat!);
 
-  /// KIERUNEK B: W jakich płatach szukać danej rośliny?
-  static List<MapEntry<Releve, EcologicalMatchingResult>> findMatchingAreasForPlant(
-      SoughtPlant plant, List<Releve> allReleves) {
-    final List<MapEntry<Releve, EcologicalMatchingResult>> results = [];
-    for (var area in allReleves) {
-      final match = calculateCompatibility(
-        prefPhMin: plant.prefPhMin, prefPhMax: plant.prefPhMax,
-        prefAreaTypes: plant.prefAreaTypes, prefWaterDynamics: plant.prefWaterDynamics,
-        prefLightLevels: plant.prefLightLevels, prefSoilTypes: plant.prefSoilTypes, area: area,
-      );
-      results.add(MapEntry(area, match));
-    }
-    return results..sort((a, b) => b.value.score.compareTo(a.value.score));
+    double pL = calculateAxisPenalty(areaProfile.sunlight, species.ellenbergL, 1, 9);
+    double pF = calculateAxisPenalty(areaProfile.moisture, species.ellenbergF, 1, 12);
+    double pR = calculateAxisPenalty(areaProfile.acidity, species.ellenbergR, 1, 9);
+    double pN = calculateAxisPenalty(areaProfile.nitrogen, species.ellenbergN, 1, 9);
+    double pT = calculateAxisPenalty(areaProfile.temperature, species.ellenbergT, 1, 9);
+    double pK = calculateAxisPenalty(areaProfile.continent, species.ellenbergK, 1, 9);
+    double pS = calculateAxisPenalty(areaProfile.salinity, species.ellenbergS, 0, 9);
+
+    double averagePenalty = (pL + pF + pR + pN + pT + pK + pS) / 7.0;
+    return ContinuousEcologicalMatchingResult(score: (1.0 - averagePenalty).clamp(0.0, 1.0));
   }
+}
+
+class ContinuousEcologicalMatchingResult {
+  final double score;
+  ContinuousEcologicalMatchingResult({required this.score});
+  bool get isPotentialMatch => score >= 0.75;
 }
