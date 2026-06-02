@@ -34,8 +34,6 @@ class ObservationViewModel extends ChangeNotifier {
   List<PlantObservation> get incompleteObservations => _observations.where((obs) => !obs.isComplete).toList();
   List<PlantObservation> get completeObservations => _observations.where((obs) => obs.isComplete).toList();
 
-  // --- ŁADOWANIE I INICJALIZACJA ---
-
   Future<void> loadFromDisk() async {
     _observations = await _db.getObservations();
     _speciesDictionary = await _db.getSpecies();
@@ -56,8 +54,6 @@ class ObservationViewModel extends ChangeNotifier {
     }
   }
 
-  // --- ZDJĘCIA ---
-
   Future<void> takePhoto() async {
     if (!canTakePhoto) return;
     final path = await _cameraService.takePicture();
@@ -75,9 +71,6 @@ class ObservationViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- OPERACJE NA OBSERWACJACH (PRZYWRÓCONE I POPRAWIONE) ---
-
-  // Metoda dodawania, której brakowało w Twoim błędzie
   Future<void> addObservation(PlantObservation obs) async {
     await _db.insertObservation(obs);
     await loadFromDisk();
@@ -85,40 +78,27 @@ class ObservationViewModel extends ChangeNotifier {
 
   Future<void> deleteObservation(String id) async {
     try {
-      // ZAKODOWANE BEZPIECZEŃSTWO: Sprawdzamy indeks zamiast rzucać "Bad state: No element"
       final index = _observations.indexWhere((o) => o.id == id);
-
       if (index == -1) {
-        // Elementu nie ma w lokalnej pamięci, usuwamy bezpośrednio z SQLite dla pewności
         await _db.deleteObservation(id);
         await loadFromDisk();
         return;
       }
-
       final obs = _observations[index];
       final String? sId = obs.speciesId;
-
-      // Usunięcie okazu z bazy danych
       await _db.deleteObservation(id);
-
       if (sId != null) {
-        // Sprawdzamy, czy w bazie są jeszcze inne obserwacje tego samego gatunku
         final allObs = await _db.getObservations();
         final hasInstances = allObs.any((o) => o.speciesId == sId);
-
         if (!hasInstances) {
-          // Jeśli to był ostatni okaz na świecie, trwale usuwamy gatunek z atlasu
           await _db.deleteSpecies(sId);
         }
       }
-      // Pełne przeładowanie dyskowe i rozesłanie powiadomień do słuchaczy UI
       await loadFromDisk();
     } catch (e) {
       debugPrint("Błąd podczas usuwania: $e");
     }
   }
-
-  // --- WYSZUKIWANIE ---
 
   List<String> get allLatinNames => _speciesDictionary.map((s) => s.latinName).where((name) => name.isNotEmpty).toList();
 
@@ -129,16 +109,15 @@ class ObservationViewModel extends ChangeNotifier {
   }
   PlantSpecies? findSpeciesByPolishName(String polishName) {
     try {
-      return _speciesDictionary.firstWhere(
-              (s) => s.polishName.toLowerCase() == polishName.toLowerCase().trim()
-      );
+      return _speciesDictionary.firstWhere((s) => s.polishName.toLowerCase() == polishName.toLowerCase().trim());
     } catch (_) { return null; }
   }
 
   Future<void> addSpecies(PlantSpecies species) async {
     await _db.insertSpecies(species);
-    await loadFromDisk(); // Synchronizacja pamięci podręcznej z dyskiem
+    await loadFromDisk();
   }
+
   PlantSpecies? getSpeciesById(String? speciesId) {
     if (speciesId == null) return null;
     try {
@@ -148,8 +127,7 @@ class ObservationViewModel extends ChangeNotifier {
 
   List<String> get uniqueFamilies => _speciesDictionary.map((s) => s.family).where((f) => f.isNotEmpty).toSet().toList();
 
-  // --- AKTUALIZACJA SZCZEGÓŁOWA ---
-
+  // FIX: Sygnatura zintegrowana z mapami indeksów Ellenberga
   Future<void> updateObservationDetailed({
     required String id,
     required String localName,
@@ -168,10 +146,13 @@ class ObservationViewModel extends ChangeNotifier {
     double? prefPhMax,
     List<HarvestSeason>? harvestSeasons,
     List<HarvestSeason>? customHarvestSeasons,
-    List<String>? prefAreaTypes,
-    List<String>? prefWaterDynamics,
-    List<String>? prefLightLevels,
-    List<String>? prefSoilTypes,
+    Map<int, int>? ellenbergL,
+    Map<int, int>? ellenbergF,
+    Map<int, int>? ellenbergR,
+    Map<int, int>? ellenbergN,
+    Map<int, int>? ellenbergT,
+    Map<int, int>? ellenbergK,
+    Map<int, int>? ellenbergS,
   }) async {
     final index = _observations.indexWhere((o) => o.id == id);
     if (index == -1) return;
@@ -189,10 +170,13 @@ class ObservationViewModel extends ChangeNotifier {
       prefPhMin: prefPhMin,
       prefPhMax: prefPhMax,
       harvestSeasons: harvestSeasons ?? [],
-      prefAreaTypes: prefAreaTypes ?? [],
-      prefWaterDynamics: prefWaterDynamics ?? [],
-      prefLightLevels: prefLightLevels ?? [],
-      prefSoilTypes: prefSoilTypes ?? [],
+      ellenbergL: ellenbergL ?? {},
+      ellenbergF: ellenbergF ?? {},
+      ellenbergR: ellenbergR ?? {},
+      ellenbergN: ellenbergN ?? {},
+      ellenbergT: ellenbergT ?? {},
+      ellenbergK: ellenbergK ?? {},
+      ellenbergS: ellenbergS ?? {},
     );
     await _db.insertSpecies(species);
 
@@ -224,56 +208,27 @@ class ObservationViewModel extends ChangeNotifier {
     await _db.insertObservation(updatedObs);
     await loadFromDisk();
   }
-  // lib/viewmodels/observation_view_model.dart
 
   Future<void> updateObservationCoordinates(String id, double lat, double lng) async {
     try {
       final index = _observations.indexWhere((o) => o.id == id);
       if (index == -1) return;
       final old = _observations[index];
-
       final updatedObs = PlantObservation(
-        id: old.id,
-        releveId: old.releveId,
-        speciesId: old.speciesId,
-        localName: old.localName,
-        subspecies: old.subspecies,
-        tempBiologicalType: old.tempBiologicalType,
-        photoPaths: old.photoPaths,
-        latitude: lat, // Nowa szerokość
-        longitude: lng, // Nowa długość
-        timestamp: old.timestamp,
-        characteristics: old.characteristics,
-        observationDate: old.observationDate,
-        phenologicalStage: old.phenologicalStage,
-        abundance: old.abundance,
-        coverage: old.coverage,
-        vitality: old.vitality,
-        certainty: old.certainty,
-        idDoubts: old.idDoubts,
-        keyMorphologicalTraits: old.keyMorphologicalTraits,
-        confusingSpecies: old.confusingSpecies,
-        characteristicFeature: old.characteristicFeature,
-        customHarvestSeasons: old.customHarvestSeasons,
+        id: old.id, releveId: old.releveId, speciesId: old.speciesId, localName: old.localName, subspecies: old.subspecies,
+        tempBiologicalType: old.tempBiologicalType, photoPaths: old.photoPaths, latitude: lat, longitude: lng, timestamp: old.timestamp,
+        characteristics: old.characteristics, observationDate: old.observationDate, phenologicalStage: old.phenologicalStage,
+        abundance: old.abundance, coverage: old.coverage, vitality: old.vitality, certainty: old.certainty, idDoubts: old.idDoubts,
+        keyMorphologicalTraits: old.keyMorphologicalTraits, confusingSpecies: old.confusingSpecies, characteristicFeature: old.characteristicFeature, customHarvestSeasons: old.customHarvestSeasons,
       );
-
       _observations[index] = updatedObs;
-      await _db.insertObservation(updatedObs); // Nadpisanie rekordu w bazie przez ConflictAlgorithm.replace
+      await _db.insertObservation(updatedObs);
       await loadFromDisk();
     } catch (e) {
       debugPrint("Błąd podczas zmiany lokalizacji okazu: $e");
     }
   }
 
-  void reset() {
-    _currentPhotoPaths = [];
-    _currentPosition = null;
-    notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _cameraService.dispose();
-    super.dispose();
-  }
+  void reset() { _currentPhotoPaths = []; _currentPosition = null; notifyListeners(); }
+  @override void dispose() { _cameraService.dispose(); super.dispose(); }
 }

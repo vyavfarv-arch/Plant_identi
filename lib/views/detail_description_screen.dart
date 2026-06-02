@@ -5,10 +5,9 @@ import '../models/plant_observation.dart';
 import '../models/plant_species.dart';
 import '../models/harvest_season.dart';
 import '../viewmodels/observation_view_model.dart';
-import '../viewmodels/reminder_view_model.dart';
 import '../widgets/ecological_amplitude_picker.dart';
 import '../widgets/harvest_season_picker.dart';
-import '../widgets/specimen_reference_card.dart'; // Import nowego komponentu
+import '../widgets/specimen_reference_card.dart';
 
 class DetailDescriptionScreen extends StatefulWidget {
   final PlantObservation observation;
@@ -40,10 +39,8 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       else if (f == 'localName') initialValue = widget.observation.localName ?? "";
       else if (f == 'latinName') initialValue = species?.latinName ?? "";
       else if (f == 'family') initialValue = species?.family ?? "";
-      // ... przypisanie reszty pól z modelu species lub observation
       _controllers[f] = TextEditingController(text: initialValue);
     }
-
     _selectedCertainty = widget.observation.certainty;
     if (species != null) _applySpeciesData(species);
   }
@@ -56,10 +53,10 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       _controllers['cultivation']!.text = s.cultivation ?? "";
       _selectedSeasons = List.from(s.harvestSeasons);
     });
-    _ecoController.updateData(
+    _ecoController.updateFromSpeciesData(
       newPhMin: s.prefPhMin, newPhMax: s.prefPhMax,
-      newAreaTypes: s.prefAreaTypes, newWaterDynamics: s.prefWaterDynamics,
-      newLightLevels: s.prefLightLevels, newSoilTypes: s.prefSoilTypes,
+      lL: s.ellenbergL, fMap: s.ellenbergF, lR: s.ellenbergR,
+      lN: s.ellenbergN, lT: s.ellenbergT, lK: s.ellenbergK, lS: s.ellenbergS,
     );
   }
 
@@ -70,7 +67,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            SpecimenReferenceCard(observation: widget.observation), // Użycie komponentu
+            SpecimenReferenceCard(observation: widget.observation),
             const Divider(height: 1),
             Expanded(
               child: ListView(
@@ -157,8 +154,11 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       subspecies: _controllers['subspecies']!.text, certainty: _selectedCertainty, doubts: _controllers['idDoubts']!.text,
       keyTraits: _controllers['keyTraits']!.text, confusing: _controllers['confusing']!.text, characteristic: _controllers['characteristic']!.text,
       usage: _controllers['usage']!.text, cultivation: _controllers['cultivation']!.text, harvestSeasons: _selectedSeasons,
-      prefPhMin: _ecoController.phMin, prefPhMax: _ecoController.phMax, prefAreaTypes: _ecoController.areaTypes,
-      prefWaterDynamics: _ecoController.waterDynamics, prefLightLevels: _ecoController.lightLevels, prefSoilTypes: _ecoController.soilTypes,
+      prefPhMin: _ecoController.phMin, prefPhMax: _ecoController.phMax,
+      ellenbergL: _ecoController.ellenbergL, ellenbergF: _ecoController.ellenbergF,
+      ellenbergR: _ecoController.ellenbergR, ellenbergN: _ecoController.ellenbergN,
+      ellenbergT: _ecoController.ellenbergT, ellenbergK: _ecoController.ellenbergK,
+      ellenbergS: _ecoController.ellenbergS,
     );
     if (mounted) Navigator.pop(context);
   }

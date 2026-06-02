@@ -67,16 +67,12 @@ class _ResultsMapScreenState extends State<ResultsMapScreen> {
         strokeColor = Colors.grey.shade700;
         statusText = "Zweryfikowana nieobecność gatunku (Brak występowania)";
       } else {
-        final matchResult = EcologicalMatchingService.calculateCompatibility(
-          prefPhMin: widget.targetPlant.prefPhMin, prefPhMax: widget.targetPlant.prefPhMax,
-          prefAreaTypes: widget.targetPlant.prefAreaTypes, prefWaterDynamics: widget.targetPlant.prefWaterDynamics,
-          prefLightLevels: widget.targetPlant.prefLightLevels, prefSoilTypes: widget.targetPlant.prefSoilTypes, area: area,
-        );
+        final matchResult = EcologicalMatchingService.calculateCompatibility(area, widget.targetPlant);
 
         if (matchResult.isPotentialMatch) {
-          fillColor = Colors.amber.withOpacity(0.5); // ŻÓŁTY: Potencjalne stanowisko
+          fillColor = Colors.amber.withOpacity(0.5);
           strokeColor = Colors.orange.shade800;
-          statusText = "Siedlisko potencjalne (Matryca wagowa: ${(matchResult.score * 100).toStringAsFixed(0)}%)";
+          statusText = "Siedlisko potencjalne (Matryca Ellenberga: ${(matchResult.score * 100).toStringAsFixed(0)}%)";
         } else {
           fillColor = Colors.grey.withOpacity(0.15);
           strokeColor = Colors.grey.shade400;

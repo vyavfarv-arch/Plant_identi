@@ -5,14 +5,13 @@ class EcologicalDataController extends ChangeNotifier {
   double phMin = 5.5;
   double phMax = 7.5;
 
-  // Inicjalizacja trzystanowych map indeksów Ellenberga
-  final Map<int, int> ellenbergL = {}; // 1 - 9
-  final Map<int, int> ellenbergF = {}; // 1 - 12
-  final Map<int, int> ellenbergR = {}; // 1 - 9
-  final Map<int, int> ellenbergN = {}; // 1 - 9
-  final Map<int, int> ellenbergT = {}; // 1 - 9
-  final Map<int, int> ellenbergK = {}; // 1 - 9
-  final Map<int, int> ellenbergS = {}; // 0 - 9
+  final Map<int, int> ellenbergL = {};
+  final Map<int, int> ellenbergF = {};
+  final Map<int, int> ellenbergR = {};
+  final Map<int, int> ellenbergN = {};
+  final Map<int, int> ellenbergT = {};
+  final Map<int, int> ellenbergK = {};
+  final Map<int, int> ellenbergS = {};
 
   void updateFromSpeciesData({
     double? newPhMin, double? newPhMax,
@@ -23,7 +22,6 @@ class EcologicalDataController extends ChangeNotifier {
   }) {
     if (newPhMin != null) phMin = newPhMin;
     if (newPhMax != null) phMax = newPhMax;
-
     ellenbergL..clear()..addAll(lL);
     ellenbergF..clear()..addAll(lF);
     ellenbergR..clear()..addAll(lR);
@@ -34,7 +32,6 @@ class EcologicalDataController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // LOGIKA ZAKODOWANA: Trzystanowy cykl kliknięć kwadratów (0 -> 1 -> 2 -> 0)
   void cycleEllenbergState(String axis, int value) {
     Map<int, int> targetMap;
     switch (axis) {
@@ -47,12 +44,10 @@ class EcologicalDataController extends ChangeNotifier {
       case 'S': targetMap = ellenbergS; break;
       default: return;
     }
-
     int currentState = targetMap[value] ?? 0;
-    int nextState = (currentState + 1) % 3; // Cykl trzech stanów
-
+    int nextState = (currentState + 1) % 3;
     if (nextState == 0) {
-      targetMap.remove(value); // Czyszczenie nieaktywnego indeksu
+      targetMap.remove(value);
     } else {
       targetMap[value] = nextState;
     }
@@ -60,4 +55,92 @@ class EcologicalDataController extends ChangeNotifier {
   }
 
   void updatePh(double min, double max) { phMin = min; phMax = max; notifyListeners(); }
+}
+
+class EcologicalAmplitudePicker extends StatelessWidget {
+  final EcologicalDataController controller;
+  const EcologicalAmplitudePicker({super.key, required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, child) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Siatka Amplitudy Ekologicznej Ellenberga:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.teal)),
+            const SizedBox(height: 4),
+            const Text("1 klik = Tolerancja (Jasny) | 2 kliki = Optimum (Ciemny + ★)", style: TextStyle(fontSize: 11, color: Colors.grey, fontStyle: FontStyle.italic)),
+            const Divider(),
+            _buildEllenbergRow("L - Światło (1-9)", "L", controller.ellenbergL, 1, 9),
+            _buildEllenbergRow("F - Wilgotność (1-12)", "F", controller.ellenbergF, 1, 12),
+            _buildEllenbergRow("R - Odczyn pH (1-9)", "R", controller.ellenbergR, 1, 9),
+            _buildEllenbergRow("N - Żyzność Azot (1-9)", "N", controller.ellenbergN, 1, 9),
+            _buildEllenbergRow("T - Temperatura (1-9)", "T", controller.ellenbergT, 1, 9),
+            _buildEllenbergRow("K - Kontynentalizm (1-9)", "K", controller.ellenbergK, 1, 9),
+            _buildEllenbergRow("S - Zasolenie (0-9)", "S", controller.ellenbergS, 0, 9),
+            const Divider(),
+            Text("Preferowany Odczyn pH Gleby: ${controller.phMin.toStringAsFixed(1)} - ${controller.phMax.toStringAsFixed(1)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            RangeSlider(
+              values: RangeValues(controller.phMin, controller.phMax), min: 3.0, max: 9.0, divisions: 60, activeColor: Colors.teal,
+              onChanged: (v) => controller.updatePh(v.start, v.end),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildEllenbergRow(String title, String axis, Map<int, int> currentMap, int min, int max) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueGrey)),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6, runSpacing: 6,
+            children: List.generate(max - min + 1, (index) {
+              final val = min + index;
+              final state = currentMap[val] ?? 0;
+
+              Color bg = Colors.grey.shade200;
+              Color border = Colors.grey.shade400;
+              Color text = Colors.black87;
+              Widget? icon;
+
+              if (state == 1) {
+                bg = Colors.teal.shade100;
+                border = Colors.teal.shade300;
+                text = Colors.teal.shade900;
+              } else if (state == 2) {
+                bg = Colors.teal.shade700;
+                border = Colors.teal.shade900;
+                text = Colors.white;
+                icon = const Icon(Icons.star, size: 10, color: Colors.amber);
+              }
+
+              return InkWell(
+                onTap: () => controller.cycleEllenbergState(axis, val),
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  width: 34, height: 34,
+                  decoration: BoxDecoration(color: bg, border: Border.all(color: border, width: 1.5), borderRadius: BorderRadius.circular(6)),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Text("$val", style: TextStyle(color: text, fontWeight: FontWeight.bold, fontSize: 12)),
+                      if (icon != null) Positioned(top: 1, right: 1, child: icon),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          )
+        ],
+      ),
+    );
+  }
 }

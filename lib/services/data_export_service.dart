@@ -38,14 +38,14 @@ class DataExportService {
         final h = releve.habitat!;
         csv += "${obs.id},"
             "${releve.id},"
-            "${h.moisture},"
+            "${h.canopyDensity}," // Nowe
             "${h.ph ?? ''},"
-            "${_escapeCsvField(h.canopyCover)},"
-            "${_escapeCsvField(h.waterDynamics)},"
+            "${_escapeCsvField(h.waterMovement)}," // Nowe
+            "${_escapeCsvField(h.hydrologicalContext)}," // Nowe
             "${_escapeCsvField(h.areaType)},"
             "${_escapeCsvField(h.slopeAngle)},"
-            "${_escapeCsvField(h.litterThickness)},"
-            "${_escapeCsvField(h.distanceToWater)},"
+            "${_escapeCsvField(h.soilSurfaceCover)}," // Nowe
+            "${_escapeCsvField(h.humanImpact)}," // Nowe
             "${_escapeCsvField(h.substrateType.join(';'))},"
             "${_escapeCsvField(species.latinName)},"
             "${_escapeCsvField(species.polishName)}\n";

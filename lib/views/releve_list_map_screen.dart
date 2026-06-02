@@ -36,26 +36,18 @@ class _ReleveListMapScreenState extends State<ReleveListMapScreen> {
     // LOGIKA FILTROWANIA LISTY
     final filteredReleves = releveVm.allReleves.where((r) {
       final h = r.habitat;
-
-      // Jeśli filtry są aktywne, nie pokazujemy obszarów bez opisu siedliska
       if (h == null) return !_isAnyFilterActive(filterVm);
 
-      // Filtry dokładnego dopasowania
       if (filterVm.areaFilterType != null && r.type != filterVm.areaFilterType) return false;
-      if (filterVm.areaFilterCanopy != null && h.canopyCover != filterVm.areaFilterCanopy) return false;
-      if (filterVm.areaFilterWater != null && h.waterDynamics != filterVm.areaFilterWater) return false;
+      if (filterVm.areaFilterWater != null && h.waterMovement != filterVm.areaFilterWater) return false;
       if (filterVm.areaFilterSlope != null && h.slopeAngle != filterVm.areaFilterSlope) return false;
 
-      // Logika AND dla podłoży: obszar musi zawierać WSZYSTKIE zaznaczone typy
       if (filterVm.areaFilterSubstrates.isNotEmpty) {
         if (!filterVm.areaFilterSubstrates.every((s) => h.substrateType.contains(s))) return false;
       }
-
-      // Filtr zakresu pH
       if (h.ph != null) {
         if (h.ph! < filterVm.areaFilterPh.start || h.ph! > filterVm.areaFilterPh.end) return false;
       }
-
       return true;
     }).toList();
 

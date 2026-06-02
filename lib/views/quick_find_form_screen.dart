@@ -135,12 +135,15 @@ class _QuickFindFormScreenState extends State<QuickFindFormScreen> {
     final String targetSpeciesId = existingSpecies?.speciesID ?? const Uuid().v4();
 
     if (existingSpecies == null) {
+      // FIX: Konstruktor gatunku przekazuje mapy wegetacji Ellenberga z poszukiwanej rośliny
       final newSpecies = PlantSpecies(
         speciesID: targetSpeciesId, latinName: widget.targetPlant.latinName, polishName: widget.targetPlant.polishName,
         family: "Nieokreślona (Wymaga edycji)", biologicalType: "Zielne",
         prefPhMin: widget.targetPlant.prefPhMin, prefPhMax: widget.targetPlant.prefPhMax,
-        prefAreaTypes: widget.targetPlant.prefAreaTypes, prefWaterDynamics: widget.targetPlant.prefWaterDynamics,
-        prefLightLevels: widget.targetPlant.prefLightLevels, prefSoilTypes: widget.targetPlant.prefSoilTypes,
+        ellenbergL: widget.targetPlant.ellenbergL, ellenbergF: widget.targetPlant.ellenbergF,
+        ellenbergR: widget.targetPlant.ellenbergR, ellenbergN: widget.targetPlant.ellenbergN,
+        ellenbergT: widget.targetPlant.ellenbergT, ellenbergK: widget.targetPlant.ellenbergK,
+        ellenbergS: widget.targetPlant.ellenbergS,
       );
       await DatabaseHelper().insertSpecies(newSpecies);
     }
