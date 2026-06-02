@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/plant_observation.dart';
 import '../models/harvest_season.dart';
-import '../models/description_schema.dart'; // DODANY IMPORT
+import '../models/description_schema.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../viewmodels/observation_view_model.dart';
 import '../services/spatial_service.dart';
@@ -16,11 +16,9 @@ class PlantCardView {
     final obsVm = context.read<ObservationViewModel>();
     final species = obsVm.getSpeciesById(obs.speciesId);
 
-    // Ustalamy typ biologiczny i pobieramy odpowiedni schemat opisu
     final biologicalType = species?.biologicalType ?? obs.tempBiologicalType ?? "Zielne";
     final schema = SchemaGenerator.getForType(biologicalType);
 
-    // Pobieramy kalendarz: najpierw indywidualny okazu, jeśli pusty - z gatunku
     final harvestData = obs.customHarvestSeasons.isNotEmpty
         ? obs.customHarvestSeasons
         : (species?.harvestSeasons ?? []);
@@ -30,10 +28,7 @@ class PlantCardView {
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.8,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        expand: false,
+        initialChildSize: 0.8, minChildSize: 0.5, maxChildSize: 0.95, expand: false,
         builder: (_, controller) => Container(
           padding: const EdgeInsets.all(20),
           child: ListView(
@@ -42,8 +37,7 @@ class PlantCardView {
               _buildHandle(),
               const SizedBox(height: 20),
               _buildHeader(obs),
-              Text(species?.latinName ?? "Brak nazwy łacińskiej",
-                  style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey)),
+              Text(species?.latinName ?? "Brak nazwy łacińskiej", style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey)),
               const Divider(),
               _buildPhotoGallery(obs),
               const SizedBox(height: 20),
@@ -58,7 +52,6 @@ class PlantCardView {
               _infoItem(Icons.analytics, "Ilościowość", obs.abundance ?? "-"),
               _infoItem(Icons.favorite, "Witalność", obs.vitality ?? "-"),
 
-              // NOWA SEKCJA: ZGRUPOWANE CECHY MORFOLOGICZNE
               _sectionHeader("3. Zaobserwowane cechy"),
               _buildGroupedCharacteristics(obs, schema),
 
@@ -68,9 +61,12 @@ class PlantCardView {
               else
                 ...harvestData.map((h) => _harvestItem(h)),
 
-              _sectionHeader("5. Amplituda ekologiczna (ML)"),
-              _infoItem(Icons.science, "Zakres pH", "${species?.prefPhMin?.toStringAsFixed(1) ?? '?'} - ${species?.prefPhMax?.toStringAsFixed(1) ?? '?'}"),
-              _infoItem(Icons.landscape, "Typy obszaru", _joinList(species?.prefAreaTypes)),
+              // FIX: Nowa, zintegrowana sekcja prezentacji optymalnych liczb wskaźnikowych Ellenberga
+              _sectionHeader("5. Amplituda ekologiczna (Liczby Ellenberga)"),
+              _infoItem(Icons.science, "Wskaźnik odczynu gleby (R)", _getMapOptimum(species?.ellenbergR)),
+              _infoItem(Icons.wb_sunny, "Wskaźnik Światła (L)", _getMapOptimum(species?.ellenbergL)),
+              _infoItem(Icons.water_drop, "Wskaźnik Wilgotności (F)", _getMapOptimum(species?.ellenbergF)),
+              _infoItem(Icons.grass, "Wskaźnik Żyzności / Azotu (N)", _getMapOptimum(species?.ellenbergN)),
 
               _sectionHeader("6. Lokalizacja w płatach"),
               _buildReleveLinks(context, obs),
@@ -82,63 +78,45 @@ class PlantCardView {
     );
   }
 
-  // Metoda grupująca cechy według Tytułu (np. System korzeniowy: palowy, kłącza)
+  // Funkcja mapująca wyciągająca optimum z mapy Ellenberga
+  static String _getMapOptimum(Map<int, int>? map) {
+    if (map == null || map.isEmpty) return "Brak przypisanych wskaźników";
+    final optimums = map.entries.where((e) => e.value == 2).map((e) => e.key).toList();
+    if (optimums.isEmpty) return map.keys.join(", ");
+    return "${optimums.join(', ')} (Zdefiniowane optimum)";
+  }
+
   static Widget _buildGroupedCharacteristics(PlantObservation obs, List<DescriptionCategory> schema) {
     List<Widget> groupedRows = [];
-
     for (var category in schema) {
       List<String> values = [];
-
-      // Przeszukujemy cechy okazu pod kątem kluczy należących do tej kategorii
       for (var subTitle in category.subCategories.keys) {
         if (obs.characteristics.containsKey(subTitle)) {
           values.addAll(obs.characteristics[subTitle]!);
         }
       }
-
       if (values.isNotEmpty) {
-        groupedRows.add(
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.check_circle_outline, color: Colors.green, size: 20),
-                const SizedBox(width: 15),
-                Expanded(
-                  child: RichText(
-                    text: TextSpan(
-                      style: const TextStyle(color: Colors.black, fontSize: 14),
-                      children: [
-                        TextSpan(text: "${category.title}: ", style: const TextStyle(fontWeight: FontWeight.bold)),
-                        TextSpan(text: values.join(", ")),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+        groupedRows.add(Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.check_circle_outline, color: Colors.green, size: 20),
+              const SizedBox(width: 15),
+              Expanded(child: RichText(text: TextSpan(style: const TextStyle(color: Colors.black, fontSize: 14), children: [TextSpan(text: "${category.title}: ", style: const TextStyle(fontWeight: FontWeight.bold)), TextSpan(text: values.join(", "))]))),
+            ],
           ),
-        );
+        ));
       }
     }
-
     if (groupedRows.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.only(left: 35),
-        child: Text("Brak szczegółowych cech morfologicznych.", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
-      );
+      return const Padding(padding: EdgeInsets.only(left: 35), child: Text("Brak szczegółowych cech morfologicznych.", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)));
     }
-
     return Column(children: groupedRows);
   }
 
   static Widget _harvestItem(HarvestSeason h) {
     final df = DateFormat('dd.MM');
-    final dateRange = (h.startDate != null && h.endDate != null)
-        ? "${df.format(h.startDate!)} - ${df.format(h.endDate!)}"
-        : "Cały rok";
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
       child: Row(
@@ -146,13 +124,12 @@ class PlantCardView {
           const Icon(Icons.calendar_today, size: 16, color: Colors.green),
           const SizedBox(width: 10),
           Expanded(child: Text(h.material, style: const TextStyle(fontWeight: FontWeight.bold))),
-          Text(dateRange, style: const TextStyle(color: Colors.blueGrey)),
+          Text((h.startDate != null && h.endDate != null) ? "${df.format(h.startDate!)} - ${df.format(h.endDate!)}" : "Cały rok", style: const TextStyle(color: Colors.blueGrey)),
         ],
       ),
     );
   }
 
-  static String _joinList(List<String>? list) => (list == null || list.isEmpty) ? "-" : list.join(", ");
   static Widget _buildHandle() => Center(child: Container(width: 40, height: 5, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10))));
   static Widget _buildHeader(PlantObservation obs) => Text(obs.displayName, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.green));
   static Widget _buildPhotoGallery(PlantObservation obs) => SizedBox(height: 150, child: ListView.builder(scrollDirection: Axis.horizontal, itemCount: obs.photoPaths.length, itemBuilder: (ctx, i) => Padding(padding: const EdgeInsets.only(right: 12), child: ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.file(File(obs.photoPaths[i]), width: 200, fit: BoxFit.cover)))));

@@ -174,10 +174,14 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
                   targetPlant = item.originalObject;
                 } else {
                   final sp = item.originalObject;
+                  // FIX: Przepisanie nowych kolekcji map Ellenberga zamiast starych list tekstowych
                   targetPlant = SoughtPlant(
                       id: sp.speciesID, polishName: sp.polishName, latinName: sp.latinName,
-                      prefPhMin: sp.prefPhMin, prefPhMax: sp.prefPhMax, prefAreaTypes: sp.prefAreaTypes,
-                      prefWaterDynamics: sp.prefWaterDynamics, prefLightLevels: sp.prefLightLevels, prefSoilTypes: sp.prefSoilTypes
+                      prefPhMin: sp.prefPhMin, prefPhMax: sp.prefPhMax,
+                      ellenbergL: sp.ellenbergL, ellenbergF: sp.ellenbergF,
+                      ellenbergR: sp.ellenbergR, ellenbergN: sp.ellenbergN,
+                      ellenbergT: sp.ellenbergT, ellenbergK: sp.ellenbergK,
+                      ellenbergS: sp.ellenbergS
                   );
                 }
                 Navigator.push(context, MaterialPageRoute(builder: (_) => ResultsMapScreen(targetPlant: targetPlant)));

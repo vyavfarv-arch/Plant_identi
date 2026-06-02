@@ -51,12 +51,12 @@ class PlantSpecies {
   });
 
   Map<String, dynamic> toMap() {
-    // Pakujemy dodatkowe osie (T, K, S, N) do wolnej kolumny associatedSyntaxaJson, by nie uszkodzić struktury DB v20
+    // FIX: Każda wewnętrzna mapa int-int musi przekształcić klucze na String przed jsonEncode
     final Map<String, dynamic> extraAxes = {
-      'T': ellenbergT,
-      'K': ellenbergK,
-      'S': ellenbergS,
-      'N': ellenbergN,
+      'T': ellenbergT.map((k, v) => MapEntry(k.toString(), v)),
+      'K': ellenbergK.map((k, v) => MapEntry(k.toString(), v)),
+      'S': ellenbergS.map((k, v) => MapEntry(k.toString(), v)),
+      'N': ellenbergN.map((k, v) => MapEntry(k.toString(), v)),
     };
 
     return {

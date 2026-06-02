@@ -16,23 +16,16 @@ class SpeciesCardView {
     final String biologicalType = species.biologicalType;
     final schema = SchemaGenerator.getForType(biologicalType);
 
-    // BARDZO WAŻNA ZMIANA: Dwupoziomowa mapa grupowania [Etap -> [Kategoria -> Cechy]]
     final Map<String, Map<String, Set<String>>> accumulatedTraitsByStage = {};
     final List<PhotoWithStage> allPhotosWithStage = [];
 
     for (var obs in speciesObservations) {
       final String stage = obs.phenologicalStage ?? "Nieokreślony etap";
-
-      // Gromadzenie zdjęć z przypisanym etapem do wizualnego kontekstu
       for (var path in obs.photoPaths) {
         allPhotosWithStage.add(PhotoWithStage(path: path, stage: stage));
       }
-
-      // Inicjalizacja poziomu etapu fenologicznego
       accumulatedTraitsByStage.putIfAbsent(stage, () => {});
       final Map<String, Set<String>> stageMap = accumulatedTraitsByStage[stage]!;
-
-      // Grupowanie cech morfologicznych wewnątrz tego etapu
       obs.characteristics.forEach((category, traits) {
         stageMap.putIfAbsent(category, () => {}).addAll(traits);
       });
@@ -56,7 +49,6 @@ class SpeciesCardView {
               Text("Rodzina: ${species.family.isEmpty ? 'Brak' : species.family}", style: const TextStyle(fontSize: 13, color: Colors.blueGrey)),
               const Divider(height: 24),
 
-              // SKUMULOWANY BANK ZDJĘĆ Z BADGE'AMI ETAPU FENOLOGICZNEGO
               if (allPhotosWithStage.isNotEmpty) ...[
                 _sectionHeader("BANK ZDJĘĆ GATUNKU W ROZWOJU"),
                 const SizedBox(height: 6),
@@ -71,21 +63,13 @@ class SpeciesCardView {
                         padding: const EdgeInsets.only(right: 12),
                         child: Stack(
                           children: [
-                            ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.file(File(item.path), width: 150, height: 140, fit: BoxFit.cover)
-                            ),
+                            ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(File(item.path), width: 150, height: 140, fit: BoxFit.cover)),
                             Positioned(
                               bottom: 6, left: 6, right: 6,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                                 decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(4)),
-                                child: Text(
-                                  item.stage,
-                                  style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.center,
-                                ),
+                                child: Text(item.stage, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
                               ),
                             )
                           ],
@@ -101,10 +85,12 @@ class SpeciesCardView {
               _buildPhenologicalTraitsWidget(accumulatedTraitsByStage, schema),
               const SizedBox(height: 20),
 
+              // FIX: Zsynchronizowana sekcja prezentacji liczb Ellenberga dla skumulowanej karty gatunku
               _sectionHeader("AMPLITUDA EKOLOGICZNA GATUNKU"),
-              _infoItem(Icons.science, "Preferowany zakres pH", "${species.prefPhMin?.toStringAsFixed(1) ?? '?'} - ${species.prefPhMax?.toStringAsFixed(1) ?? '?'}"),
-              _infoItem(Icons.landscape, "Typy siedlisk", species.prefAreaTypes.isEmpty ? "-" : species.prefAreaTypes.join(", ")),
-              _infoItem(Icons.water_drop, "Gospodarka wodna", species.prefWaterDynamics.isEmpty ? "-" : species.prefWaterDynamics.join(", ")),
+              _infoItem(Icons.science, "Odczyn gleby pH (R)", _getMapOptimum(species.ellenbergR)),
+              _infoItem(Icons.wb_sunny, "Wymagania świetlne (L)", _getMapOptimum(species.ellenbergL)),
+              _infoItem(Icons.water_drop, "Gospodarka wodna (F)", _getMapOptimum(species.ellenbergF)),
+              _infoItem(Icons.grass, "Zasobność w Azot (N)", _getMapOptimum(species.ellenbergN)),
               const SizedBox(height: 30),
             ],
           ),
@@ -113,17 +99,21 @@ class SpeciesCardView {
     );
   }
 
-  /// Buduje interfejs podzielony na sekcje rozwijane dla każdego etapu fenologicznego
+  static String _getMapOptimum(Map<int, int>? map) {
+    if (map == null || map.isEmpty) return "Brak danych";
+    final optimums = map.entries.where((e) => e.value == 2).map((e) => e.key).toList();
+    if (optimums.isEmpty) return map.keys.join(", ");
+    return "${optimums.join(', ')} (Optimum)";
+  }
+
   static Widget _buildPhenologicalTraitsWidget(Map<String, Map<String, Set<String>>> traitsByStage, List<DescriptionCategory> schema) {
     if (traitsByStage.isEmpty) {
       return const Text("Brak zarejestrowanych cech morfologicznych we wszystkich okazach.", style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey));
     }
-
     return Column(
       children: traitsByStage.entries.map((stageEntry) {
         final String stageName = stageEntry.key;
         final Map<String, Set<String>> categoryMap = stageEntry.value;
-
         List<Widget> traitRows = [];
 
         for (var cat in schema) {
@@ -133,7 +123,6 @@ class SpeciesCardView {
               combinedValues.addAll(categoryMap[subTitle]!);
             }
           }
-
           if (combinedValues.isNotEmpty) {
             traitRows.add(Padding(
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -142,17 +131,7 @@ class SpeciesCardView {
                 children: [
                   const Icon(Icons.brightness_high_outlined, color: Colors.teal, size: 16),
                   const SizedBox(width: 10),
-                  Expanded(
-                      child: RichText(
-                          text: TextSpan(
-                              style: const TextStyle(color: Colors.black87, fontSize: 13),
-                              children: [
-                                TextSpan(text: "${cat.title}: ", style: const TextStyle(fontWeight: FontWeight.bold)),
-                                TextSpan(text: combinedValues.join(", "))
-                              ]
-                          )
-                      )
-                  ),
+                  Expanded(child: RichText(text: TextSpan(style: const TextStyle(color: Colors.black87, fontSize: 13), children: [TextSpan(text: "${cat.title}: ", style: const TextStyle(fontWeight: FontWeight.bold)), TextSpan(text: combinedValues.join(", "))]))),
                 ],
               ),
             ));
@@ -160,9 +139,7 @@ class SpeciesCardView {
         }
 
         return Card(
-          elevation: 1,
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          color: Colors.teal.withOpacity(0.02),
+          elevation: 1, margin: const EdgeInsets.symmetric(vertical: 4), color: Colors.teal.withOpacity(0.02),
           child: ExpansionTile(
             initiallyExpanded: stageName == "Kwitnienie" || traitsByStage.length == 1,
             leading: const Icon(Icons.calendar_today_outlined, size: 20, color: Colors.teal),
@@ -171,9 +148,7 @@ class SpeciesCardView {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
-                child: traitRows.isEmpty
-                    ? const Text("Brak szczegółów morfologicznych dla tego etapu.", style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12, color: Colors.grey))
-                    : Column(children: traitRows),
+                child: traitRows.isEmpty ? const Text("Brak szczegółów morfologicznych dla tego etapu.", style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12, color: Colors.grey)) : Column(children: traitRows),
               )
             ],
           ),

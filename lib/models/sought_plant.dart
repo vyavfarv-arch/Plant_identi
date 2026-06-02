@@ -37,8 +37,12 @@ class SoughtPlant {
   });
 
   Map<String, dynamic> toMap() {
+    // FIX: Stringowanie kluczy numerycznych dla osi dodatkowych
     final Map<String, dynamic> extraAxes = {
-      'T': ellenbergT, 'K': ellenbergK, 'S': ellenbergS, 'N': ellenbergN,
+      'T': ellenbergT.map((k, v) => MapEntry(k.toString(), v)),
+      'K': ellenbergK.map((k, v) => MapEntry(k.toString(), v)),
+      'S': ellenbergS.map((k, v) => MapEntry(k.toString(), v)),
+      'N': ellenbergN.map((k, v) => MapEntry(k.toString(), v)),
     };
     return {
       'id': id,

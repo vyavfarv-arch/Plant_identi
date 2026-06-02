@@ -41,6 +41,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       else if (f == 'family') initialValue = species?.family ?? "";
       _controllers[f] = TextEditingController(text: initialValue);
     }
+
     _selectedCertainty = widget.observation.certainty;
     if (species != null) _applySpeciesData(species);
   }
@@ -53,10 +54,12 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       _controllers['cultivation']!.text = s.cultivation ?? "";
       _selectedSeasons = List.from(s.harvestSeasons);
     });
+    // FIX: Poprawne przekazanie lF zamiast starego fMap
     _ecoController.updateFromSpeciesData(
       newPhMin: s.prefPhMin, newPhMax: s.prefPhMax,
-      lL: s.ellenbergL, fMap: s.ellenbergF, lR: s.ellenbergR,
-      lN: s.ellenbergN, lT: s.ellenbergT, lK: s.ellenbergK, lS: s.ellenbergS,
+      lL: s.ellenbergL, lF: s.ellenbergF,
+      lR: s.ellenbergR, lN: s.ellenbergN,
+      lT: s.ellenbergT, lK: s.ellenbergK, lS: s.ellenbergS,
     );
   }
 
@@ -148,6 +151,8 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Podaj obie nazwy!"), backgroundColor: Colors.redAccent));
       return;
     }
+
+    // FIX: Przekazanie w pełni zunifikowanych map Ellenberga do ViewModelu przy zapisie szczegółowym
     await context.read<ObservationViewModel>().updateObservationDetailed(
       id: widget.observation.id, localName: _controllers['localName']!.text, latinName: _controllers['latinName']!.text,
       family: _controllers['family']!.text, biologicalType: widget.observation.tempBiologicalType,
@@ -155,10 +160,13 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       keyTraits: _controllers['keyTraits']!.text, confusing: _controllers['confusing']!.text, characteristic: _controllers['characteristic']!.text,
       usage: _controllers['usage']!.text, cultivation: _controllers['cultivation']!.text, harvestSeasons: _selectedSeasons,
       prefPhMin: _ecoController.phMin, prefPhMax: _ecoController.phMax,
-      ellenbergL: _ecoController.ellenbergL, ellenbergF: _ecoController.ellenbergF,
-      ellenbergR: _ecoController.ellenbergR, ellenbergN: _ecoController.ellenbergN,
-      ellenbergT: _ecoController.ellenbergT, ellenbergK: _ecoController.ellenbergK,
-      ellenbergS: _ecoController.ellenbergS,
+      ellenbergL: Map.from(_ecoController.ellenbergL),
+      ellenbergF: Map.from(_ecoController.ellenbergF),
+      ellenbergR: Map.from(_ecoController.ellenbergR),
+      ellenbergN: Map.from(_ecoController.ellenbergN),
+      ellenbergT: Map.from(_ecoController.ellenbergT),
+      ellenbergK: Map.from(_ecoController.ellenbergK),
+      ellenbergS: Map.from(_ecoController.ellenbergS),
     );
     if (mounted) Navigator.pop(context);
   }

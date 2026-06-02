@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/habitat_info.dart';
 import '../viewmodels/search_filter_view_model.dart';
-import '../viewmodels/releve_view_model.dart';
-import 'filtered_areas_map_screen.dart';
+
 
 class AreaFilterScreen extends StatefulWidget {
   const AreaFilterScreen({super.key});
