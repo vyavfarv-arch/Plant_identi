@@ -12,9 +12,8 @@ class _IngredientControllers {
   _IngredientControllers(String n, String p, String a) : name = TextEditingController(text: n), part = TextEditingController(text: p), amount = TextEditingController(text: a);
 }
 
-// Zmodyfikowana klasa z logiką Jednostek (Minuty/Godziny/Dni)
 class _StepData {
-  String type; // 'text' lub 'timer'
+  String type;
   late TextEditingController contentCtrl;
   late TextEditingController durationCtrl;
   String unit = 'Minuty';
@@ -22,7 +21,6 @@ class _StepData {
   _StepData({required this.type, String content = '', int duration = 0}) {
     contentCtrl = TextEditingController(text: content);
 
-    // Heurystyka odtwarzania jednostki przy ładowaniu przepisu z bazy
     if (duration > 0 && duration % 1440 == 0) {
       durationCtrl = TextEditingController(text: (duration ~/ 1440).toString());
       unit = 'Dni';
@@ -35,7 +33,6 @@ class _StepData {
     }
   }
 
-  // Funkcja zwracająca łączny czas w minutach przed zapisem do bazy
   int get durationAsMinutes {
     final val = int.tryParse(durationCtrl.text) ?? 0;
     if (unit == 'Dni') return val * 1440;
@@ -54,6 +51,7 @@ class RecipeFormScreen extends StatefulWidget {
 
 class _RecipeFormScreenState extends State<RecipeFormScreen> {
   final _titleCtrl = TextEditingController();
+  final _noteCtrl = TextEditingController(); // NOWOŚĆ: Kontroler notatki
   String _selectedType = 'Napar';
   final List<String> _types = ['Napar', 'Odwar', 'Macerat', 'Nalewka', 'Maść', 'Syrop', 'Inne'];
 
@@ -65,7 +63,9 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
     super.initState();
     if (widget.recipeToEdit != null) {
       final r = widget.recipeToEdit!;
-      _titleCtrl.text = r.title; _selectedType = r.type;
+      _titleCtrl.text = r.title;
+      _selectedType = r.type;
+      _noteCtrl.text = r.note; // Wczytanie istniejącej notatki do edycji
       for (var ing in r.ingredients) { _ingredients.add(_IngredientControllers(ing.speciesName, ing.plantPart, ing.amount)); }
       for (var s in r.steps) { _steps.add(_StepData(type: s.type, content: s.content, duration: s.durationMinutes)); }
     } else {
@@ -79,7 +79,6 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
 
     final recipeId = widget.recipeToEdit?.id ?? const Uuid().v4();
 
-    // Konwersja naszych edytorów i jednostek na model bazodanowy
     List<RecipeStep> finalSteps = _steps.where((s) => s.contentCtrl.text.isNotEmpty).map((s) {
       return RecipeStep(
           type: s.type,
@@ -90,7 +89,9 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
 
     final recipe = Recipe(
       id: recipeId,
-      title: _titleCtrl.text, type: _selectedType,
+      title: _titleCtrl.text,
+      type: _selectedType,
+      note: _noteCtrl.text.trim(), // Zapis przekazanej notatki
       createdAt: widget.recipeToEdit?.createdAt ?? DateTime.now(),
       ingredients: _ingredients.where((c) => c.name.text.isNotEmpty).map((c) => RecipeIngredient(speciesName: c.name.text, plantPart: c.part.text, amount: c.amount.text)).toList(),
       steps: finalSteps,
@@ -110,6 +111,10 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
           TextField(controller: _titleCtrl, decoration: const InputDecoration(labelText: "Tytuł przepisu", border: OutlineInputBorder())),
           const SizedBox(height: 15),
           DropdownButtonFormField<String>(value: _selectedType, items: _types.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(), onChanged: (v) => setState(() => _selectedType = v!), decoration: const InputDecoration(border: OutlineInputBorder())),
+          const SizedBox(height: 15),
+
+          // NOWOŚĆ: Pole edytora notatki/opisu przepisu
+          TextField(controller: _noteCtrl, maxLines: 3, decoration: const InputDecoration(labelText: "Notatka / Opis przepisu", border: OutlineInputBorder(), alignLabelWithHint: true)),
 
           const Divider(height: 40),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -149,7 +154,6 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
                 ],
               );
             } else {
-              // Blok Czasowy z Jednostkami!
               return Card(
                 color: Colors.indigo.shade50,
                 elevation: 0,
@@ -164,7 +168,6 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
                       const SizedBox(width: 8),
                       Expanded(flex: 2, child: TextField(controller: step.durationCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(hintText: "Czas", isDense: true))),
                       const SizedBox(width: 8),
-                      // Dropdown z Jednostkami
                       Expanded(flex: 3, child: DropdownButton<String>(
                         value: step.unit,
                         isExpanded: true,

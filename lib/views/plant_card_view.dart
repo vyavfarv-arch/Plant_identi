@@ -143,7 +143,7 @@ class PlantCardView {
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
       child: Row(
         children: [
-          Icon(Icons.calendar_today, size: 16, color: h.reminderEnabled ? Colors.orange : Colors.green),
+          const Icon(Icons.calendar_today, size: 16, color: Colors.green),
           const SizedBox(width: 10),
           Expanded(child: Text(h.material, style: const TextStyle(fontWeight: FontWeight.bold))),
           Text(dateRange, style: const TextStyle(color: Colors.blueGrey)),

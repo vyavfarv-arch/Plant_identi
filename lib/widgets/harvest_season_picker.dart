@@ -1,7 +1,7 @@
 // lib/widgets/harvest_season_picker.dart
 import 'package:flutter/material.dart';
 import '../models/harvest_season.dart';
-import 'package:intl/intl.dart'; // Upewnij się, że masz pakiet intl w pubspec.yaml
+import 'package:intl/intl.dart';
 
 class HarvestSeasonPicker extends StatefulWidget {
   final String title;
@@ -33,7 +33,6 @@ class _HarvestSeasonPickerState extends State<HarvestSeasonPicker> {
     String? selectedMaterial;
     DateTime? startDate;
     DateTime? endDate;
-    bool enableReminder = false;
 
     showDialog(
       context: context,
@@ -44,7 +43,7 @@ class _HarvestSeasonPickerState extends State<HarvestSeasonPicker> {
                 : "Wybierz zakres dat";
 
             return AlertDialog(
-              title: const Text("Zdefiniuj zbiory"),
+              title: const Text("Zdefiniuj okres zbiorów"),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -57,7 +56,6 @@ class _HarvestSeasonPickerState extends State<HarvestSeasonPicker> {
                     ),
                     const SizedBox(height: 20),
 
-                    // PRZYCISK WYWOŁUJĄCY DATERANGEPICKER
                     OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
@@ -81,15 +79,6 @@ class _HarvestSeasonPickerState extends State<HarvestSeasonPicker> {
                         }
                       },
                     ),
-
-                    const Divider(height: 30),
-                    SwitchListTile(
-                      title: const Text("Ustaw przypomnienie", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      subtitle: const Text("Aplikacja przypomni w dniu rozpoczęcia zbiorów.", style: TextStyle(fontSize: 11)),
-                      value: enableReminder,
-                      activeColor: Colors.green,
-                      onChanged: (val) => setDialogState(() => enableReminder = val),
-                    )
                   ],
                 ),
               ),
@@ -104,7 +93,7 @@ class _HarvestSeasonPickerState extends State<HarvestSeasonPicker> {
                             material: selectedMaterial!,
                             startDate: startDate,
                             endDate: endDate,
-                            reminderEnabled: enableReminder
+                            reminderEnabled: false // WYŁĄCZONE DLA POJEDYNCZEGO OKAZU
                         ));
                       });
                       widget.onChanged(_seasons);
@@ -145,23 +134,8 @@ class _HarvestSeasonPickerState extends State<HarvestSeasonPicker> {
             elevation: 1, margin: const EdgeInsets.symmetric(vertical: 4),
             child: ListTile(
               dense: true,
-              leading: IconButton(
-                icon: Icon(
-                    season.reminderEnabled ? Icons.notifications_active : Icons.notifications_off,
-                    color: season.reminderEnabled ? Colors.orange : Colors.grey
-                ),
-                onPressed: () {
-                  // TOGGLE DZWONKA NA LIŚCIE
-                  final updatedSeason = HarvestSeason(
-                    material: season.material,
-                    startDate: season.startDate,
-                    endDate: season.endDate,
-                    reminderEnabled: !season.reminderEnabled,
-                  );
-                  setState(() => _seasons[idx] = updatedSeason);
-                  widget.onChanged(_seasons);
-                },
-              ),
+              // ZMIANA: Zastąpiono interaktywny przycisk dzwonka czystą, estetyczną ikoną botaniczną
+              leading: const Icon(Icons.shopping_bag_outlined, color: Colors.green),
               title: Text(season.material, style: const TextStyle(fontWeight: FontWeight.bold)),
               subtitle: Text(dateText),
               trailing: IconButton(

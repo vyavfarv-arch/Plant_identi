@@ -151,14 +151,6 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Podaj obie nazwy!"), backgroundColor: Colors.redAccent));
       return;
     }
-
-    final remVm = context.read<ReminderViewModel>();
-    for (var s in _selectedSeasons) {
-      if (s.reminderEnabled && s.startDate != null) {
-        await remVm.addHarvestReminder(plantName: _controllers['localName']!.text, material: s.material, startDate: s.startDate!, endDate: s.endDate ?? s.startDate!.add(const Duration(days: 30)), relatedId: widget.observation.id);
-      }
-    }
-
     await context.read<ObservationViewModel>().updateObservationDetailed(
       id: widget.observation.id, localName: _controllers['localName']!.text, latinName: _controllers['latinName']!.text,
       family: _controllers['family']!.text, biologicalType: widget.observation.tempBiologicalType,

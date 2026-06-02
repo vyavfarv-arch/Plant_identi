@@ -6,9 +6,11 @@ import 'package:provider/provider.dart';
 import '../models/plant_species.dart';
 import '../models/plant_observation.dart';
 import '../models/releve.dart';
+import '../models/harvest_season.dart';
 import '../models/description_schema.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../viewmodels/observation_view_model.dart';
+import '../viewmodels/reminder_view_model.dart'; // DODANY IMPORT
 import '../services/spatial_service.dart';
 import 'plant_card_view.dart';
 import 'releve_details_screen.dart';
@@ -28,8 +30,9 @@ class SpeciesDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final obsVm = context.watch<ObservationViewModel>();
     final releveVm = context.watch<ReleveViewModel>();
+    final remVm = context.read<ReminderViewModel>(); // Słuchacz managera powiadomień
 
-    // Pobieramy aktualne okazy z ViewModelu
+    // 1. Dynamiczne pobranie ewidencji okazów dla tego gatunku
     final List<PlantObservation> currentObservations = obsVm.completeObservations.where((o) {
       final spec = obsVm.getSpeciesById(o.speciesId);
       final String name = (spec?.polishName.isNotEmpty == true ? spec!.polishName : o.displayName).trim();
@@ -37,7 +40,6 @@ class SpeciesDetailsScreen extends StatelessWidget {
       return key == commonName;
     }).toList();
 
-    // Jeśli usunięto ostatni okaz, wracamy płynnie do Magazynu
     if (currentObservations.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (Navigator.canPop(context)) {
@@ -49,11 +51,14 @@ class SpeciesDetailsScreen extends StatelessWidget {
       );
     }
 
+    // 2. LOGIKA MATRYCY FENOLOGICZNEJ I BANKU ZDJĘĆ
     final Map<String, Map<String, Set<String>>> accumulatedTraitsByStage = {};
-    // NORMALIZACJA: Prosta mapa zamiast kłopotliwej klasy zewnętrznej
     final List<Map<String, String>> allPhotosWithStage = [];
     final String biologicalType = species?.biologicalType ?? "Zielne";
     final schema = SchemaGenerator.getForType(biologicalType);
+
+    // Słownik gromadzenia dat surowców do obliczenia średniej
+    final Map<String, List<HarvestSeason>> seasonsByMaterial = {};
 
     for (var obs in currentObservations) {
       final String stage = obs.phenologicalStage ?? "Nieokreślony etap";
@@ -65,8 +70,49 @@ class SpeciesDetailsScreen extends StatelessWidget {
       obs.characteristics.forEach((category, traits) {
         stageMap.putIfAbsent(category, () => {}).addAll(traits);
       });
+
+      // Zbieranie kalendarzy zbiorów z poszczególnych wypraw terenowych okazu
+      final harvestData = obs.customHarvestSeasons.isNotEmpty
+          ? obs.customHarvestSeasons
+          : (species?.harvestSeasons ?? []);
+
+      for (var s in harvestData) {
+        if (s.startDate != null && s.endDate != null) {
+          seasonsByMaterial.putIfAbsent(s.material, () => []).add(s);
+        }
+      }
     }
 
+    // 3. ALGORYTM BOTANICZNEGO UŚREDNIANIA DAT (Normalizacja do roku cyklu: 2026)
+    final List<Map<String, dynamic>> calculatedAverageSeasons = [];
+    final int targetCycleYear = 2026;
+
+    seasonsByMaterial.forEach((material, list) {
+      int totalStartMs = 0;
+      int totalEndMs = 0;
+      int count = list.length;
+
+      for (var s in list) {
+        // Normalizujemy do wspólnego roku, by uśredniać czysty dzień i miesiąc wegetacji
+        final normalizedStart = DateTime(targetCycleYear, s.startDate!.month, s.startDate!.day);
+        final normalizedEnd = DateTime(targetCycleYear, s.endDate!.month, s.endDate!.day);
+
+        totalStartMs += normalizedStart.millisecondsSinceEpoch;
+        totalEndMs += normalizedEnd.millisecondsSinceEpoch;
+      }
+
+      final avgStart = DateTime.fromMillisecondsSinceEpoch(totalStartMs ~/ count);
+      final avgEnd = DateTime.fromMillisecondsSinceEpoch(totalEndMs ~/ count);
+
+      calculatedAverageSeasons.add({
+        'material': material,
+        'startDate': avgStart,
+        'endDate': avgEnd,
+        'count': count,
+      });
+    });
+
+    // 4. Mapowanie unikalnych obszarów
     final Set<String> observedAreaIds = {};
     final List<Releve> uniqueAreas = [];
     for (var obs in currentObservations) {
@@ -82,6 +128,8 @@ class SpeciesDetailsScreen extends StatelessWidget {
         uniqueAreas.add(area);
       } catch (_) {}
     }
+
+    final df = DateFormat('dd.MM');
 
     return Scaffold(
       appBar: AppBar(
@@ -135,6 +183,51 @@ class SpeciesDetailsScreen extends StatelessWidget {
 
             _sectionHeader("SPECYFIKACJA MORFOLOGICZNA (ETAPY FENOLOGICZNE)"),
             _buildPhenologicalTraitsWidget(accumulatedTraitsByStage, schema),
+            const Divider(height: 30),
+
+            // NOWA SEKCJA: FENOLOGICZNA ŚREDNIA ZBIORÓW Z PRZYCISKIEM PRZYPOMNIEŃ
+            _sectionHeader("ŚREDNIE TERMINY ZBIORU SUROWCÓW (Z TERENU)"),
+            if (calculatedAverageSeasons.isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(left: 6, top: 4),
+                child: Text("Brak zarejestrowanych terminów wegetacji surowców.", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
+              )
+            else
+              ...calculatedAverageSeasons.map((item) {
+                final String mat = item['material'];
+                final DateTime start = item['startDate'];
+                final DateTime end = item['endDate'];
+                final int sampleCount = item['count'];
+
+                return Card(
+                  color: Colors.green.shade50,
+                  margin: const EdgeInsets.symmetric(vertical: 4),
+                  child: ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.calendar_today, color: Colors.green),
+                    title: Text(mat, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: Text("Uśredniony fenologicznie czas: ${df.format(start)} - ${df.format(end)} (Próba z $sampleCount okazów)"),
+                    // REWOLUCJA: Bezpośredni zapytanie powiadomienia z poziomu karty specyfikacji
+                    trailing: IconButton(
+                      icon: const Icon(Icons.notification_add, color: Colors.orange),
+                      tooltip: "Aktywuj asystenta poszukiwań i powiadomienie",
+                      onPressed: () async {
+                        await remVm.addHarvestReminder(
+                            plantName: commonName,
+                            material: mat,
+                            startDate: start,
+                            endDate: end,
+                            relatedId: species?.speciesID ?? currentObservations.first.id
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          backgroundColor: Colors.amber.shade900,
+                          content: Text("Asystent czasowy aktywny. Przypomnę o zbiorze surowca ($mat) dnia ${df.format(start)}!"),
+                        ));
+                      },
+                    ),
+                  ),
+                );
+              }),
             const Divider(height: 40),
 
             _sectionHeader("OBSZARY (PŁATY) WYSTĘPOWANIA"),

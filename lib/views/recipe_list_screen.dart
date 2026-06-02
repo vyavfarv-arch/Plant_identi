@@ -35,9 +35,8 @@ class RecipeListScreen extends StatelessWidget {
             child: ExpansionTile(
               leading: CircleAvatar(backgroundColor: Colors.teal.shade100, child: const Icon(Icons.menu_book, color: Colors.teal)),
               title: Text(r.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text("${r.type} | Składniki: ${r.ingredients.length} \nDodano: ${DateFormat('yyyy-MM-dd').format(r.createdAt)}"),
+              subtitle: Text("${r.type} | Składniki: ${r.ingredients.length}"),
               children: [
-                // Ograniczenie wielkości dropdowna (np. do 2/3 ekranu)
                 Container(
                   constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
                   child: SingleChildScrollView(
@@ -45,6 +44,26 @@ class RecipeListScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // HIERARCHIA 1: Wyżej nadany tytuł przepisu
+                        Text(r.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal)),
+                        const SizedBox(height: 4),
+
+                        // HIERARCHIA 2: Typ produktu (napar / inne etc)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(color: Colors.teal.shade50, borderRadius: BorderRadius.circular(6)),
+                          child: Text("Typ: ${r.type}", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.teal.shade900)),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // HIERARCHIA 3: Notatka wyświetlana jako opis zamiast starego układu
+                        if (r.note.isNotEmpty) ...[
+                          Text(r.note, style: const TextStyle(fontSize: 14, height: 1.4, color: Colors.black87, fontStyle: FontStyle.italic)),
+                        ] else ...[
+                          const Text("Brak dodatkowych notatek do tego przepisu.", style: TextStyle(fontSize: 13, color: Colors.grey, fontStyle: FontStyle.italic)),
+                        ],
+
+                        const Divider(height: 30),
                         const Text("Składniki:", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
                         const SizedBox(height: 5),
                         ...r.ingredients.map((ing) => Row(
@@ -60,7 +79,6 @@ class RecipeListScreen extends StatelessWidget {
                         const Text("Przygotowanie:", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
                         const SizedBox(height: 10),
 
-                        // Rysowanie przeplatanych KROKÓW (Tekst i Minutniki)
                         ...r.steps.map((step) {
                           if (step.type == 'text') {
                             return Padding(
@@ -68,7 +86,6 @@ class RecipeListScreen extends StatelessWidget {
                               child: Text(step.content, style: const TextStyle(fontSize: 15, height: 1.4)),
                             );
                           } else {
-                            // Przycisk odpalający Minutnik!
                             return Container(
                               margin: const EdgeInsets.only(bottom: 12),
                               decoration: BoxDecoration(color: Colors.indigo.shade50, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.indigo.shade200)),
@@ -81,7 +98,7 @@ class RecipeListScreen extends StatelessWidget {
                                   onPressed: () {
                                     remVm.addTimerReminder(
                                         title: "Przepis: ${r.title}",
-                                        body: "Trwa proces: ${step.content}", // Zmiana z "Zakończono" na "Trwa"
+                                        body: "Trwa proces: ${step.content}",
                                         durationMinutes: step.durationMinutes,
                                         relatedId: r.id
                                     );

@@ -15,12 +15,11 @@ class RecipeIngredient {
   );
 }
 
-// NOWOŚĆ: Krok przepisu. Może to być tekst albo minutnik.
 class RecipeStep {
   final String id;
-  final String type; // 'text' LUB 'timer'
-  final String content; // Tekst instrukcji LUB nazwa minutnika
-  final int durationMinutes; // Używane tylko gdy type == 'timer'
+  final String type;
+  final String content;
+  final int durationMinutes;
 
   RecipeStep({String? id, required this.type, required this.content, this.durationMinutes = 0}) : id = id ?? const Uuid().v4();
 
@@ -35,17 +34,20 @@ class Recipe {
   final String id;
   final String title;
   final String type;
+  final String note; // NOWOŚĆ: Notatka stanowiąca główny opis przepisu
   final List<RecipeIngredient> ingredients;
-  final List<RecipeStep> steps; // ZMIANA: Lista przeplatających się kroków i minutników
+  final List<RecipeStep> steps;
   final DateTime createdAt;
 
   Recipe({
     required this.id, required this.title, required this.type,
+    this.note = '', // Domyślnie pusta
     required this.ingredients, required this.steps, required this.createdAt,
   });
 
   Map<String, dynamic> toMap() => {
     'id': id, 'title': title, 'type': type,
+    'instructions': note, // Mapowanie do istniejącej kolumny struktury bazy danych!
     'ingredientsJson': jsonEncode(ingredients.map((x) => x.toMap()).toList()),
     'stepsJson': jsonEncode(steps.map((x) => x.toMap()).toList()),
     'createdAt': createdAt.toIso8601String(),
@@ -53,6 +55,7 @@ class Recipe {
 
   factory Recipe.fromMap(Map<String, dynamic> map) => Recipe(
     id: map['id'], title: map['title'] ?? '', type: map['type'] ?? '',
+    note: map['instructions'] ?? '', // Odczyt notatki z bazy
     ingredients: map['ingredientsJson'] != null ? List<RecipeIngredient>.from(jsonDecode(map['ingredientsJson']).map((x) => RecipeIngredient.fromMap(x))) : [],
     steps: map['stepsJson'] != null ? List<RecipeStep>.from(jsonDecode(map['stepsJson']).map((x) => RecipeStep.fromMap(x))) : [],
     createdAt: DateTime.parse(map['createdAt']),
