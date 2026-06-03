@@ -9,7 +9,7 @@ class HabitatInfo {
 
   // Opisy dla 9-stopniowej skali gęstości okapu i zacienienia (zastępuje dawne canopyCover)
   static const List<String> canopyDensityLabels = [
-    "1 - Pełna otwartość (0-10% cieniowania, patelnia)",
+    "1 - Pełna otwartość (0-10% cienia, zupełnie otwarte)",
     "2 - Pojedyncze przeszkody (rzadkie drzewa/krzewy)",
     "3 - Bardzo luźne zarośla / Świetlisty sad",
     "4 - Świetlisty las / Polana leśna",

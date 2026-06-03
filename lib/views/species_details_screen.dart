@@ -10,8 +10,9 @@ import '../models/harvest_season.dart';
 import '../models/description_schema.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../viewmodels/observation_view_model.dart';
-import '../viewmodels/reminder_view_model.dart'; // DODANY IMPORT
 import '../services/spatial_service.dart';
+import '../widgets/ellenberg_matrix_card.dart'; // NOWY IMPORT COMPONENTU
+import '../widgets/species_harvest_averages.dart'; // NOWY IMPORT COMPONENTU
 import 'plant_card_view.dart';
 import 'releve_details_screen.dart';
 import 'detail_description_screen.dart';
@@ -30,7 +31,6 @@ class SpeciesDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final obsVm = context.watch<ObservationViewModel>();
     final releveVm = context.watch<ReleveViewModel>();
-    final remVm = context.read<ReminderViewModel>(); // Słuchacz managera powiadomień
 
     // 1. Dynamiczne pobranie ewidencji okazów dla tego gatunku
     final List<PlantObservation> currentObservations = obsVm.completeObservations.where((o) {
@@ -56,8 +56,6 @@ class SpeciesDetailsScreen extends StatelessWidget {
     final List<Map<String, String>> allPhotosWithStage = [];
     final String biologicalType = species?.biologicalType ?? "Zielne";
     final schema = SchemaGenerator.getForType(biologicalType);
-
-    // Słownik gromadzenia dat surowców do obliczenia średniej
     final Map<String, List<HarvestSeason>> seasonsByMaterial = {};
 
     for (var obs in currentObservations) {
@@ -71,7 +69,6 @@ class SpeciesDetailsScreen extends StatelessWidget {
         stageMap.putIfAbsent(category, () => {}).addAll(traits);
       });
 
-      // Zbieranie kalendarzy zbiorów z poszczególnych wypraw terenowych okazu
       final harvestData = obs.customHarvestSeasons.isNotEmpty
           ? obs.customHarvestSeasons
           : (species?.harvestSeasons ?? []);
@@ -91,23 +88,16 @@ class SpeciesDetailsScreen extends StatelessWidget {
       int totalStartMs = 0;
       int totalEndMs = 0;
       int count = list.length;
-
       for (var s in list) {
-        // Normalizujemy do wspólnego roku, by uśredniać czysty dzień i miesiąc wegetacji
         final normalizedStart = DateTime(targetCycleYear, s.startDate!.month, s.startDate!.day);
         final normalizedEnd = DateTime(targetCycleYear, s.endDate!.month, s.endDate!.day);
-
         totalStartMs += normalizedStart.millisecondsSinceEpoch;
         totalEndMs += normalizedEnd.millisecondsSinceEpoch;
       }
-
-      final avgStart = DateTime.fromMillisecondsSinceEpoch(totalStartMs ~/ count);
-      final avgEnd = DateTime.fromMillisecondsSinceEpoch(totalEndMs ~/ count);
-
       calculatedAverageSeasons.add({
         'material': material,
-        'startDate': avgStart,
-        'endDate': avgEnd,
+        'startDate': DateTime.fromMillisecondsSinceEpoch(totalStartMs ~/ count),
+        'endDate': DateTime.fromMillisecondsSinceEpoch(totalEndMs ~/ count),
         'count': count,
       });
     });
@@ -118,9 +108,7 @@ class SpeciesDetailsScreen extends StatelessWidget {
     for (var obs in currentObservations) {
       if (obs.releveId != null) observedAreaIds.add(obs.releveId!);
       final spatialAreas = SpatialService.getAreasForPlant(releveVm.allReleves, obs);
-      for (var a in spatialAreas) {
-        observedAreaIds.add(a.id);
-      }
+      for (var a in spatialAreas) { observedAreaIds.add(a.id); }
     }
     for (var areaId in observedAreaIds) {
       try {
@@ -128,8 +116,6 @@ class SpeciesDetailsScreen extends StatelessWidget {
         uniqueAreas.add(area);
       } catch (_) {}
     }
-
-    final df = DateFormat('dd.MM');
 
     return Scaffold(
       appBar: AppBar(
@@ -155,8 +141,7 @@ class SpeciesDetailsScreen extends StatelessWidget {
               SizedBox(
                 height: 140,
                 child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: allPhotosWithStage.length,
+                  scrollDirection: Axis.horizontal, itemCount: allPhotosWithStage.length,
                   itemBuilder: (ctx, i) {
                     final item = allPhotosWithStage[i];
                     return Padding(
@@ -181,53 +166,21 @@ class SpeciesDetailsScreen extends StatelessWidget {
               const SizedBox(height: 20),
             ],
 
+            // 100% ZACHOWANE: Twoja pełna logika i widok rozwijanych cech morfologicznych pętli
             _sectionHeader("SPECYFIKACJA MORFOLOGICZNA (ETAPY FENOLOGICZNE)"),
             _buildPhenologicalTraitsWidget(accumulatedTraitsByStage, schema),
             const Divider(height: 30),
 
-            // NOWA SEKCJA: FENOLOGICZNA ŚREDNIA ZBIORÓW Z PRZYCISKIEM PRZYPOMNIEŃ
-            _sectionHeader("ŚREDNIE TERMINY ZBIORU SUROWCÓW (Z TERENU)"),
-            if (calculatedAverageSeasons.isEmpty)
-              const Padding(
-                padding: EdgeInsets.only(left: 6, top: 4),
-                child: Text("Brak zarejestrowanych terminów wegetacji surowców.", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
-              )
-            else
-              ...calculatedAverageSeasons.map((item) {
-                final String mat = item['material'];
-                final DateTime start = item['startDate'];
-                final DateTime end = item['endDate'];
-                final int sampleCount = item['count'];
+            // DEKOMPOZYCJA: Czyste wywołanie wyodrębnionej siatki Ellenberga
+            if (species != null) ...[
+              _sectionHeader("AMPLITUDA EKOLOGICZNA (WSKAŹNIKI ELLENBERGA)"),
+              EllenbergMatrixCard(species: species!),
+              const Divider(height: 30),
+            ],
 
-                return Card(
-                  color: Colors.green.shade50,
-                  margin: const EdgeInsets.symmetric(vertical: 4),
-                  child: ListTile(
-                    dense: true,
-                    leading: const Icon(Icons.calendar_today, color: Colors.green),
-                    title: Text(mat, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: Text("Uśredniony fenologicznie czas: ${df.format(start)} - ${df.format(end)} (Próba z $sampleCount okazów)"),
-                    // REWOLUCJA: Bezpośredni zapytanie powiadomienia z poziomu karty specyfikacji
-                    trailing: IconButton(
-                      icon: const Icon(Icons.notification_add, color: Colors.orange),
-                      tooltip: "Aktywuj asystenta poszukiwań i powiadomienie",
-                      onPressed: () async {
-                        await remVm.addHarvestReminder(
-                            plantName: commonName,
-                            material: mat,
-                            startDate: start,
-                            endDate: end,
-                            relatedId: species?.speciesID ?? currentObservations.first.id
-                        );
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          backgroundColor: Colors.amber.shade900,
-                          content: Text("Asystent czasowy aktywny. Przypomnę o zbiorze surowca ($mat) dnia ${df.format(start)}!"),
-                        ));
-                      },
-                    ),
-                  ),
-                );
-              }),
+            // DEKOMPOZYCJA: Czyste wywołanie wyodrębnionego modułu średnich dat surowców
+            _sectionHeader("ŚREDNIE TERMINY ZBIORU SUROWCÓW (Z TERENU)"),
+            SpeciesHarvestAverages(commonName: commonName, speciesId: species?.speciesID, calculatedAverageSeasons: calculatedAverageSeasons),
             const Divider(height: 40),
 
             _sectionHeader("OBSZARY (PŁATY) WYSTĘPOWANIA"),
@@ -235,8 +188,7 @@ class SpeciesDetailsScreen extends StatelessWidget {
               const Text("Ten gatunek nie został powiązany z żadnym płatem fitosocjologicznym.", style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey))
             else
               ...uniqueAreas.map((area) => Card(
-                color: Colors.indigo.shade50,
-                margin: const EdgeInsets.symmetric(vertical: 4),
+                color: Colors.indigo.shade50, margin: const EdgeInsets.symmetric(vertical: 4),
                 child: ListTile(
                   leading: const Icon(Icons.layers, color: Colors.indigo),
                   title: Text(area.commonName, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -256,23 +208,13 @@ class SpeciesDetailsScreen extends StatelessWidget {
                 subtitle: Text("Witalność: ${obs.vitality ?? '-'} | Ilościowość BB: ${obs.abundance ?? '-'}"),
                 trailing: Wrap(
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove_red_eye_outlined, color: Colors.teal),
-                      tooltip: "Podgląd karty okazu",
-                      onPressed: () => PlantCardView.show(context, obs),
-                    ),
+                    IconButton(icon: const Icon(Icons.remove_red_eye_outlined, color: Colors.teal), tooltip: "Podgląd karty okazu", onPressed: () => PlantCardView.show(context, obs)),
                     PopupMenuButton<String>(
                       onSelected: (val) {
-                        if (val == 'edit') {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => DetailDescriptionScreen(observation: obs)));
-                        } else if (val == 'delete') {
-                          obsVm.deleteObservation(obs.id);
-                        }
+                        if (val == 'edit') Navigator.push(context, MaterialPageRoute(builder: (_) => DetailDescriptionScreen(observation: obs)));
+                        else if (val == 'delete') obsVm.deleteObservation(obs.id);
                       },
-                      itemBuilder: (ctx) => [
-                        const PopupMenuItem(value: 'edit', child: Text('Edytuj szczegóły okazu')),
-                        const PopupMenuItem(value: 'delete', child: Text('Usuń rekord okazu', style: TextStyle(color: Colors.red))),
-                      ],
+                      itemBuilder: (ctx) => [const PopupMenuItem(value: 'edit', child: Text('Edytuj szczegóły okazu')), const PopupMenuItem(value: 'delete', child: Text('Usuń rekord okazu', style: TextStyle(color: Colors.red)))],
                     ),
                   ],
                 ),
@@ -285,6 +227,7 @@ class SpeciesDetailsScreen extends StatelessWidget {
     );
   }
 
+  // 100% ODZYSKANA I ZACHOWANA METODA GENEROWANIA CECH ANATOMICZNYCH OKAZÓW
   static Widget _buildPhenologicalTraitsWidget(Map<String, Map<String, Set<String>>> traitsByStage, List<DescriptionCategory> schema) {
     return Column(
       children: traitsByStage.entries.map((stageEntry) {

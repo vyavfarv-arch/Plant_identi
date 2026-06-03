@@ -59,9 +59,9 @@ class _HabitatDetailsScreenState extends State<HabitatDetailsScreen> {
               ),
               const SizedBox(height: 12),
               _buildDropdown("Ruch i natlenienie wody", HabitatInfo.waterMovementOptions, _waterMovement, (v) => setState(() => _waterMovement = v)),
-              _buildDropdown("Režim wodno-retencyjny", HabitatInfo.hydrologicalContextOptions, _hydrologicalContext, (v) => setState(() => _hydrologicalContext = v)),
+              _buildDropdown("Reżim wodno-retencyjny", HabitatInfo.hydrologicalContextOptions, _hydrologicalContext, (v) => setState(() => _hydrologicalContext = v)),
               _buildDropdown("Struktura okrywy glebowej", HabitatInfo.soilSurfaceCoverOptions, _soilSurfaceCover, (v) => setState(() => _soilSurfaceCover = v)),
-              _buildDropdown("Antropopresja / Zaburzenia", HabitatInfo.humanImpactOptions, _humanImpact, (v) => setState(() => _humanImpact = v)),
+              _buildDropdown("Zaburzenia", HabitatInfo.humanImpactOptions, _humanImpact, (v) => setState(() => _humanImpact = v)),
               _buildDropdown("Ekspozycja stoku", HabitatInfo.exposureOptions, _exposure, (v) => setState(() => _exposure = v)),
               _buildDropdown("Kąt nachylenia stoku", HabitatInfo.slopeAngleOptions, _slopeAngle, (v) => setState(() => _slopeAngle = v)),
 
