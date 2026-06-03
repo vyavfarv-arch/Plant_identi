@@ -2,7 +2,7 @@
 import '../models/releve.dart';
 import '../models/habitat_info.dart';
 import '../models/plant_species.dart';
-import '../models/has_ellenberg_profile.dart'; // BEZPIECZEŃSTWO TYPÓW INTERFEJSU
+import '../models/has_ellenberg_profile.dart';
 
 class ContinuousEcologicalProfile {
   final double sunlight, moisture, acidity, nitrogen, temperature, continent, salinity;
@@ -17,7 +17,7 @@ class AxisPenalty {
 
 class ContinuousEcologicalMatchingResult {
   final double score;
-  final Map<String, String> diagnostics; // PRZYWRÓCONA DIAGNOSTYKA
+  final Map<String, String> diagnostics; // DEDYKOWANA MAPA DIAGNOSTYCZNA URUCHOMIONA DLA WIDOKU
 
   ContinuousEcologicalMatchingResult({required this.score, required this.diagnostics});
   bool get isPotentialMatch => score >= 0.75;
@@ -30,6 +30,7 @@ class AdvancedEcologicalTranslator {
       if (h.exposure == "S") sunlight += 0.8;
       if (h.exposure == "N") sunlight -= 0.8;
     }
+
     double moisture = 4.0;
     final context = h.hydrologicalContext ?? "";
     if (context.contains("Skrajnie suche")) moisture = 1.5;
@@ -40,6 +41,7 @@ class AdvancedEcologicalTranslator {
     final movement = h.waterMovement ?? "";
     if (movement.contains("Stojąca")) moisture += 1.0;
     if (movement.contains("Źródliskowa")) moisture += 0.5;
+
     if (h.substrateType.any((s) => s.contains("Torfowa"))) moisture += 1.5;
     if (h.substrateType.any((s) => s.contains("Gliniasta"))) moisture += 0.4;
     if (h.substrateType.any((s) => s.contains("Piaszczysta"))) moisture -= 1.0;
@@ -51,6 +53,7 @@ class AdvancedEcologicalTranslator {
       else if (h.substrateType.any((s) => s.contains("Gliniasta"))) acidity = 6.5;
       if (h.humanImpact == "Składowisko odpadów / Śmietnisko") acidity = 8.0;
     }
+
     double nitrogen = 3.0;
     final impact = h.humanImpact ?? "";
     if (impact.contains("Śmietnisko")) nitrogen = 8.5;
@@ -62,18 +65,22 @@ class AdvancedEcologicalTranslator {
     if (cover.contains("Zwarta darń")) nitrogen += 1.2;
     if (h.substrateType.any((s) => s.contains("Piaszczysta"))) nitrogen -= 1.0;
 
-    return ContinuousEcologicalProfile(sunlight: sunlight.clamp(1.0, 9.0), moisture: moisture.clamp(1.0, 12.0), acidity: acidity.clamp(1.0, 9.0), nitrogen: nitrogen.clamp(1.0, 9.0), temperature: 5.0, continent: 3.5, salinity: 0.0);
+    return ContinuousEcologicalProfile(
+      sunlight: sunlight.clamp(1.0, 9.0), moisture: moisture.clamp(1.0, 12.0),
+      acidity: acidity.clamp(1.0, 9.0), nitrogen: nitrogen.clamp(1.0, 9.0),
+      temperature: 5.0, continent: 3.5, salinity: 0.0,
+    );
   }
 }
 
 class EcologicalMatchingService {
   static AxisPenalty calculateAxisPenalty(double areaValue, Map<int, int> speciesMap, int minVal, int maxVal) {
-    // FIX: Puste osie zwracają isDefined = false, wykluczając je z dzielenia średniej
     if (speciesMap.isEmpty || !speciesMap.values.any((state) => state > 0)) {
       return AxisPenalty(0.0, false);
     }
     int closestNode = areaValue.round().clamp(minVal, maxVal);
     int directState = speciesMap[closestNode] ?? 0;
+
     if (directState == 2) return AxisPenalty(0.0, true);
     if (directState == 1) return AxisPenalty(0.15, true);
 
@@ -84,11 +91,11 @@ class EcologicalMatchingService {
         if (dist < minDistance) minDistance = dist;
       }
     });
+
     if (minDistance == double.infinity) return AxisPenalty(1.0, true);
     return AxisPenalty(((minDistance / (maxVal - minVal))).clamp(0.0, 1.0), true);
   }
 
-  // FIX: Bezpieczeństwo typów dzięki HasEllenbergProfile
   static ContinuousEcologicalMatchingResult calculateCompatibility(Releve area, HasEllenbergProfile species) {
     if (area.habitat == null) return ContinuousEcologicalMatchingResult(score: 0.0, diagnostics: {});
     final areaProfile = AdvancedEcologicalTranslator.translateArea(area.habitat!);
@@ -100,27 +107,28 @@ class EcologicalMatchingService {
 
     double sumPenalty = 0.0;
     int activeAxesCount = 0;
-    Map<String, String> diagnostics = {};
+    Map<String, String> diagMap = {};
 
-    void processAxisScore(String axisKey, AxisPenalty res) {
+    void processAxis(String key, AxisPenalty res) {
       if (res.isDefined) {
         sumPenalty += res.value;
         activeAxesCount++;
-        diagnostics[axisKey] = res.value == 0.0 ? "✓" : (res.value <= 0.15 ? "░" : "✗");
+        // ✓ = Optimum, ░ = Tolerancja, ✗ = Przekroczona amplituda
+        diagMap[key] = res.value == 0.0 ? "✓" : (res.value <= 0.15 ? "✓" : "✗");
       } else {
-        diagnostics[axisKey] = "?";
+        diagMap[key] = "?";
       }
     }
 
-    processAxisScore("L", resL);
-    processAxisScore("F", resF);
-    processAxisScore("R", resR);
-    processAxisScore("N", resN);
+    processAxis("L", resL);
+    processAxis("F", resF);
+    processAxis("R", resR);
+    processAxis("N", resN);
 
-    if (activeAxesCount == 0) return ContinuousEcologicalMatchingResult(score: 0.0, diagnostics: diagnostics);
+    if (activeAxesCount == 0) return ContinuousEcologicalMatchingResult(score: 0.0, diagnostics: diagMap);
 
     double averagePenalty = sumPenalty / activeAxesCount;
-    return ContinuousEcologicalMatchingResult(score: (1.0 - averagePenalty).clamp(0.0, 1.0), diagnostics: diagnostics);
+    return ContinuousEcologicalMatchingResult(score: (1.0 - averagePenalty).clamp(0.0, 1.0), diagnostics: diagMap);
   }
 
   static List<MapEntry<PlantSpecies, ContinuousEcologicalMatchingResult>> findPotentialPlantsForArea(Releve area, List<PlantSpecies> dictionary) {

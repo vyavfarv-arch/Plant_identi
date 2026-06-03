@@ -1,7 +1,7 @@
-// lib/views/widgets/specimen_reference_card.dart
+// lib/widgets/specimen_reference_card.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../../models/plant_observation.dart';
+import '../models/plant_observation.dart';
 
 class SpecimenReferenceCard extends StatelessWidget {
   final PlantObservation observation;
@@ -21,7 +21,7 @@ class SpecimenReferenceCard extends StatelessWidget {
         ),
         subtitle: const Text("Dane zebrane w terenie", style: TextStyle(fontSize: 11)),
         children: [
-          _buildPhotos(),
+          _buildPhotos(context), // Przekazujemy context do obsługi okien modalnych dialogu
           _buildBadges(),
           _buildTraitsList(),
         ],
@@ -29,7 +29,7 @@ class SpecimenReferenceCard extends StatelessWidget {
     );
   }
 
-  Widget _buildPhotos() {
+  Widget _buildPhotos(BuildContext context) {
     if (observation.photoPaths.isEmpty) return const SizedBox.shrink();
     return SizedBox(
       height: 100,
@@ -39,10 +39,56 @@ class SpecimenReferenceCard extends StatelessWidget {
         itemCount: observation.photoPaths.length,
         itemBuilder: (ctx, i) => Padding(
           padding: const EdgeInsets.only(right: 8),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.file(File(observation.photoPaths[i]), width: 80, height: 80, fit: BoxFit.cover),
+          child: GestureDetector(
+            // POPRAWKA: Kliknięcie wywołuje powiększenie InteractiveViewer
+            onTap: () => _showEnlargedImage(context, observation.photoPaths[i]),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.file(
+                File(observation.photoPaths[i]),
+                width: 80, height: 80, fit: BoxFit.cover,
+                errorBuilder: (c, e, s) => const Icon(Icons.broken_image, color: Colors.grey),
+              ),
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showEnlargedImage(BuildContext context, String path) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(12),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.pop(ctx),
+              child: InteractiveViewer(
+                panEnabled: true,
+                boundaryMargin: const EdgeInsets.all(20),
+                minScale: 0.5,
+                maxScale: 4.0, // Swobodny 4-krotny zoom morfologiczny detali
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(File(path), fit: BoxFit.contain),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 10, right: 10,
+              child: CircleAvatar(
+                backgroundColor: Colors.black54, radius: 20,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white, size: 18),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -75,12 +121,11 @@ class SpecimenReferenceCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Wrap(
-        spacing: 6,
+        spacing: 6, runSpacing: 4,
         children: observation.characteristics.entries.expand((e) =>
             e.value.map((v) => Chip(
               label: Text("${e.key}: $v", style: const TextStyle(fontSize: 11)),
-              visualDensity: VisualDensity.compact,
-              backgroundColor: Colors.white,
+              visualDensity: VisualDensity.compact, backgroundColor: Colors.white,
             ))
         ).toList(),
       ),

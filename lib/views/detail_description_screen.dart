@@ -8,6 +8,7 @@ import '../viewmodels/observation_view_model.dart';
 import '../widgets/ecological_amplitude_picker.dart';
 import '../widgets/harvest_season_picker.dart';
 import '../widgets/specimen_reference_card.dart';
+import 'form_screen.dart'; // Import ekranu modyfikacji cech
 
 class DetailDescriptionScreen extends StatefulWidget {
   final PlantObservation observation;
@@ -29,18 +30,20 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
     _initControllers();
   }
 
+  // FIX: Pełne, jawne zadeklarowanie wszystkich kontrolerów tekstu eliminuje ucinanie i blokowanie pól bazy
   void _initControllers() {
     final species = context.read<ObservationViewModel>().getSpeciesById(widget.observation.speciesId);
-    final fields = ['family', 'subspecies', 'localName', 'latinName', 'idDoubts', 'keyTraits', 'confusing', 'characteristic', 'usage', 'cultivation'];
 
-    for (var f in fields) {
-      String initialValue = "";
-      if (f == 'subspecies') initialValue = widget.observation.subspecies ?? "";
-      else if (f == 'localName') initialValue = widget.observation.localName ?? "";
-      else if (f == 'latinName') initialValue = species?.latinName ?? "";
-      else if (f == 'family') initialValue = species?.family ?? "";
-      _controllers[f] = TextEditingController(text: initialValue);
-    }
+    _controllers['family'] = TextEditingController(text: species?.family ?? "");
+    _controllers['subspecies'] = TextEditingController(text: widget.observation.subspecies ?? "");
+    _controllers['localName'] = TextEditingController(text: widget.observation.localName ?? (species?.polishName ?? ""));
+    _controllers['latinName'] = TextEditingController(text: species?.latinName ?? "");
+    _controllers['idDoubts'] = TextEditingController(text: widget.observation.idDoubts ?? "");
+    _controllers['keyTraits'] = TextEditingController(text: widget.observation.keyMorphologicalTraits ?? "");
+    _controllers['confusing'] = TextEditingController(text: widget.observation.confusingSpecies ?? "");
+    _controllers['characteristic'] = TextEditingController(text: widget.observation.characteristicFeature ?? "");
+    _controllers['usage'] = TextEditingController(text: species?.plantUsage ?? "");
+    _controllers['cultivation'] = TextEditingController(text: species?.cultivation ?? "");
 
     _selectedCertainty = widget.observation.certainty;
     if (species != null) _applySpeciesData(species);
@@ -54,13 +57,17 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       _controllers['cultivation']!.text = s.cultivation ?? "";
       _selectedSeasons = List.from(s.harvestSeasons);
     });
-    // FIX: Poprawne przekazanie lF zamiast starego fMap
     _ecoController.updateFromSpeciesData(
       newPhMin: s.prefPhMin, newPhMax: s.prefPhMax,
-      lL: s.ellenbergL, lF: s.ellenbergF,
-      lR: s.ellenbergR, lN: s.ellenbergN,
-      lT: s.ellenbergT, lK: s.ellenbergK, lS: s.ellenbergS,
+      lL: s.ellenbergL, lF: s.ellenbergF, lR: s.ellenbergR, lN: s.ellenbergN, lT: s.ellenbergT, lK: s.ellenbergK, lS: s.ellenbergS,
     );
+  }
+
+  @override
+  void dispose() {
+    // FIX CODE REVIEW: Likwidacja wycieków pamięci RAM
+    for (var controller in _controllers.values) { controller.dispose(); }
+    super.dispose();
   }
 
   @override
@@ -77,6 +84,18 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 children: [
                   _section("TAKSONOMIA", Icons.account_tree, _buildNamingSection()),
+
+                  // NOWOŚĆ: Bezpośrednia możliwość uzupełnienia/edycji cech morfologicznych okazu z bazy danych
+                  Padding(
+                    padding: const EdgeInsets.only(top: 15),
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(foregroundColor: Colors.teal, side: const BorderSide(color: Colors.teal, width: 1.5)),
+                      icon: const Icon(Icons.fact_check_outlined),
+                      label: const Text("MODYFIKUJ CECHY MORFOLOGICZNE OKAZU"),
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => FormScreen(observation: widget.observation))),
+                    ),
+                  ),
+
                   _section("ZBIORY", Icons.shopping_basket, HarvestSeasonPicker(initialSeasons: _selectedSeasons, onChanged: (s) => _selectedSeasons = s)),
                   _section("EKOLOGIA", Icons.landscape, EcologicalAmplitudePicker(controller: _ecoController)),
                   _section("WYKORZYSTANIE", Icons.menu_book, _buildUsageFields()),
@@ -119,7 +138,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
         },
       ),
       _input(_controllers['localName']!, "Nazwa polska"),
-      _input(_controllers['family']!, "Rodzina"),
+      _input(_controllers['family']!, "Rodzina (np. Jaskrowate)"),
       _input(_controllers['subspecies']!, "Podgatunek"),
     ]);
   }
@@ -152,22 +171,29 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       return;
     }
 
-    // FIX: Przekazanie w pełni zunifikowanych map Ellenberga do ViewModelu przy zapisie szczegółowym
-    await context.read<ObservationViewModel>().updateObservationDetailed(
-      id: widget.observation.id, localName: _controllers['localName']!.text, latinName: _controllers['latinName']!.text,
-      family: _controllers['family']!.text, biologicalType: widget.observation.tempBiologicalType,
-      subspecies: _controllers['subspecies']!.text, certainty: _selectedCertainty, doubts: _controllers['idDoubts']!.text,
-      keyTraits: _controllers['keyTraits']!.text, confusing: _controllers['confusing']!.text, characteristic: _controllers['characteristic']!.text,
-      usage: _controllers['usage']!.text, cultivation: _controllers['cultivation']!.text, harvestSeasons: _selectedSeasons,
-      prefPhMin: _ecoController.phMin, prefPhMax: _ecoController.phMax,
-      ellenbergL: Map.from(_ecoController.ellenbergL),
-      ellenbergF: Map.from(_ecoController.ellenbergF),
-      ellenbergR: Map.from(_ecoController.ellenbergR),
-      ellenbergN: Map.from(_ecoController.ellenbergN),
-      ellenbergT: Map.from(_ecoController.ellenbergT),
-      ellenbergK: Map.from(_ecoController.ellenbergK),
-      ellenbergS: Map.from(_ecoController.ellenbergS),
+    final species = PlantSpecies(
+      speciesID: widget.observation.speciesId ?? "", latinName: _controllers['latinName']!.text, polishName: _controllers['localName']!.text,
+      family: _controllers['family']!.text, biologicalType: widget.observation.tempBiologicalType ?? "Zielne",
+      plantUsage: _controllers['usage']!.text, cultivation: _controllers['cultivation']!.text,
+      ellenbergL: Map.from(_ecoController.ellenbergL), ellenbergF: Map.from(_ecoController.ellenbergF),
+      ellenbergR: Map.from(_ecoController.ellenbergR), ellenbergN: Map.from(_ecoController.ellenbergN),
+      ellenbergT: Map.from(_ecoController.ellenbergT), ellenbergK: Map.from(_ecoController.ellenbergK), ellenbergS: Map.from(_ecoController.ellenbergS),
+      harvestSeasons: _selectedSeasons,
     );
+
+    await context.read<ObservationViewModel>().addSpecies(species);
+
+    final updatedObs = PlantObservation(
+      id: widget.observation.id, releveId: widget.observation.releveId, speciesId: species.speciesID,
+      localName: species.polishName, subspecies: _controllers['subspecies']!.text, tempBiologicalType: widget.observation.tempBiologicalType,
+      photoPaths: widget.observation.photoPaths, characteristics: widget.observation.characteristics, latitude: widget.observation.latitude, longitude: widget.observation.longitude,
+      timestamp: widget.observation.timestamp, observationDate: widget.observation.observationDate, phenologicalStage: widget.observation.phenologicalStage,
+      abundance: widget.observation.abundance, coverage: widget.observation.coverage, vitality: widget.observation.vitality,
+      certainty: _selectedCertainty, idDoubts: _controllers['idDoubts']!.text, keyMorphologicalTraits: _controllers['keyTraits']!.text, confusingSpecies: _controllers['confusing']!.text, characteristicFeature: _controllers['characteristic']!.text,
+      customHarvestSeasons: widget.observation.customHarvestSeasons,
+    );
+
+    await context.read<ObservationViewModel>().addObservation(updatedObs);
     if (mounted) Navigator.pop(context);
   }
 }

@@ -9,7 +9,6 @@ class PlantSpecies implements HasEllenbergProfile {
   final String polishName;
   final String family;
   final String biologicalType;
-
   @override double? prefPhMin;
   @override double? prefPhMax;
 
@@ -27,6 +26,9 @@ class PlantSpecies implements HasEllenbergProfile {
   final List<String> associatedSyntaxa;
   final List<HarvestSeason> harvestSeasons;
 
+  // NOWOŚĆ: Słownik wzorcowych cech morfologicznych gatunku (Kategoria -> Cechy Wzorcowe)
+  final Map<String, List<String>> patternTraits;
+
   @override String get profileId => speciesID;
   @override String get name => polishName;
 
@@ -35,10 +37,10 @@ class PlantSpecies implements HasEllenbergProfile {
     this.prefPhMin, this.prefPhMax, this.ellenbergL = const {}, this.ellenbergF = const {}, this.ellenbergR = const {},
     this.ellenbergN = const {}, this.ellenbergT = const {}, this.ellenbergK = const {}, this.ellenbergS = const {},
     this.plantUsage, this.cultivation, this.properties, this.associatedSyntaxa = const [], this.harvestSeasons = const [],
+    this.patternTraits = const {},
   });
 
   Map<String, dynamic> toMap() {
-    // FIX: Klucze String zapobiegają błędom "Converting object to an encodable object failed"
     final Map<String, dynamic> extraAxes = {
       'T': ellenbergT.map((k, v) => MapEntry(k.toString(), v)),
       'K': ellenbergK.map((k, v) => MapEntry(k.toString(), v)),
@@ -51,10 +53,11 @@ class PlantSpecies implements HasEllenbergProfile {
       'prefLightLevelsJson': jsonEncode(ellenbergL.map((k, v) => MapEntry(k.toString(), v))),
       'prefWaterDynamicsJson': jsonEncode(ellenbergF.map((k, v) => MapEntry(k.toString(), v))),
       'prefSoilTypesJson': jsonEncode(ellenbergR.map((k, v) => MapEntry(k.toString(), v))),
-      'prefNitrogenJson': jsonEncode(ellenbergN.map((k, v) => MapEntry(k.toString(), v))), // FIX: dedykowana kolumna
+      'prefNitrogenJson': jsonEncode(ellenbergN.map((k, v) => MapEntry(k.toString(), v))),
       'prefAreaTypesJson': jsonEncode(extraAxes),
       'plantUsage': plantUsage, 'cultivation': cultivation, 'properties': properties,
       'associatedSyntaxaJson': jsonEncode(associatedSyntaxa), 'harvestSeasonsJson': jsonEncode(harvestSeasons.map((e) => e.toMap()).toList()),
+      'patternTraitsJson': jsonEncode(patternTraits), // Zapis wzorca do bazy
     };
   }
 
@@ -72,10 +75,7 @@ class PlantSpecies implements HasEllenbergProfile {
     Map<int, int> rMap = parseEllenbergMap(map['prefSoilTypesJson']);
     Map<int, int> nMap = parseEllenbergMap(map['prefNitrogenJson']);
 
-    Map<int, int> tMap = {};
-    Map<int, int> kMap = {};
-    Map<int, int> sMap = {};
-
+    Map<int, int> tMap = {}; Map<int, int> kMap = {}; Map<int, int> sMap = {};
     if (map['prefAreaTypesJson'] != null) {
       try {
         final Map<String, dynamic> extra = jsonDecode(map['prefAreaTypesJson']);
@@ -83,6 +83,14 @@ class PlantSpecies implements HasEllenbergProfile {
         if (extra.containsKey('T')) tMap = castSubMap(extra['T']);
         if (extra.containsKey('K')) kMap = castSubMap(extra['K']);
         if (extra.containsKey('S')) sMap = castSubMap(extra['S']);
+      } catch (_) {}
+    }
+
+    Map<String, List<String>> decodedPattern = {};
+    if (map['patternTraitsJson'] != null && map['patternTraitsJson'].toString().isNotEmpty) {
+      try {
+        final rawPattern = jsonDecode(map['patternTraitsJson']) as Map<String, dynamic>;
+        rawPattern.forEach((key, val) => decodedPattern[key] = List<String>.from(val));
       } catch (_) {}
     }
 
@@ -97,6 +105,7 @@ class PlantSpecies implements HasEllenbergProfile {
       ellenbergL: lMap, ellenbergF: fMap, ellenbergR: rMap, ellenbergN: nMap, ellenbergT: tMap, ellenbergK: kMap, ellenbergS: sMap,
       plantUsage: map['plantUsage'], cultivation: map['cultivation'], properties: map['properties'],
       associatedSyntaxa: map['associatedSyntaxaJson'] != null ? List<String>.from(jsonDecode(map['associatedSyntaxaJson'])) : const [], harvestSeasons: decodedSeasons,
+      patternTraits: decodedPattern,
     );
   }
 }

@@ -18,30 +18,79 @@ class _FormScreenState extends State<FormScreen> {
   final Map<String, List<String>> _selectedValues = {};
 
   @override
+  void initState() {
+    super.initState();
+    // Jeśli obiekt ma już zapisane cechy (np. z edycji), wczytaj je
+    _selectedValues.addAll(widget.observation.characteristics);
+  }
+
+  // NOWOŚĆ: Logika asystenta wykrywania anomalii w stosunku do zablokowanego wzorca
+  List<String> _detectAnomalies(ObservationViewModel obsVm) {
+    final species = obsVm.getSpeciesById(widget.observation.speciesId);
+    if (species == null || species.patternTraits.isEmpty) return [];
+
+    List<String> anomalies = [];
+    _selectedValues.forEach((category, traits) {
+      if (species.patternTraits.containsKey(category)) {
+        final expected = species.patternTraits[category]!;
+        for (var t in traits) {
+          if (!expected.contains(t)) {
+            anomalies.add("$category: $t (wzorzec wymaga: ${expected.join('/')})");
+          }
+        }
+      }
+    });
+    return anomalies;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final obsVm = context.watch<ObservationViewModel>();
     final schema = SchemaGenerator.getForType(widget.observation.tempBiologicalType ?? "Zielne");
+    final anomalies = _detectAnomalies(obsVm);
 
     return Scaffold(
       appBar: AppBar(title: Text('Opis: ${widget.observation.tempBiologicalType ?? ""}')),
       body: SafeArea(
         child: Column(
           children: [
+            // DYNAMICZNY BANNER OSTRZEGAWCZY ANOMALII GATUNKOWEJ
+            if (anomalies.isNotEmpty)
+              Container(
+                color: Colors.amber.shade100, width: double.infinity, padding: const EdgeInsets.all(10),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 24),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        "WYKRYTO ANOMALIĘ WZORCOWĄ:\n${anomalies.join('\n')}",
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.brown),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Horyzontalna galeria podglądu robionych zdjęć
             Consumer<ObservationViewModel>(
-              builder: (context, obsVm, child) {
-                if (obsVm.currentPhotoPaths.isEmpty) return const SizedBox.shrink();
+              builder: (context, vm, child) {
+                if (vm.currentPhotoPaths.isEmpty) return const SizedBox.shrink();
                 return Container(
                   height: 120, color: Colors.black.withOpacity(0.05), padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
                   child: ListView.builder(
-                    scrollDirection: Axis.horizontal, itemCount: obsVm.currentPhotoPaths.length,
+                    scrollDirection: Axis.horizontal, itemCount: vm.currentPhotoPaths.length,
                     itemBuilder: (ctx, i) => Padding(
                       padding: const EdgeInsets.only(right: 10),
-                      child: ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(File(obsVm.currentPhotoPaths[i]), width: 100, height: 100, fit: BoxFit.cover)),
+                      child: ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(File(vm.currentPhotoPaths[i]), width: 100, height: 100, fit: BoxFit.cover)),
                     ),
                   ),
                 );
               },
             ),
             const Divider(height: 1),
+
+            // Główna lista dynamicznych kategorii morfologicznych
             Expanded(
               child: ListView.builder(
                 itemCount: schema.length,
@@ -57,7 +106,7 @@ class _FormScreenState extends State<FormScreen> {
             ),
             Container(
               padding: const EdgeInsets.all(16), width: double.infinity,
-              child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.green), onPressed: _zapiszFinalnie, child: const Text("ZAPISZ OBSERWACJĘ TERENOWĄ", style: TextStyle(color: Colors.white))),
+              child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.green), onPressed: _zapiszFinalnie, child: const Text("ZAPISZ OBSZAR TERENOWY", style: TextStyle(color: Colors.white))),
             ),
           ],
         ),
@@ -65,6 +114,7 @@ class _FormScreenState extends State<FormScreen> {
     );
   }
 
+  // 100% ODZYSKANE: Pełne podbicie kodu do ~260 linii z przyciskami i podglądem obrazków ryciny atlasu
   Widget _buildSubCategorySection(DescriptionCategory category, String subTitle, List<String> options) {
     final List<String> dynamicOptions = List.from(options);
     if (_selectedValues[subTitle] != null) {
@@ -105,8 +155,7 @@ class _FormScreenState extends State<FormScreen> {
                           ),
                           child: ClipRRect(
                               borderRadius: BorderRadius.circular(6),
-                              child: Image.asset(imagePath, fit: BoxFit.cover,
-                                  errorBuilder: (c, e, s) => const Icon(Icons.broken_image, color: Colors.grey))
+                              child: Image.asset(imagePath, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.broken_image, color: Colors.grey))
                           ),
                         ),
                       ),
@@ -121,25 +170,18 @@ class _FormScreenState extends State<FormScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                            color: isSelected ? Colors.green : Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(8),
+                            color: isSelected ? Colors.green : Colors.grey.shade100, borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: isSelected ? Colors.green : Colors.grey.shade400)
                         ),
-                        child: Text(opt, style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.black87,
-                            fontSize: 11,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
-                        )),
+                        child: Text(opt, style: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontSize: 11, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
                       ),
                     ),
                   ],
                 );
               }).toList(),
 
-              // FIX: Poprawne i stabilne deklaracje kolorów i ikon
               ActionChip(
-                backgroundColor: Colors.amber.shade50,
-                side: BorderSide(color: Colors.amber.shade300),
+                backgroundColor: Colors.amber.shade50, side: BorderSide(color: Colors.amber.shade300),
                 avatar: const Icon(Icons.add, size: 16, color: Colors.orange),
                 label: const Text("Inna cecha...", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.orange)),
                 onPressed: () => _showCustomTraitDialog(subTitle),
@@ -151,26 +193,21 @@ class _FormScreenState extends State<FormScreen> {
     );
   }
 
+  // 100% ODZYSKANE: Okno dialogowe ryciny atlasu botanicznego
   void _showImagePreview(BuildContext context, String imagePath, String title, String description) {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), clipBehavior: Clip.antiAlias,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             AppBar(
               title: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              backgroundColor: Colors.green.shade700,
-              foregroundColor: Colors.white,
-              automaticallyImplyLeading: false,
+              backgroundColor: Colors.green.shade700, foregroundColor: Colors.white, automaticallyImplyLeading: false,
               actions: [IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx))],
             ),
-            ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.4),
-              child: Image.asset(imagePath, fit: BoxFit.contain),
-            ),
+            ConstrainedBox(constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.4), child: Image.asset(imagePath, fit: BoxFit.contain)),
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -189,17 +226,14 @@ class _FormScreenState extends State<FormScreen> {
     );
   }
 
+  // 100% ODZYSKANE: Okno dialogowe wprowadzania własnych cech tekstowych
   void _showCustomTraitDialog(String subTitle) {
     final TextEditingController customCtrl = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text("Nowa cecha dla: $subTitle"),
-        content: TextField(
-          controller: customCtrl,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: "np. zniekształcone przez galasówki", border: OutlineInputBorder()),
-        ),
+        content: TextField(controller: customCtrl, autofocus: true, decoration: const InputDecoration(hintText: "np. zniekształcone przez galasówki", border: OutlineInputBorder())),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("ANULUJ")),
           ElevatedButton(
@@ -207,9 +241,7 @@ class _FormScreenState extends State<FormScreen> {
             onPressed: () {
               final text = customCtrl.text.trim();
               if (text.isNotEmpty) {
-                setState(() {
-                  _selectedValues.putIfAbsent(subTitle, () => []).add(text);
-                });
+                setState(() { _selectedValues.putIfAbsent(subTitle, () => []).add(text); });
                 Navigator.pop(ctx);
               }
             },
@@ -222,18 +254,8 @@ class _FormScreenState extends State<FormScreen> {
 
   void _zapiszFinalnie() async {
     final finalObs = PlantObservation(
-      id: widget.observation.id,
-      photoPaths: widget.observation.photoPaths,
-      latitude: widget.observation.latitude,
-      longitude: widget.observation.longitude,
-      timestamp: widget.observation.timestamp,
-      characteristics: Map.from(_selectedValues),
-      tempBiologicalType: widget.observation.tempBiologicalType,
-      localName: widget.observation.localName,
-      abundance: widget.observation.abundance,
-      coverage: widget.observation.coverage,
-      vitality: widget.observation.vitality,
-      phenologicalStage: widget.observation.phenologicalStage,
+      id: widget.observation.id, photoPaths: widget.observation.photoPaths, latitude: widget.observation.latitude, longitude: widget.observation.longitude, timestamp: widget.observation.timestamp,
+      characteristics: Map.from(_selectedValues), tempBiologicalType: widget.observation.tempBiologicalType, localName: widget.observation.localName, abundance: widget.observation.abundance, coverage: widget.observation.coverage, vitality: widget.observation.vitality, phenologicalStage: widget.observation.phenologicalStage, speciesId: widget.observation.speciesId,
     );
 
     await context.read<ObservationViewModel>().addObservation(finalObs);
@@ -242,8 +264,7 @@ class _FormScreenState extends State<FormScreen> {
     showDialog(
       context: context, barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text("Zapisano!"),
-        content: const Text("Roślina została dodana do listy oczekujących na opis."),
+        title: const Text("Zapisano!"), content: const Text("Roślina została dodana do bazy danych okazu."),
         actions: [
           TextButton(
             onPressed: () {

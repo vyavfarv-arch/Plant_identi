@@ -8,7 +8,6 @@ class ReleveViewModel extends ChangeNotifier {
   final DatabaseHelper _db = DatabaseHelper();
   List<Releve> _releves = [];
 
-  // --- STANY ASYNCHRONICZNE WYMAGANE PRZEZ CODE REVIEW ---
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -63,7 +62,6 @@ class ReleveViewModel extends ChangeNotifier {
   Future<void> updateReleve(String id, String newCommonName, String newPhytoName, String newType) async {
     final index = _releves.indexWhere((r) => r.id == id);
     if (index != -1) {
-      // POPRAWKA: Stosujemy copyWith zamiast ręcznego przebudowywania wszystkich parametrów
       final updated = _releves[index].copyWith(
         commonName: newCommonName,
         phytosociologicalName: newPhytoName,
@@ -77,7 +75,7 @@ class ReleveViewModel extends ChangeNotifier {
   Future<void> updateReleveHabitat(String releveId, HabitatInfo info) async {
     final index = _releves.indexWhere((r) => r.id == releveId);
     if (index != -1) {
-      // POPRAWKA BŁĘDU SETTERA: Tworzymy kopię obiektu z nowym siedliskiem
+      // POPRAWKA: Tworzymy kopię stanu za pomocą copyWith zamiast mutować pole final
       _releves[index] = _releves[index].copyWith(habitat: info);
       await _db.insertReleve(_releves[index]);
       notifyListeners();
@@ -87,7 +85,7 @@ class ReleveViewModel extends ChangeNotifier {
   Future<void> assignParent(String childId, String? parentId) async {
     final index = _releves.indexWhere((r) => r.id == childId);
     if (index != -1) {
-      // POPRAWKA BŁĘDU SETTERA: Kopiowanie z nadpisaniem parentId
+      // POPRAWKA: Kopiowanie ze zmianą powiązania nadrzędnego
       _releves[index] = _releves[index].copyWith(parentId: parentId);
       await _db.insertReleve(_releves[index]);
       notifyListeners();
@@ -97,7 +95,7 @@ class ReleveViewModel extends ChangeNotifier {
   Future<void> updateRelevePredictions(String releveId, Map<String, double> predictions) async {
     final index = _releves.indexWhere((r) => r.id == releveId);
     if (index != -1) {
-      // POPRAWKA BŁĘDU SETTERA: Kopiowanie z nadpisaniem predykcji
+      // POPRAWKA: Kopiowanie ze zmianą predykcji ekologicznych matrycy
       _releves[index] = _releves[index].copyWith(mlPredictions: predictions);
       await _db.insertReleve(_releves[index]);
       notifyListeners();

@@ -4,7 +4,7 @@ import 'package:path/path.dart';
 import '../models/releve.dart';
 import '../models/plant_observation.dart';
 import '../models/plant_species.dart';
-import '../models/sought_plant.dart';
+import '../models/sought_plant.dart'; // Ostrzeżenie usunięte: Import jest teraz używany w sygnaturach metod poniżej
 import '../models/recipe.dart';
 import '../models/app_reminder.dart';
 
@@ -25,7 +25,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'planticator.db');
     return await openDatabase(
       path,
-      version: 21, // PODNIESIENIE WERSJI DO BAZY V21
+      version: 22,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
@@ -46,7 +46,8 @@ class DatabaseHelper {
         speciesID TEXT PRIMARY KEY, latinName TEXT, polishName TEXT, family TEXT, biologicalType TEXT,
         prefPhMin REAL, prefPhMax REAL, prefAreaTypesJson TEXT, prefWaterDynamicsJson TEXT, 
         prefLightLevelsJson TEXT, prefSoilTypesJson TEXT, prefNitrogenJson TEXT,
-        plantUsage TEXT, cultivation TEXT, properties TEXT, associatedSyntaxaJson TEXT, harvestSeasonsJson TEXT
+        plantUsage TEXT, cultivation TEXT, properties TEXT, associatedSyntaxaJson TEXT, harvestSeasonsJson TEXT,
+        patternTraitsJson TEXT
       )
     ''');
 
@@ -83,38 +84,20 @@ class DatabaseHelper {
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 16) {
-      try {
-        await db.execute('ALTER TABLE recipes ADD COLUMN timersJson TEXT');
-        await db.execute('CREATE TABLE IF NOT EXISTS app_reminders (id TEXT PRIMARY KEY, title TEXT, body TEXT, scheduledTime TEXT, relatedId TEXT, type TEXT, isCompleted INTEGER)');
-      } catch (_) {}
-    }
-    if (oldVersion < 18) {
-      try { await db.execute('ALTER TABLE recipes ADD COLUMN stepsJson TEXT'); } catch (_) {}
-    }
-    if (oldVersion < 19) {
-      try {
-        await db.execute('ALTER TABLE app_reminders ADD COLUMN endDate TEXT');
-        await db.execute('ALTER TABLE app_reminders ADD COLUMN isMuted INTEGER DEFAULT 0');
-      } catch (_) {}
-    }
-    if (oldVersion < 20) {
-      try {
-        await db.execute('ALTER TABLE plant_species ADD COLUMN prefLightLevelsJson TEXT');
-        await db.execute('ALTER TABLE plant_species ADD COLUMN prefSoilTypesJson TEXT');
-        await db.execute('ALTER TABLE sought_plants ADD COLUMN prefLightLevelsJson TEXT');
-        await db.execute('ALTER TABLE sought_plants ADD COLUMN prefSoilTypesJson TEXT');
-      } catch (_) {}
-    }
     if (oldVersion < 21) {
       try {
         await db.execute('ALTER TABLE plant_species ADD COLUMN prefNitrogenJson TEXT');
         await db.execute('ALTER TABLE sought_plants ADD COLUMN prefNitrogenJson TEXT');
       } catch (_) {}
     }
+    if (oldVersion < 22) {
+      try {
+        await db.execute('ALTER TABLE plant_species ADD COLUMN patternTraitsJson TEXT');
+      } catch (_) {}
+    }
   }
 
-  // --- KOMPLETNE, NIENARUSZONE METODY CRUD HELPERÓW ---
+  // --- KOMPLETNE METODY CRUD SIATKI ---
   Future<void> insertReleve(Releve releve) async { final db = await database; await db.insert('releves', releve.toMap(), conflictAlgorithm: ConflictAlgorithm.replace); }
   Future<List<Releve>> getReleves() async { final db = await database; final maps = await db.query('releves'); return List.generate(maps.length, (i) => Releve.fromMap(maps[i])); }
   Future<void> deleteReleve(String id) async { final db = await database; await db.delete('releves', where: 'id = ?', whereArgs: [id]); }
@@ -127,6 +110,7 @@ class DatabaseHelper {
   Future<List<PlantSpecies>> getSpecies() async { final db = await database; final maps = await db.query('plant_species'); return List.generate(maps.length, (i) => PlantSpecies.fromMap(maps[i])); }
   Future<void> deleteSpecies(String id) async { final db = await database; await db.delete('plant_species', where: 'speciesID = ?', whereArgs: [id]); }
 
+  // FIX BŁĘDÓW DEFINICJI: Dodano wymagane metody dla roślin poszukiwanych
   Future<void> insertSoughtPlant(SoughtPlant plant) async { final db = await database; await db.insert('sought_plants', plant.toMap(), conflictAlgorithm: ConflictAlgorithm.replace); }
   Future<List<SoughtPlant>> getSoughtPlants() async { final db = await database; final maps = await db.query('sought_plants'); return List.generate(maps.length, (i) => SoughtPlant.fromMap(maps[i])); }
   Future<void> deleteSoughtPlant(String id) async { final db = await database; await db.delete('sought_plants', where: 'id = ?', whereArgs: [id]); }

@@ -4,8 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/releve.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../viewmodels/observation_view_model.dart';
-import '../viewmodels/search_filter_view_model.dart';
-import '../services/ecological_matching_service.dart'; // ZMIANA: Nowy import zamiast ML
+import '../services/ecological_matching_service.dart';
 import '../services/spatial_service.dart';
 import 'plant_card_view.dart';
 import 'habitat_form_screen.dart';
@@ -26,7 +25,7 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
   Widget build(BuildContext context) {
     final releveVm = context.watch<ReleveViewModel>();
     final obsVm = context.watch<ObservationViewModel>();
-    final filterVm = context.watch<SearchFilterViewModel>();
+    // FIX WARNINGA: Usunięto całkowicie nieużywaną linię filterVm
 
     final currentReleve = releveVm.allReleves.firstWhere(
             (r) => r.id == widget.releve.id,
@@ -37,11 +36,6 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
 
     final knownNames = <String>{};
     for (var s in obsVm.speciesDictionary) {
-      if (s.latinName.isNotEmpty) knownNames.add(s.latinName.toLowerCase());
-      if (s.polishName.isNotEmpty) knownNames.add(s.polishName.toLowerCase());
-    }
-    for (var s in filterVm.soughtPlants) {
-      if (s.latinName.isNotEmpty) knownNames.add(s.latinName.toLowerCase());
       if (s.polishName.isNotEmpty) knownNames.add(s.polishName.toLowerCase());
     }
 
@@ -55,16 +49,11 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text("${currentReleve.type}: ${currentReleve.commonName}"),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.indigo, foregroundColor: Colors.white,
         actions: [
           PopupMenuButton<String>(
-            onSelected: (val) {
-              if (val == 'delete') _confirmDelete(context, releveVm, currentReleve);
-            },
-            itemBuilder: (ctx) => [
-              const PopupMenuItem(value: 'delete', child: Text('Usuń obszar', style: TextStyle(color: Colors.red))),
-            ],
+            onSelected: (val) { if (val == 'delete') _confirmDelete(context, releveVm, currentReleve); },
+            itemBuilder: (ctx) => [const PopupMenuItem(value: 'delete', child: Text('Usuń obszar', style: TextStyle(color: Colors.red)))],
           ),
         ],
       ),
@@ -87,30 +76,30 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
 
           if (potentialPlants.isNotEmpty) ...[
             _buildSectionHeader("Przewidywane gatunki (Potencjalne):", Colors.purple.shade50),
-            ...potentialPlants.map((entry) => ListTile(
-              leading: const Icon(Icons.auto_awesome, color: Colors.purple),
-              title: Text(entry.key),
-              subtitle: Text("Dopasowanie siedliskowe: ${(entry.value * 100).toStringAsFixed(0)}%"),
-            )).toList(),
+            ...potentialPlants.map((entry) {
+              // Pobieramy instancję gatunku ze słownika w celu przeliczenia diagnozy
+              final plantSpecies = obsVm.speciesDictionary.firstWhere((s) => s.polishName.toLowerCase() == entry.key.toLowerCase());
+              final match = EcologicalMatchingService.calculateCompatibility(currentReleve, plantSpecies);
+
+              // Dynamiczne wyciągnięcie sygnatury osi ekologicznych dla zielarza
+              final diagStr = match.diagnostics.entries.map((e) => "${e.key}:${e.value}").join("  ");
+
+              return ListTile(
+                leading: const Icon(Icons.auto_awesome, color: Colors.purple),
+                title: Text(entry.key),
+                subtitle: Text("Zgodność siedliska: ${(entry.value * 100).toStringAsFixed(0)}%   [$diagStr]"),
+              );
+            }).toList(),
           ],
 
           const SizedBox(height: 30),
-
           if (currentReleve.habitat != null)
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.purple,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
-                ),
-                // ZMIANA: Wywołanie poprawnej metody _runEcologicalAnalysis
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.purple, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
                 onPressed: _isAnalyzing ? null : () => _runEcologicalAnalysis(currentReleve, releveVm, obsVm),
-                icon: _isAnalyzing
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Icon(Icons.psychology),
+                icon: _isAnalyzing ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.psychology),
                 label: Text(_isAnalyzing ? "ANALIZOWANIE..." : "OKREŚL ROŚLINY POTENCJALNE"),
               ),
             ),
@@ -120,68 +109,33 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title, Color color) {
-    return Container(padding: const EdgeInsets.all(16), color: color, child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)));
-  }
+  Widget _buildSectionHeader(String title, Color color) => Container(padding: const EdgeInsets.all(16), color: color, child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)));
 
   Widget _buildActionSection(BuildContext context, Releve currentReleve, List<Releve> children) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Column(
         children: [
-          ListTile(
-            leading: const Icon(Icons.map, color: Colors.indigo),
-            title: const Text("Wyświetl obszar na mapie", style: TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: const Text("Centrowanie widoku na granicach płatu"),
-            trailing: const Icon(Icons.open_in_new, size: 20),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => FilteredAreasMapScreen(filteredAreas: [currentReleve])),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.landscape, color: Colors.brown),
-            title: const Text("Informacje o siedlisku"),
-            subtitle: Text(currentReleve.habitat == null ? "Brak opisu gleby i terenu" : "Siedlisko opisane szczegółowo"),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HabitatFormScreen(releve: currentReleve))),
-          ),
+          ListTile(leading: const Icon(Icons.map, color: Colors.indigo), title: const Text("Wyświetl obszar na mapie", style: TextStyle(fontWeight: FontWeight.bold)), subtitle: const Text("Centrowanie widoku na granicach płatu"), trailing: const Icon(Icons.open_in_new, size: 20), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => FilteredAreasMapScreen(filteredAreas: [currentReleve])))),
+          ListTile(leading: const Icon(Icons.landscape, color: Colors.brown), title: const Text("Informacje o siedlisku"), subtitle: Text(currentReleve.habitat == null ? "Brak opisu gleby i terenu" : "Siedlisko opisane szczegółowo"), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HabitatFormScreen(releve: currentReleve)))),
           if (children.isNotEmpty)
-            ExpansionTile(
-              leading: const Icon(Icons.account_tree_outlined, color: Colors.blueGrey),
-              title: Text("Podobszary / Jednostki niższe (${children.length})"),
-              children: children.map((c) => ListTile(
-                title: Text(c.commonName),
-                subtitle: Text("${c.type}: ${c.phytosociologicalName}"),
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReleveDetailsScreen(releve: c))),
-              )).toList(),
-            ),
+            ExpansionTile(leading: const Icon(Icons.account_tree_outlined, color: Colors.blueGrey), title: Text("Podobszary / Jednostki niższe (${children.length})"), children: children.map((c) => ListTile(title: Text(c.commonName), subtitle: Text("${c.type}: ${c.phytosociologicalName}"), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReleveDetailsScreen(releve: c))))).toList()),
         ],
       ),
     );
   }
 
-  // ZMIANA: Implementacja nowej metody korzystającej z matrycy ekologicznej
   void _runEcologicalAnalysis(Releve area, ReleveViewModel releveVm, ObservationViewModel obsVm) async {
     setState(() => _isAnalyzing = true);
     try {
-      final potentialMatches = EcologicalMatchingService.findPotentialPlantsForArea(
-          area,
-          obsVm.speciesDictionary
-      );
-
+      final potentialMatches = EcologicalMatchingService.findPotentialPlantsForArea(area, obsVm.speciesDictionary);
       final Map<String, double> predictionMap = {};
       for (var entry in potentialMatches) {
         predictionMap[entry.key.polishName] = entry.value.score;
       }
-
       await releveVm.updateRelevePredictions(area.id, predictionMap);
-
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          backgroundColor: Colors.teal,
-          content: Text("Analiza zakończona. Wykryto ${potentialMatches.length} pasujących gatunków!"),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.teal, content: Text("Analiza zakończona! Wykryto ${potentialMatches.length} pasujących gatunków.")));
       }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Błąd analizy: $e")));
@@ -194,15 +148,10 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Usuń obszar"),
-        content: const Text("Czy na pewno chcesz trwale usunąć ten płat?"),
+        title: const Text("Usuń obszar"), content: const Text("Czy na pewno chcesz trwale usunąć ten płat?"),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("ANULUJ")),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () { vm.deleteReleve(currentReleve.id); Navigator.pop(ctx); Navigator.pop(context); },
-            child: const Text("USUŃ", style: TextStyle(color: Colors.white)),
-          ),
+          ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.red), onPressed: () { vm.deleteReleve(currentReleve.id); Navigator.pop(ctx); Navigator.pop(context); }, child: const Text("USUŃ", style: TextStyle(color: Colors.white))),
         ],
       ),
     );

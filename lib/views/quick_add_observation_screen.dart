@@ -81,7 +81,6 @@ class _QuickAddObservationScreenState extends State<QuickAddObservationScreen> {
               const SizedBox(height: 8),
 
               if (!_isReadOnly) ...[
-                // Autocomplete po nazwie Łacińskiej
                 Autocomplete<String>(
                   optionsBuilder: (val) => val.text.isEmpty
                       ? const Iterable.empty()
@@ -99,7 +98,6 @@ class _QuickAddObservationScreenState extends State<QuickAddObservationScreen> {
                   },
                 ),
 
-                // Autocomplete po nazwie Polskiej
                 Autocomplete<String>(
                   optionsBuilder: (val) => val.text.isEmpty
                       ? const Iterable.empty()
@@ -170,15 +168,9 @@ class _QuickAddObservationScreenState extends State<QuickAddObservationScreen> {
   void _handleQuickSave() async {
     final obsVm = context.read<ObservationViewModel>();
 
-    // Zapobieganie powstawaniu duplikatów przy ręcznym (bądź niedokładnym) wpisaniu cech tekstowych
     if (_targetSpeciesId == null) {
-      final matchByLatin = obsVm.findSpeciesByLatinName(_latinController.text);
-      final matchByPolish = obsVm.findSpeciesByPolishName(_nameController.text);
-      final foundSpecies = matchByLatin ?? matchByPolish;
-
-      if (foundSpecies != null) {
-        _targetSpeciesId = foundSpecies.speciesID;
-      }
+      final found = obsVm.findSpeciesByLatinName(_latinController.text) ?? obsVm.findSpeciesByPolishName(_nameController.text);
+      if (found != null) _targetSpeciesId = found.speciesID;
     }
 
     String finalSpeciesId = _targetSpeciesId ?? const Uuid().v4();
@@ -191,7 +183,6 @@ class _QuickAddObservationScreenState extends State<QuickAddObservationScreen> {
         family: "Nieokreślona (Szybki zapis)",
         biologicalType: "Zielne",
       );
-      // POPRAWKA MVVM: Zapis przez architekturę ViewModelu
       await obsVm.addSpecies(newSpecies);
     }
 
