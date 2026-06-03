@@ -1,24 +1,30 @@
 // lib/models/sought_plant.dart
 import 'dart:convert';
 import 'harvest_season.dart';
+import 'has_ellenberg_profile.dart'; // Import wymaganego interfejsu
 
-class SoughtPlant {
+class SoughtPlant implements HasEllenbergProfile {
   final String id;
   final String polishName;
   final String latinName;
-  final double? prefPhMin;
-  final double? prefPhMax;
 
-  // --- TRZYSTANOWE MAPY INDEKSÓW ELLENBERGA ---
-  final Map<int, int> ellenbergL;
-  final Map<int, int> ellenbergF;
-  final Map<int, int> ellenbergR;
-  final Map<int, int> ellenbergN;
-  final Map<int, int> ellenbergT;
-  final Map<int, int> ellenbergK;
-  final Map<int, int> ellenbergS;
+  @override final double? prefPhMin;
+  @override final double? prefPhMax;
+
+  // --- TRZYSTANOWE CYFROWE MAPY INDEKSÓW ELLENBERGA ---
+  @override final Map<int, int> ellenbergL; // Światło
+  @override final Map<int, int> ellenbergF; // Wilgotność
+  @override final Map<int, int> ellenbergR; // Odczyn pH
+  @override final Map<int, int> ellenbergN; // Żyzność / Azot
+  @override final Map<int, int> ellenbergT; // Temperatura
+  @override final Map<int, int> ellenbergK; // Kontynentalizm
+  @override final Map<int, int> ellenbergS; // Zasolenie
 
   final List<HarvestSeason> harvestSeasons;
+
+  // Mapowanie właściwości gettera interfejsu
+  @override String get profileId => id;
+  @override String get name => polishName;
 
   SoughtPlant({
     required this.id,
@@ -37,13 +43,13 @@ class SoughtPlant {
   });
 
   Map<String, dynamic> toMap() {
-    // FIX: Stringowanie kluczy numerycznych dla osi dodatkowych
+    // Pakujemy osie dodatkowe (T, K, S) do dodatkowej kolumny bez uszkadzania DB
     final Map<String, dynamic> extraAxes = {
       'T': ellenbergT.map((k, v) => MapEntry(k.toString(), v)),
       'K': ellenbergK.map((k, v) => MapEntry(k.toString(), v)),
       'S': ellenbergS.map((k, v) => MapEntry(k.toString(), v)),
-      'N': ellenbergN.map((k, v) => MapEntry(k.toString(), v)),
     };
+
     return {
       'id': id,
       'polishName': polishName,
@@ -53,6 +59,7 @@ class SoughtPlant {
       'prefLightLevelsJson': jsonEncode(ellenbergL.map((k, v) => MapEntry(k.toString(), v))),
       'prefWaterDynamicsJson': jsonEncode(ellenbergF.map((k, v) => MapEntry(k.toString(), v))),
       'prefSoilTypesJson': jsonEncode(ellenbergR.map((k, v) => MapEntry(k.toString(), v))),
+      'prefNitrogenJson': jsonEncode(ellenbergN.map((k, v) => MapEntry(k.toString(), v))), // Wydzielona oś Azotu N
       'prefAreaTypesJson': jsonEncode(extraAxes),
       'harvestSeasonsJson': jsonEncode(harvestSeasons.map((e) => e.toMap()).toList()),
     };
@@ -70,11 +77,11 @@ class SoughtPlant {
     Map<int, int> lMap = parseEllenbergMap(map['prefLightLevelsJson']);
     Map<int, int> fMap = parseEllenbergMap(map['prefWaterDynamicsJson']);
     Map<int, int> rMap = parseEllenbergMap(map['prefSoilTypesJson']);
+    Map<int, int> nMap = parseEllenbergMap(map['prefNitrogenJson']); // Bezpośredni odczyt Azotu
 
     Map<int, int> tMap = {};
     Map<int, int> kMap = {};
     Map<int, int> sMap = {};
-    Map<int, int> nMap = {};
 
     if (map['prefAreaTypesJson'] != null) {
       try {
@@ -83,7 +90,6 @@ class SoughtPlant {
         if (extra.containsKey('T')) tMap = castSubMap(extra['T']);
         if (extra.containsKey('K')) kMap = castSubMap(extra['K']);
         if (extra.containsKey('S')) sMap = castSubMap(extra['S']);
-        if (extra.containsKey('N')) nMap = castSubMap(extra['N']);
       } catch (_) {}
     }
 
@@ -101,8 +107,13 @@ class SoughtPlant {
       latinName: map['latinName'] ?? '',
       prefPhMin: map['prefPhMin']?.toDouble(),
       prefPhMax: map['prefPhMax']?.toDouble(),
-      ellenbergL: lMap, ellenbergF: fMap, ellenbergR: rMap,
-      ellenbergN: nMap, ellenbergT: tMap, ellenbergK: kMap, ellenbergS: sMap,
+      ellenbergL: lMap,
+      ellenbergF: fMap,
+      ellenbergR: rMap,
+      ellenbergN: nMap,
+      ellenbergT: tMap,
+      ellenbergK: kMap,
+      ellenbergS: sMap,
       harvestSeasons: decodedSeasons,
     );
   }

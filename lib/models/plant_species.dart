@@ -1,81 +1,60 @@
 // lib/models/plant_species.dart
 import 'dart:convert';
 import 'harvest_season.dart';
+import 'has_ellenberg_profile.dart';
 
-class PlantSpecies {
+class PlantSpecies implements HasEllenbergProfile {
   final String speciesID;
   final String latinName;
   final String polishName;
   final String family;
   final String biologicalType;
 
-  final double? prefPhMin;
-  final double? prefPhMax;
+  @override double? prefPhMin;
+  @override double? prefPhMax;
 
-  // --- TRZYSTANOWE MAPY ELLENBERGA (Klucz: liczba wskaźnikowa, Wartość: stan 0, 1 lub 2) ---
-  final Map<int, int> ellenbergL; // Światło (1-9)
-  final Map<int, int> ellenbergF; // Wilgotność (1-12)
-  final Map<int, int> ellenbergR; // Odczyn pH (1-9)
-  final Map<int, int> ellenbergN; // Żyzność/Azot (1-9)
-  final Map<int, int> ellenbergT; // Temperatura (1-9)
-  final Map<int, int> ellenbergK; // Kontynentalizm (1-9)
-  final Map<int, int> ellenbergS; // Zasolenie (0-9)
+  @override final Map<int, int> ellenbergL;
+  @override final Map<int, int> ellenbergF;
+  @override final Map<int, int> ellenbergR;
+  @override final Map<int, int> ellenbergN;
+  @override final Map<int, int> ellenbergT;
+  @override final Map<int, int> ellenbergK;
+  @override final Map<int, int> ellenbergS;
 
   final String? plantUsage;
   final String? cultivation;
   final String? properties;
-
   final List<String> associatedSyntaxa;
   final List<HarvestSeason> harvestSeasons;
 
+  @override String get profileId => speciesID;
+  @override String get name => polishName;
+
   PlantSpecies({
-    required this.speciesID,
-    required this.latinName,
-    required this.polishName,
-    required this.family,
-    required this.biologicalType,
-    this.prefPhMin,
-    this.prefPhMax,
-    this.ellenbergL = const {},
-    this.ellenbergF = const {},
-    this.ellenbergR = const {},
-    this.ellenbergN = const {},
-    this.ellenbergT = const {},
-    this.ellenbergK = const {},
-    this.ellenbergS = const {},
-    this.plantUsage,
-    this.cultivation,
-    this.properties,
-    this.associatedSyntaxa = const [],
-    this.harvestSeasons = const [],
+    required this.speciesID, required this.latinName, required this.polishName, required this.family, required this.biologicalType,
+    this.prefPhMin, this.prefPhMax, this.ellenbergL = const {}, this.ellenbergF = const {}, this.ellenbergR = const {},
+    this.ellenbergN = const {}, this.ellenbergT = const {}, this.ellenbergK = const {}, this.ellenbergS = const {},
+    this.plantUsage, this.cultivation, this.properties, this.associatedSyntaxa = const [], this.harvestSeasons = const [],
   });
 
   Map<String, dynamic> toMap() {
-    // FIX: Każda wewnętrzna mapa int-int musi przekształcić klucze na String przed jsonEncode
+    // FIX: Klucze String zapobiegają błędom "Converting object to an encodable object failed"
     final Map<String, dynamic> extraAxes = {
       'T': ellenbergT.map((k, v) => MapEntry(k.toString(), v)),
       'K': ellenbergK.map((k, v) => MapEntry(k.toString(), v)),
       'S': ellenbergS.map((k, v) => MapEntry(k.toString(), v)),
-      'N': ellenbergN.map((k, v) => MapEntry(k.toString(), v)),
     };
 
     return {
-      'speciesID': speciesID,
-      'latinName': latinName,
-      'polishName': polishName,
-      'family': family,
-      'biologicalType': biologicalType,
-      'prefPhMin': prefPhMin,
-      'prefPhMax': prefPhMax,
+      'speciesID': speciesID, 'latinName': latinName, 'polishName': polishName, 'family': family, 'biologicalType': biologicalType,
+      'prefPhMin': prefPhMin, 'prefPhMax': prefPhMax,
       'prefLightLevelsJson': jsonEncode(ellenbergL.map((k, v) => MapEntry(k.toString(), v))),
       'prefWaterDynamicsJson': jsonEncode(ellenbergF.map((k, v) => MapEntry(k.toString(), v))),
       'prefSoilTypesJson': jsonEncode(ellenbergR.map((k, v) => MapEntry(k.toString(), v))),
+      'prefNitrogenJson': jsonEncode(ellenbergN.map((k, v) => MapEntry(k.toString(), v))), // FIX: dedykowana kolumna
       'prefAreaTypesJson': jsonEncode(extraAxes),
-      'plantUsage': plantUsage,
-      'cultivation': cultivation,
-      'properties': properties,
-      'associatedSyntaxaJson': jsonEncode(associatedSyntaxa),
-      'harvestSeasonsJson': jsonEncode(harvestSeasons.map((e) => e.toMap()).toList()),
+      'plantUsage': plantUsage, 'cultivation': cultivation, 'properties': properties,
+      'associatedSyntaxaJson': jsonEncode(associatedSyntaxa), 'harvestSeasonsJson': jsonEncode(harvestSeasons.map((e) => e.toMap()).toList()),
     };
   }
 
@@ -91,11 +70,11 @@ class PlantSpecies {
     Map<int, int> lMap = parseEllenbergMap(map['prefLightLevelsJson']);
     Map<int, int> fMap = parseEllenbergMap(map['prefWaterDynamicsJson']);
     Map<int, int> rMap = parseEllenbergMap(map['prefSoilTypesJson']);
+    Map<int, int> nMap = parseEllenbergMap(map['prefNitrogenJson']);
 
     Map<int, int> tMap = {};
     Map<int, int> kMap = {};
     Map<int, int> sMap = {};
-    Map<int, int> nMap = {};
 
     if (map['prefAreaTypesJson'] != null) {
       try {
@@ -104,38 +83,20 @@ class PlantSpecies {
         if (extra.containsKey('T')) tMap = castSubMap(extra['T']);
         if (extra.containsKey('K')) kMap = castSubMap(extra['K']);
         if (extra.containsKey('S')) sMap = castSubMap(extra['S']);
-        if (extra.containsKey('N')) nMap = castSubMap(extra['N']);
       } catch (_) {}
     }
 
     List<HarvestSeason> decodedSeasons = [];
     if (map['harvestSeasonsJson'] != null) {
-      try {
-        final List<dynamic> rawList = jsonDecode(map['harvestSeasonsJson']);
-        decodedSeasons = rawList.map((e) => HarvestSeason.fromMap(e)).toList();
-      } catch (_) {}
+      try { decodedSeasons = (jsonDecode(map['harvestSeasonsJson']) as List).map((e) => HarvestSeason.fromMap(e)).toList(); } catch (_) {}
     }
 
     return PlantSpecies(
-      speciesID: map['speciesID'] ?? '',
-      latinName: map['latinName'] ?? '',
-      polishName: map['polishName'] ?? '',
-      family: map['family'] ?? '',
-      biologicalType: map['biologicalType'] ?? 'Zielne',
-      prefPhMin: map['prefPhMin']?.toDouble(),
-      prefPhMax: map['prefPhMax']?.toDouble(),
-      ellenbergL: lMap,
-      ellenbergF: fMap,
-      ellenbergR: rMap,
-      ellenbergN: nMap,
-      ellenbergT: tMap,
-      ellenbergK: kMap,
-      ellenbergS: sMap,
-      plantUsage: map['plantUsage'],
-      cultivation: map['cultivation'],
-      properties: map['properties'],
-      associatedSyntaxa: map['associatedSyntaxaJson'] != null ? List<String>.from(jsonDecode(map['associatedSyntaxaJson'])) : const [],
-      harvestSeasons: decodedSeasons,
+      speciesID: map['speciesID'] ?? '', latinName: map['latinName'] ?? '', polishName: map['polishName'] ?? '', family: map['family'] ?? '', biologicalType: map['biologicalType'] ?? 'Zielne',
+      prefPhMin: map['prefPhMin']?.toDouble(), prefPhMax: map['prefPhMax']?.toDouble(),
+      ellenbergL: lMap, ellenbergF: fMap, ellenbergR: rMap, ellenbergN: nMap, ellenbergT: tMap, ellenbergK: kMap, ellenbergS: sMap,
+      plantUsage: map['plantUsage'], cultivation: map['cultivation'], properties: map['properties'],
+      associatedSyntaxa: map['associatedSyntaxaJson'] != null ? List<String>.from(jsonDecode(map['associatedSyntaxaJson'])) : const [], harvestSeasons: decodedSeasons,
     );
   }
 }

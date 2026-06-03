@@ -10,66 +10,46 @@ class Releve {
   final String type;
   final List<LatLng> points;
   final DateTime date;
-  String? parentId;
-  HabitatInfo? habitat;
+  final String? parentId; // FIX: final
+  final HabitatInfo? habitat; // FIX: final
+  final Map<String, double> mlPredictions; // FIX: final
 
-  // NOWE: Przechowuje wyniki ML (Nazwa gatunku -> Prawdopodobieństwo %)
-  Map<String, double> mlPredictions;
+  Releve({required this.id, required this.commonName, required this.phytosociologicalName, required this.type, required this.points, required this.date, this.parentId, this.habitat, this.mlPredictions = const {}});
 
-  Releve({
-    required this.id,
-    required this.commonName,
-    required this.phytosociologicalName,
-    required this.type,
-    required this.points,
-    required this.date,
-    this.parentId,
-    this.habitat,
-    this.mlPredictions = const {}, // Domyślnie puste
-  });
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'commonName': commonName,
-      'phytosociologicalName': phytosociologicalName,
-      'type': type,
-      'pointsJson': jsonEncode(points.map((p) => {'lat': p.latitude, 'lng': p.longitude}).toList()),
-      'parentId': parentId,
-      'date': date.toIso8601String(),
-      'habitatJson': habitat != null ? jsonEncode(habitat!.toMap()) : null,
-      'mlPredictionsJson': jsonEncode(mlPredictions), // Zapis do JSON
-    };
+  // NOWOŚĆ: Metoda copyWith dla bezpiecznych aktualizacji w ViewModelach
+  Releve copyWith({
+    String? commonName, String? phytosociologicalName, String? type, List<LatLng>? points, DateTime? date,
+    String? parentId, HabitatInfo? habitat, Map<String, double>? mlPredictions,
+  }) {
+    return Releve(
+      id: this.id,
+      commonName: commonName ?? this.commonName,
+      phytosociologicalName: phytosociologicalName ?? this.phytosociologicalName,
+      type: type ?? this.type,
+      points: points ?? this.points,
+      date: date ?? this.date,
+      parentId: parentId ?? this.parentId,
+      habitat: habitat ?? this.habitat,
+      mlPredictions: mlPredictions ?? this.mlPredictions,
+    );
   }
 
-  factory Releve.fromMap(Map<String, dynamic> map) {
-    List<dynamic> pointsData = [];
-    if (map.containsKey('pointsJson') && map['pointsJson'] != null) {
-      pointsData = jsonDecode(map['pointsJson']);
-    } else if (map.containsKey('points')) {
-      pointsData = map['points'] as List;
-    }
+  Map<String, dynamic> toMap() => {
+    'id': id, 'commonName': commonName, 'phytosociologicalName': phytosociologicalName, 'type': type,
+    'pointsJson': jsonEncode(points.map((p) => {'lat': p.latitude, 'lng': p.longitude}).toList()), 'parentId': parentId, 'date': date.toIso8601String(),
+    'habitatJson': habitat != null ? jsonEncode(habitat!.toMap()) : null, 'mlPredictionsJson': jsonEncode(mlPredictions),
+  };
 
+  factory Releve.fromMap(Map<String, dynamic> map) {
+    List<dynamic> pointsData = map['pointsJson'] != null ? jsonDecode(map['pointsJson']) : [];
     Map<String, double> decodedPredictions = {};
     if (map['mlPredictionsJson'] != null) {
-      try {
-        final rawMap = jsonDecode(map['mlPredictionsJson']) as Map<String, dynamic>;
-        rawMap.forEach((k, v) => decodedPredictions[k] = (v as num).toDouble());
-      } catch (e) {
-        print("Błąd dekodowania predykcji ML: $e");
-      }
+      try { (jsonDecode(map['mlPredictionsJson']) as Map).forEach((k, v) => decodedPredictions[k] = (v as num).toDouble()); } catch (_) {}
     }
-
     return Releve(
-      id: map['id'],
-      commonName: map['commonName'] ?? '',
-      phytosociologicalName: map['phytosociologicalName'] ?? '',
-      type: map['type'],
-      points: pointsData.map((p) => LatLng(p['lat'], p['lng'])).toList(),
-      date: DateTime.parse(map['date']),
-      parentId: map['parentId'],
-      habitat: map['habitatJson'] != null ? HabitatInfo.fromMap(jsonDecode(map['habitatJson'])) : null,
-      mlPredictions: decodedPredictions, // Odczyt z JSON
+      id: map['id'], commonName: map['commonName'] ?? '', phytosociologicalName: map['phytosociologicalName'] ?? '', type: map['type'],
+      points: pointsData.map((p) => LatLng(p['lat'], p['lng'])).toList(), date: DateTime.parse(map['date']), parentId: map['parentId'],
+      habitat: map['habitatJson'] != null ? HabitatInfo.fromMap(jsonDecode(map['habitatJson'])) : null, mlPredictions: decodedPredictions,
     );
   }
 }

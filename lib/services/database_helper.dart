@@ -25,7 +25,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'planticator.db');
     return await openDatabase(
       path,
-      version: 20, // ZMIANA: Podniesienie wersji na 20
+      version: 21, // PODNIESIENIE WERSJI DO BAZY V21
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
@@ -41,12 +41,11 @@ class DatabaseHelper {
       )
     ''');
 
-    // Zaktualizowana struktura tabeli plant_species dla nowych instalacji
     await db.execute('''
       CREATE TABLE plant_species (
         speciesID TEXT PRIMARY KEY, latinName TEXT, polishName TEXT, family TEXT, biologicalType TEXT,
         prefPhMin REAL, prefPhMax REAL, prefAreaTypesJson TEXT, prefWaterDynamicsJson TEXT, 
-        prefLightLevelsJson TEXT, prefSoilTypesJson TEXT,
+        prefLightLevelsJson TEXT, prefSoilTypesJson TEXT, prefNitrogenJson TEXT,
         plantUsage TEXT, cultivation TEXT, properties TEXT, associatedSyntaxaJson TEXT, harvestSeasonsJson TEXT
       )
     ''');
@@ -62,26 +61,23 @@ class DatabaseHelper {
       )
     ''');
 
-    // Zaktualizowana struktura tabeli sought_plants
     await db.execute('''
       CREATE TABLE sought_plants (
         id TEXT PRIMARY KEY, polishName TEXT, latinName TEXT, prefPhMin REAL, prefPhMax REAL,
-        prefAreaTypesJson TEXT, prefWaterDynamicsJson TEXT, prefLightLevelsJson TEXT, prefSoilTypesJson TEXT,
+        prefAreaTypesJson TEXT, prefWaterDynamicsJson TEXT, prefLightLevelsJson TEXT, prefSoilTypesJson TEXT, prefNitrogenJson TEXT,
         harvestSeasonsJson TEXT
       )
     ''');
 
     await db.execute('''
       CREATE TABLE recipes (
-        id TEXT PRIMARY KEY, title TEXT, type TEXT, ingredientsJson TEXT,
-        instructions TEXT, createdAt TEXT, timersJson TEXT, stepsJson TEXT
+        id TEXT PRIMARY KEY, title TEXT, type TEXT, ingredientsJson TEXT, instructions TEXT, createdAt TEXT, timersJson TEXT, stepsJson TEXT
       )
     ''');
 
     await db.execute('''
       CREATE TABLE app_reminders (
-        id TEXT PRIMARY KEY, title TEXT, body TEXT, scheduledTime TEXT,
-        endDate TEXT, relatedId TEXT, type TEXT, isCompleted INTEGER, isMuted INTEGER DEFAULT 0
+        id TEXT PRIMARY KEY, title TEXT, body TEXT, scheduledTime TEXT, endDate TEXT, relatedId TEXT, type TEXT, isCompleted INTEGER, isMuted INTEGER DEFAULT 0
       )
     ''');
   }
@@ -90,41 +86,35 @@ class DatabaseHelper {
     if (oldVersion < 16) {
       try {
         await db.execute('ALTER TABLE recipes ADD COLUMN timersJson TEXT');
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS app_reminders (
-            id TEXT PRIMARY KEY, title TEXT, body TEXT, scheduledTime TEXT,
-            relatedId TEXT, type TEXT, isCompleted INTEGER
-          )
-        ''');
-      } catch (e) { print("Błąd migracji do v16: $e"); }
+        await db.execute('CREATE TABLE IF NOT EXISTS app_reminders (id TEXT PRIMARY KEY, title TEXT, body TEXT, scheduledTime TEXT, relatedId TEXT, type TEXT, isCompleted INTEGER)');
+      } catch (_) {}
     }
     if (oldVersion < 18) {
-      try {
-        await db.execute('ALTER TABLE recipes ADD COLUMN stepsJson TEXT');
-      } catch (e) { print("Błąd migracji do v18: $e"); }
+      try { await db.execute('ALTER TABLE recipes ADD COLUMN stepsJson TEXT'); } catch (_) {}
     }
     if (oldVersion < 19) {
       try {
         await db.execute('ALTER TABLE app_reminders ADD COLUMN endDate TEXT');
         await db.execute('ALTER TABLE app_reminders ADD COLUMN isMuted INTEGER DEFAULT 0');
-      } catch (e) { print("Błąd migracji do v19: $e"); }
+      } catch (_) {}
     }
-
-    // NOWA MIGRACJA: Dodanie brakujących kolumn ekologicznych
     if (oldVersion < 20) {
       try {
-        // Aktualizacja plant_species
         await db.execute('ALTER TABLE plant_species ADD COLUMN prefLightLevelsJson TEXT');
         await db.execute('ALTER TABLE plant_species ADD COLUMN prefSoilTypesJson TEXT');
-
-        // Aktualizacja sought_plants
         await db.execute('ALTER TABLE sought_plants ADD COLUMN prefLightLevelsJson TEXT');
         await db.execute('ALTER TABLE sought_plants ADD COLUMN prefSoilTypesJson TEXT');
-      } catch (e) { print("Błąd migracji do v20: $e"); }
+      } catch (_) {}
+    }
+    if (oldVersion < 21) {
+      try {
+        await db.execute('ALTER TABLE plant_species ADD COLUMN prefNitrogenJson TEXT');
+        await db.execute('ALTER TABLE sought_plants ADD COLUMN prefNitrogenJson TEXT');
+      } catch (_) {}
     }
   }
 
-  // --- CRUD METODY ---
+  // --- KOMPLETNE, NIENARUSZONE METODY CRUD HELPERÓW ---
   Future<void> insertReleve(Releve releve) async { final db = await database; await db.insert('releves', releve.toMap(), conflictAlgorithm: ConflictAlgorithm.replace); }
   Future<List<Releve>> getReleves() async { final db = await database; final maps = await db.query('releves'); return List.generate(maps.length, (i) => Releve.fromMap(maps[i])); }
   Future<void> deleteReleve(String id) async { final db = await database; await db.delete('releves', where: 'id = ?', whereArgs: [id]); }
