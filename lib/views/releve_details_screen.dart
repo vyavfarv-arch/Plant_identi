@@ -25,7 +25,7 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
   Widget build(BuildContext context) {
     final releveVm = context.watch<ReleveViewModel>();
     final obsVm = context.watch<ObservationViewModel>();
-    // FIX WARNINGA: Usunięto całkowicie nieużywaną linię filterVm
+    // FIX WARNINGA: Usunięto nieużywany obiekt filterVm, czyszcząc konsolę lintera
 
     final currentReleve = releveVm.allReleves.firstWhere(
             (r) => r.id == widget.releve.id,
@@ -77,17 +77,17 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
           if (potentialPlants.isNotEmpty) ...[
             _buildSectionHeader("Przewidywane gatunki (Potencjalne):", Colors.purple.shade50),
             ...potentialPlants.map((entry) {
-              // Pobieramy instancję gatunku ze słownika w celu przeliczenia diagnozy
               final plantSpecies = obsVm.speciesDictionary.firstWhere((s) => s.polishName.toLowerCase() == entry.key.toLowerCase());
               final match = EcologicalMatchingService.calculateCompatibility(currentReleve, plantSpecies);
 
-              // Dynamiczne wyciągnięcie sygnatury osi ekologicznych dla zielarza
+              // Mapowanie unikalnego wektora osi diagnostycznych Ellenberga (7 osi)
               final diagStr = match.diagnostics.entries.map((e) => "${e.key}:${e.value}").join("  ");
 
               return ListTile(
                 leading: const Icon(Icons.auto_awesome, color: Colors.purple),
                 title: Text(entry.key),
-                subtitle: Text("Zgodność siedliska: ${(entry.value * 100).toStringAsFixed(0)}%   [$diagStr]"),
+                // FIX UX: Usunięto informacje procentowe zgodnie z prośbą, zostawiając czystą, zunifikowaną sygnaturę [L:✓ F:✓ R:✗ ...]
+                subtitle: Text("Siedlisko: [$diagStr]"),
               );
             }).toList(),
           ],

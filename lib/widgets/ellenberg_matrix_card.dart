@@ -46,13 +46,11 @@ class EllenbergMatrixCard extends StatelessWidget {
               Color bg = Colors.grey.shade100;
               Color border = Colors.grey.shade300;
               Color text = Colors.black38;
-              Widget? icon;
 
               if (state == 1) {
                 bg = Colors.teal.shade50; border = Colors.teal.shade200; text = Colors.teal.shade900;
               } else if (state == 2) {
                 bg = Colors.teal.shade600; border = Colors.teal.shade800; text = Colors.white;
-                icon = const Icon(Icons.star, size: 8, color: Colors.amber);
               }
 
               return Container(
@@ -62,7 +60,6 @@ class EllenbergMatrixCard extends StatelessWidget {
                   alignment: Alignment.center,
                   children: [
                     Text("$val", style: TextStyle(color: text, fontWeight: FontWeight.bold, fontSize: 11)),
-                    if (icon != null) Positioned(top: 1, right: 1, child: icon),
                   ],
                 ),
               );

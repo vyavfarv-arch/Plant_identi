@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/observation_view_model.dart';
 import 'camera_screen.dart';
-import 'quick_add_observation_screen.dart';
+import 'add_observation_screen.dart'; // FIX: Celowy import zunifikowanego komponentu
 
 class AddPlantChoiceScreen extends StatefulWidget {
   const AddPlantChoiceScreen({super.key});
@@ -87,7 +87,7 @@ class _AddPlantChoiceScreenState extends State<AddPlantChoiceScreen> {
                   ? const Center(
                 child: Text(
                   "Brak pasujących gatunków w bazie.\nUżyj opcji powyżej, aby dodać nowy.",
-                  textAlign: TextAlign.center, // POPRAWIONE
+                  textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey),
                 ),
               )
@@ -104,7 +104,8 @@ class _AddPlantChoiceScreenState extends State<AddPlantChoiceScreen> {
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(context, MaterialPageRoute(
-                        builder: (_) => QuickAddObservationScreen(preselectedSpecies: species),
+                        // FIX BŁĘDU: Przekierowanie do ujednoliconego asystenta w trybie szybkiego zapisu
+                        builder: (_) => AddObservationScreen(preselectedSpecies: species),
                       ));
                     },
                   );

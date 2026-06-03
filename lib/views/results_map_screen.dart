@@ -60,9 +60,9 @@ class _ResultsMapScreenState extends State<ResultsMapScreen> {
         if (matchResult.isPotentialMatch) {
           fillColor = Colors.amber.withOpacity(0.5); strokeColor = Colors.orange.shade800;
 
-          // FIX REALIZACJI: Łączenie elementów mapy diagnostycznej w wektor tekstowy
-          final diagStr = matchResult.diagnostics.entries.map((e) => "${e.key}:${e.value}").join("  ");
-          statusText = "Siedlisko potencjalne: ${(matchResult.score * 100).toStringAsFixed(0)}%   [$diagStr]";
+          // FIX UX: Usunięto informacje procentowe, zostawiając czysty wektor diagnostyczny 7 osi Ellenberga
+          final diagStr = matchResult.diagnostics.entries.map((e) => "${e.key}:${e.value}").join(" ");
+          statusText = "Siedlisko potencjalne: [$diagStr]";
         } else {
           fillColor = Colors.grey.withOpacity(0.15); strokeColor = Colors.grey.shade400;
           statusText = "Niska zgodność makrosiedliskowa";
@@ -81,8 +81,34 @@ class _ResultsMapScreenState extends State<ResultsMapScreen> {
     );
   }
 
-  Widget _buildLegend() => Container(padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16), color: Colors.white, width: double.infinity, child: Wrap(spacing: 12, runSpacing: 6, alignment: WrapAlignment.spaceBetween, children: [_legendItem(Colors.green, "Obecna (Sukces)"), _legendItem(Colors.amber, "Potencjalna (Matryca)"), _legendItem(Colors.grey, "Nieobecna / Niska zgodność")]));
-  Widget _legendItem(Color color, String text) => Row(mainAxisSize: MainAxisSize.min, children: [Container(width: 12, height: 12, decoration: BoxDecoration(color: color.withOpacity(0.5), border: Border.all(color: color))), const SizedBox(width: 6), Text(text, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold))]);
+  // FIX RENDERFLEX OVERFLOW: Zastąpienie Row płaskimi, elastycznymi i bezpiecznymi widgetami Chip
+  Widget _buildLegend() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      color: Colors.white,
+      width: double.infinity,
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 6,
+        alignment: WrapAlignment.start, // Elastyczne wyrównanie Material 3
+        children: [
+          _legendChip(Colors.green, "Obecna (Sukces)"),
+          _legendChip(Colors.amber, "Potencjalna (Matryca)"),
+          _legendChip(Colors.grey, "Nieobecna / Niska zgodność"),
+        ],
+      ),
+    );
+  }
+
+  Widget _legendChip(Color color, String text) {
+    return Chip(
+      avatar: CircleAvatar(backgroundColor: color.withOpacity(0.6), radius: 6),
+      label: Text(text, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+      backgroundColor: Colors.grey.shade50,
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
+  }
 
   void _showAreaActionSheet(BuildContext context, Releve area, bool isAlreadyObserved, bool isMarkedAbsent, String statusText) {
     showModalBottomSheet(

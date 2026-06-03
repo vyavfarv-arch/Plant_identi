@@ -48,7 +48,7 @@ class _HabitatDetailsScreenState extends State<HabitatDetailsScreen> {
               DropdownButtonFormField<String>(value: _selectedType, items: ["Obszar", "Podobszar"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(), onChanged: (v) => setState(() => _selectedType = v!), decoration: const InputDecoration(labelText: "Ranga", border: OutlineInputBorder())),
 
               const SizedBox(height: 30),
-              _sectionTitle("2. Parametry Krytyczne (Skala Ellenberga)"),
+              _sectionTitle("2. Parametry Krytyczne "),
               _buildDropdown("Typ obszaru", HabitatInfo.areaTypeOptions, _areaType, (v) => setState(() => _areaType = v)),
 
               const Padding(padding: EdgeInsets.symmetric(vertical: 4), child: Text("Stopń zacienienia okapu (1-9):", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),

@@ -1,8 +1,9 @@
+// lib/views/camera_screen.dart
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'classification_screen.dart';
+import 'add_observation_screen.dart'; // FIX: Celowy import zunifikowanego komponentu
 import '../viewmodels/observation_view_model.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -77,7 +78,8 @@ class _CameraScreenState extends State<CameraScreen> {
             right: 30,
             child: FloatingActionButton(
               backgroundColor: Colors.green,
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ClassificationScreen())),
+              // FIX BŁĘDU: Przekierowanie do ujednoliconego asystenta w trybie pełnego opisu nowej rośliny
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddObservationScreen())),
               child: const Icon(Icons.arrow_forward),
             ),
           ),

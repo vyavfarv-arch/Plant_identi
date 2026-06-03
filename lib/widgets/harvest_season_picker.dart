@@ -134,7 +134,6 @@ class _HarvestSeasonPickerState extends State<HarvestSeasonPicker> {
             elevation: 1, margin: const EdgeInsets.symmetric(vertical: 4),
             child: ListTile(
               dense: true,
-              // ZMIANA: Zastąpiono interaktywny przycisk dzwonka czystą, estetyczną ikoną botaniczną
               leading: const Icon(Icons.shopping_bag_outlined, color: Colors.green),
               title: Text(season.material, style: const TextStyle(fontWeight: FontWeight.bold)),
               subtitle: Text(dateText),

@@ -4,7 +4,7 @@ import 'package:path/path.dart';
 import '../models/releve.dart';
 import '../models/plant_observation.dart';
 import '../models/plant_species.dart';
-import '../models/sought_plant.dart'; // Ostrzeżenie usunięte: Import jest teraz używany w sygnaturach metod poniżej
+import '../models/sought_plant.dart'; // POPRAWKA: Import jest teraz używany w metodach poniżej
 import '../models/recipe.dart';
 import '../models/app_reminder.dart';
 
@@ -25,7 +25,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'planticator.db');
     return await openDatabase(
       path,
-      version: 22,
+      version: 22, // Baza danych w wersji v22 z obsługą wzorców morfologicznych
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
@@ -97,7 +97,7 @@ class DatabaseHelper {
     }
   }
 
-  // --- KOMPLETNE METODY CRUD SIATKI ---
+  // --- POPRAWKA BŁĘDÓW DEFINICJI: Pełne i sprawne metody CRUD ---
   Future<void> insertReleve(Releve releve) async { final db = await database; await db.insert('releves', releve.toMap(), conflictAlgorithm: ConflictAlgorithm.replace); }
   Future<List<Releve>> getReleves() async { final db = await database; final maps = await db.query('releves'); return List.generate(maps.length, (i) => Releve.fromMap(maps[i])); }
   Future<void> deleteReleve(String id) async { final db = await database; await db.delete('releves', where: 'id = ?', whereArgs: [id]); }
@@ -110,7 +110,7 @@ class DatabaseHelper {
   Future<List<PlantSpecies>> getSpecies() async { final db = await database; final maps = await db.query('plant_species'); return List.generate(maps.length, (i) => PlantSpecies.fromMap(maps[i])); }
   Future<void> deleteSpecies(String id) async { final db = await database; await db.delete('plant_species', where: 'speciesID = ?', whereArgs: [id]); }
 
-  // FIX BŁĘDÓW DEFINICJI: Dodano wymagane metody dla roślin poszukiwanych
+  // DODANE METODY POMOCNICZE DLA ROŚLIN POSZUKIWANYCH (Zamyka błędy kompilacji)
   Future<void> insertSoughtPlant(SoughtPlant plant) async { final db = await database; await db.insert('sought_plants', plant.toMap(), conflictAlgorithm: ConflictAlgorithm.replace); }
   Future<List<SoughtPlant>> getSoughtPlants() async { final db = await database; final maps = await db.query('sought_plants'); return List.generate(maps.length, (i) => SoughtPlant.fromMap(maps[i])); }
   Future<void> deleteSoughtPlant(String id) async { final db = await database; await db.delete('sought_plants', where: 'id = ?', whereArgs: [id]); }
@@ -120,7 +120,7 @@ class DatabaseHelper {
   Future<void> deleteRecipe(String id) async { final db = await database; await db.delete('recipes', where: 'id = ?', whereArgs: [id]); }
 
   Future<void> insertReminder(AppReminder reminder) async { final db = await database; await db.insert('app_reminders', reminder.toMap(), conflictAlgorithm: ConflictAlgorithm.replace); }
-  Future<List<AppReminder>> getReminders() async { final db = await database; final maps = await db.query('app_reminders', orderBy: 'scheduledTime ASC'); return List.generate(maps.length, (i) => AppReminder.fromMap(maps[i])); }
+  Future<List<AppReminder>> getReminders() async { final db = await database; final maps = await db.query('app_reminders'); return List.generate(maps.length, (i) => AppReminder.fromMap(maps[i])); }
   Future<void> updateReminderStatus(String id, bool isCompleted) async { final db = await database; await db.update('app_reminders', {'isCompleted': isCompleted ? 1 : 0}, where: 'id = ?', whereArgs: [id]); }
   Future<void> updateReminderMuteStatus(String id, bool isMuted) async { final db = await database; await db.update('app_reminders', {'isMuted': isMuted ? 1 : 0}, where: 'id = ?', whereArgs: [id]); }
   Future<void> deleteReminder(String id) async { final db = await database; await db.delete('app_reminders', where: 'id = ?', whereArgs: [id]); }

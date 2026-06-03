@@ -109,7 +109,6 @@ class EcologicalAmplitudePicker extends StatelessWidget {
               Color bg = Colors.grey.shade200;
               Color border = Colors.grey.shade400;
               Color text = Colors.black87;
-              Widget? icon;
 
               if (state == 1) {
                 bg = Colors.teal.shade100;
@@ -119,7 +118,6 @@ class EcologicalAmplitudePicker extends StatelessWidget {
                 bg = Colors.teal.shade700;
                 border = Colors.teal.shade900;
                 text = Colors.white;
-                icon = const Icon(Icons.star, size: 10, color: Colors.amber);
               }
 
               return InkWell(
@@ -132,7 +130,6 @@ class EcologicalAmplitudePicker extends StatelessWidget {
                     alignment: Alignment.center,
                     children: [
                       Text("$val", style: TextStyle(color: text, fontWeight: FontWeight.bold, fontSize: 12)),
-                      if (icon != null) Positioned(top: 1, right: 1, child: icon),
                     ],
                   ),
                 ),
