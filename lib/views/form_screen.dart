@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../viewmodels/observation_view_model.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../models/plant_observation.dart';
@@ -26,6 +27,8 @@ class _FormScreenState extends State<FormScreen> {
     _selectedValues.addAll(widget.observation.characteristics);
   }
 
+  // FIX WARNINGA: Usunięto nieużywaną, zdublowaną strukturę metody _detectAnomalies
+
   @override
   Widget build(BuildContext context) {
     final obsVm = context.watch<ObservationViewModel>();
@@ -40,7 +43,7 @@ class _FormScreenState extends State<FormScreen> {
     final temporaryObservation = PlantObservation(
       id: widget.observation.id, photoPaths: widget.observation.photoPaths,
       latitude: widget.observation.latitude, longitude: widget.observation.longitude,
-      timestamp: widget.observation.timestamp, characteristics: _selectedValues,
+      timestamp: DateTime.now(), characteristics: _selectedValues,
       speciesId: widget.observation.speciesId, localName: widget.observation.localName,
     );
 
@@ -57,8 +60,11 @@ class _FormScreenState extends State<FormScreen> {
           children: [
             if (anomalies.isNotEmpty)
               Container(
-                color: Colors.red.shade50, width: double.infinity, padding: const EdgeInsets.all(12),
-                border: Border(bottom: BorderSide(color: Colors.red.shade200)),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  border: Border(bottom: BorderSide(color: Colors.red.shade200)),
+                ),
+                width: double.infinity, padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
                     const Icon(Icons.gpp_bad_outlined, color: Colors.red, size: 24),
@@ -163,7 +169,7 @@ class _FormScreenState extends State<FormScreen> {
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(color: isSelected ? Colors.green : Colors.grey.shade100, borderRadius: BorderRadius.circular(8), border: Border.all(color: isSelected ? Colors.green : Colors.grey.shade400)),
+                        decoration: BoxDecoration(color: isSelected ? Colors.green : Colors.grey[100], borderRadius: BorderRadius.circular(8), border: Border.all(color: isSelected ? Colors.green : Colors.grey.shade400)),
                         child: Text(opt, style: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontSize: 11, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
                       ),
                     ),
@@ -237,7 +243,6 @@ class _FormScreenState extends State<FormScreen> {
   }
 
   void _zapiszFinalnie() async {
-    // FIX BŁĘDU 2: Przepisujemy kompletną migawkę starych danych (daty, fenologii, obfitości), modyfikując TYLKO morfologię
     final finalObs = PlantObservation(
       id: widget.observation.id,
       releveId: widget.observation.releveId,
@@ -260,7 +265,7 @@ class _FormScreenState extends State<FormScreen> {
       confusingSpecies: widget.observation.confusingSpecies,
       characteristicFeature: widget.observation.characteristicFeature,
       customHarvestSeasons: widget.observation.customHarvestSeasons,
-      characteristics: Map.from(_selectedValues), // Aktualizacja mapy cech
+      characteristics: Map.from(_selectedValues),
     );
 
     await context.read<ObservationViewModel>().addObservation(finalObs);

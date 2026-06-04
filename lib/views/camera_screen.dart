@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'classification_screen.dart';
+import 'add_observation_screen.dart';
 import '../viewmodels/observation_view_model.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -41,7 +41,15 @@ class _CameraScreenState extends State<CameraScreen> {
         Positioned(top: 50, left: 10, child: Row(children: vm.currentPhotoPaths.map((path) => Padding(padding: const EdgeInsets.all(4.0), child: Image.file(File(path), width: 70, height: 70, fit: BoxFit.cover))).toList())),
         Positioned(bottom: 40, left: 0, right: 0, child: Column(children: [Text("Zdjęcia: ${vm.currentPhotoPaths.length} / 10", style: const TextStyle(color: Colors.white)), const SizedBox(height: 20), IconButton(iconSize: 80, icon: const Icon(Icons.camera_alt, color: Colors.white), onPressed: vm.canTakePhoto ? () => vm.takePhoto() : null)])),
         if (vm.currentPhotoPaths.isNotEmpty)
-          Positioned(bottom: 55, right: 30, child: FloatingActionButton(backgroundColor: Colors.green, onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ClassificationScreen())), child: const Icon(Icons.arrow_forward))),
+          Positioned(
+            bottom: 55, right: 30,
+            child: FloatingActionButton(
+              backgroundColor: Colors.green,
+              // FIX: Przekierowanie do ujednoliconego asystenta w trybie DŁUGIM (forcedQuickMode: false)
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddObservationScreen(forcedQuickMode: false))),
+              child: const Icon(Icons.arrow_forward),
+            ),
+          ),
       ],
     );
   }
