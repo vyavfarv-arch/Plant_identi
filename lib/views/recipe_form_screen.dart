@@ -108,7 +108,6 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
   @override
   Widget build(BuildContext context) {
     final recipeVm = context.watch<RecipeViewModel>();
-    // Pobierz unikalne, już istniejące etykiety ze wszystkich przepisów
     final allExistingLabels = recipeVm.recipes.expand((r) => r.labels).toSet().toList();
 
     return Scaffold(
@@ -124,7 +123,6 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
           TextField(controller: _noteCtrl, maxLines: 3, decoration: const InputDecoration(labelText: "Notatka / Opis przepisu", border: OutlineInputBorder(), alignLabelWithHint: true)),
           const SizedBox(height: 20),
 
-          // SEKCJA LABELI (ETYKIET)
           const Text("Etykiety (Labele) przepisu:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.teal)),
           const SizedBox(height: 8),
           if (_currentLabels.isNotEmpty)
@@ -180,7 +178,7 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
           ],
 
           const Divider(height: 40),
-          Row(margin: const EdgeInsets.spaceBetween, children: [
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             const Text("Składniki:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             TextButton.icon(onPressed: () => setState(() => _ingredients.add(_IngredientControllers('', '', ''))), icon: const Icon(Icons.add), label: const Text("Składnik"))
           ]),
