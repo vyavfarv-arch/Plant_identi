@@ -46,7 +46,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                     _buildGridButton(
                       context,
-                      title: 'Magazyn', icon: Icons.library_books, color: Colors.blue,
+                      title: 'Katalog', icon: Icons.library_books, color: Colors.blue,
                       onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BrowsePlantsScreen())),
                     ),
                     _buildGridButton(

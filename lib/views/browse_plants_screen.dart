@@ -51,7 +51,7 @@ class BrowsePlantsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Magazyn Gatunków'),
+        title: const Text('Katalog'),
         actions: [
           IconButton(
             icon: const Icon(Icons.date_range),
