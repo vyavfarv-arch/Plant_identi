@@ -21,7 +21,6 @@ class DataExportService {
     final releves = await _db.getReleves();
     final allSpecies = await _db.getSpecies();
 
-    // ZMIANA: Nagłówki odzwierciedlają nowe, zaawansowane cechy ekologiczne
     String csv = "obs_id,releve_id,moisture,ph,canopyCover,waterDynamics,areaType,soilDepth,slopeAngle,litterThickness,distanceToWater,deadWood,landUseHistory,substrates,target_latin_name,target_local_name\n";
 
     for (var obs in observations.where((o) => o.isComplete && o.releveId != null)) {
@@ -38,14 +37,14 @@ class DataExportService {
         final h = releve.habitat!;
         csv += "${obs.id},"
             "${releve.id},"
-            "${h.canopyDensity}," // Nowe
+            "${h.canopyDensity},"
             "${h.ph ?? ''},"
-            "${_escapeCsvField(h.waterMovement)}," // Nowe
-            "${_escapeCsvField(h.hydrologicalContext)}," // Nowe
+            "${_escapeCsvField(h.waterMovement)},"
+            "${_escapeCsvField(h.hydrologicalContext)},"
             "${_escapeCsvField(h.areaType)},"
             "${_escapeCsvField(h.slopeAngle)},"
-            "${_escapeCsvField(h.soilSurfaceCover)}," // Nowe
-            "${_escapeCsvField(h.humanImpact)}," // Nowe
+            "${_escapeCsvField(h.soilSurfaceCover)},"
+            "${_escapeCsvField(h.humanImpact)},"
             "${_escapeCsvField(h.substrateType.join(';'))},"
             "${_escapeCsvField(species.latinName)},"
             "${_escapeCsvField(species.polishName)}\n";

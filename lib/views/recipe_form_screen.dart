@@ -51,12 +51,14 @@ class RecipeFormScreen extends StatefulWidget {
 
 class _RecipeFormScreenState extends State<RecipeFormScreen> {
   final _titleCtrl = TextEditingController();
-  final _noteCtrl = TextEditingController(); // NOWOŚĆ: Kontroler notatki
+  final _noteCtrl = TextEditingController();
+  final _newLabelCtrl = TextEditingController();
   String _selectedType = 'Napar';
   final List<String> _types = ['Napar', 'Odwar', 'Macerat', 'Nalewka', 'Maść', 'Syrop', 'Inne'];
 
   final List<_IngredientControllers> _ingredients = [];
   final List<_StepData> _steps = [];
+  final List<String> _currentLabels = [];
 
   @override
   void initState() {
@@ -65,7 +67,8 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
       final r = widget.recipeToEdit!;
       _titleCtrl.text = r.title;
       _selectedType = r.type;
-      _noteCtrl.text = r.note; // Wczytanie istniejącej notatki do edycji
+      _noteCtrl.text = r.note;
+      _currentLabels.addAll(r.labels);
       for (var ing in r.ingredients) { _ingredients.add(_IngredientControllers(ing.speciesName, ing.plantPart, ing.amount)); }
       for (var s in r.steps) { _steps.add(_StepData(type: s.type, content: s.content, duration: s.durationMinutes)); }
     } else {
@@ -91,10 +94,11 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
       id: recipeId,
       title: _titleCtrl.text,
       type: _selectedType,
-      note: _noteCtrl.text.trim(), // Zapis przekazanej notatki
+      note: _noteCtrl.text.trim(),
       createdAt: widget.recipeToEdit?.createdAt ?? DateTime.now(),
       ingredients: _ingredients.where((c) => c.name.text.isNotEmpty).map((c) => RecipeIngredient(speciesName: c.name.text, plantPart: c.part.text, amount: c.amount.text)).toList(),
       steps: finalSteps,
+      labels: _currentLabels,
     );
 
     context.read<RecipeViewModel>().addOrUpdateRecipe(recipe);
@@ -103,9 +107,13 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final recipeVm = context.watch<RecipeViewModel>();
+    // Pobierz unikalne, już istniejące etykiety ze wszystkich przepisów
+    final allExistingLabels = recipeVm.recipes.expand((r) => r.labels).toSet().toList();
+
     return Scaffold(
       appBar: AppBar(title: const Text("Kreator Przepisu")),
-      body: SafeArea(child:  ListView(
+      body: SafeArea(child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           TextField(controller: _titleCtrl, decoration: const InputDecoration(labelText: "Tytuł przepisu", border: OutlineInputBorder())),
@@ -113,11 +121,66 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
           DropdownButtonFormField<String>(value: _selectedType, items: _types.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(), onChanged: (v) => setState(() => _selectedType = v!), decoration: const InputDecoration(border: OutlineInputBorder())),
           const SizedBox(height: 15),
 
-          // NOWOŚĆ: Pole edytora notatki/opisu przepisu
           TextField(controller: _noteCtrl, maxLines: 3, decoration: const InputDecoration(labelText: "Notatka / Opis przepisu", border: OutlineInputBorder(), alignLabelWithHint: true)),
+          const SizedBox(height: 20),
+
+          // SEKCJA LABELI (ETYKIET)
+          const Text("Etykiety (Labele) przepisu:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.teal)),
+          const SizedBox(height: 8),
+          if (_currentLabels.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              children: _currentLabels.map((l) => Chip(
+                label: Text(l),
+                onDeleted: () => setState(() => _currentLabels.remove(l)),
+                backgroundColor: Colors.teal.shade50,
+              )).toList(),
+            )
+          else
+            const Text("Brak przypisanych etykiet.", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic, fontSize: 13)),
+
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _newLabelCtrl,
+                  decoration: const InputDecoration(hintText: "Wpisz nowy label...", isDense: true, border: OutlineInputBorder()),
+                ),
+              ),
+              const SizedBox(width: 10),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+                onPressed: () {
+                  final text = _newLabelCtrl.text.trim();
+                  if (text.isNotEmpty && !_currentLabels.contains(text)) {
+                    setState(() {
+                      _currentLabels.add(text);
+                      _newLabelCtrl.clear();
+                    });
+                  }
+                },
+                child: const Text("DODAJ"),
+              ),
+            ],
+          ),
+
+          if (allExistingLabels.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text("Wybierz z już istniejących etykiet:", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: allExistingLabels.where((l) => !_currentLabels.contains(l)).map((l) => ActionChip(
+                label: Text(l, style: const TextStyle(fontSize: 12)),
+                onPressed: () => setState(() => _currentLabels.add(l)),
+              )).toList(),
+            )
+          ],
 
           const Divider(height: 40),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Row(margin: const EdgeInsets.spaceBetween, children: [
             const Text("Składniki:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             TextButton.icon(onPressed: () => setState(() => _ingredients.add(_IngredientControllers('', '', ''))), icon: const Icon(Icons.add), label: const Text("Składnik"))
           ]),

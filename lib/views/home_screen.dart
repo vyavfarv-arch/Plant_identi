@@ -4,11 +4,11 @@ import 'description_grid_screen.dart';
 import 'browse_plants_screen.dart';
 import 'map_screen.dart';
 import 'releve_list_map_screen.dart';
-import "search_plants_screen.dart";
+import 'search_plants_screen.dart';
 import 'recipe_list_screen.dart';
 import 'reminder_list_screen.dart';
 import '../services/data_export_service.dart';
-import 'add_plant_choice_screen.dart'; // NOWY IMPORT
+import 'add_plant_choice_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -37,7 +37,6 @@ class HomeScreen extends StatelessWidget {
                     _buildGridButton(
                       context,
                       title: 'Dodaj roślinę', icon: Icons.add_a_photo, color: Colors.green,
-                      // ZMIANA: Przekierowanie do ekranu pośredniego wyboru typu ewidencji
                       onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddPlantChoiceScreen())),
                     ),
                     _buildGridButton(

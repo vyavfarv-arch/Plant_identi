@@ -4,7 +4,7 @@ import 'package:path/path.dart';
 import '../models/releve.dart';
 import '../models/plant_observation.dart';
 import '../models/plant_species.dart';
-import '../models/sought_plant.dart'; // POPRAWKA: Import jest teraz używany w metodach poniżej
+import '../models/sought_plant.dart';
 import '../models/recipe.dart';
 import '../models/app_reminder.dart';
 
@@ -25,7 +25,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'planticator.db');
     return await openDatabase(
       path,
-      version: 22, // Baza danych w wersji v22 z obsługą wzorców morfologicznych
+      version: 23, // Wersja v23 z obsługą grupowania przepisów za pomocą etykiet
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
@@ -72,7 +72,7 @@ class DatabaseHelper {
 
     await db.execute('''
       CREATE TABLE recipes (
-        id TEXT PRIMARY KEY, title TEXT, type TEXT, ingredientsJson TEXT, instructions TEXT, createdAt TEXT, timersJson TEXT, stepsJson TEXT
+        id TEXT PRIMARY KEY, title TEXT, type TEXT, ingredientsJson TEXT, instructions TEXT, createdAt TEXT, timersJson TEXT, stepsJson TEXT, labelsJson TEXT
       )
     ''');
 
@@ -95,9 +95,13 @@ class DatabaseHelper {
         await db.execute('ALTER TABLE plant_species ADD COLUMN patternTraitsJson TEXT');
       } catch (_) {}
     }
+    if (oldVersion < 23) {
+      try {
+        await db.execute('ALTER TABLE recipes ADD COLUMN labelsJson TEXT');
+      } catch (_) {}
+    }
   }
 
-  // --- POPRAWKA BŁĘDÓW DEFINICJI: Pełne i sprawne metody CRUD ---
   Future<void> insertReleve(Releve releve) async { final db = await database; await db.insert('releves', releve.toMap(), conflictAlgorithm: ConflictAlgorithm.replace); }
   Future<List<Releve>> getReleves() async { final db = await database; final maps = await db.query('releves'); return List.generate(maps.length, (i) => Releve.fromMap(maps[i])); }
   Future<void> deleteReleve(String id) async { final db = await database; await db.delete('releves', where: 'id = ?', whereArgs: [id]); }
@@ -110,7 +114,6 @@ class DatabaseHelper {
   Future<List<PlantSpecies>> getSpecies() async { final db = await database; final maps = await db.query('plant_species'); return List.generate(maps.length, (i) => PlantSpecies.fromMap(maps[i])); }
   Future<void> deleteSpecies(String id) async { final db = await database; await db.delete('plant_species', where: 'speciesID = ?', whereArgs: [id]); }
 
-  // DODANE METODY POMOCNICZE DLA ROŚLIN POSZUKIWANYCH (Zamyka błędy kompilacji)
   Future<void> insertSoughtPlant(SoughtPlant plant) async { final db = await database; await db.insert('sought_plants', plant.toMap(), conflictAlgorithm: ConflictAlgorithm.replace); }
   Future<List<SoughtPlant>> getSoughtPlants() async { final db = await database; final maps = await db.query('sought_plants'); return List.generate(maps.length, (i) => SoughtPlant.fromMap(maps[i])); }
   Future<void> deleteSoughtPlant(String id) async { final db = await database; await db.delete('sought_plants', where: 'id = ?', whereArgs: [id]); }
