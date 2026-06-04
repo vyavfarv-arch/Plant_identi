@@ -11,9 +11,9 @@ class AddObservationLongStep1 extends StatelessWidget {
   final ValueChanged<String?> onAbundanceChanged;
   final ValueChanged<String?> onVitalityChanged;
 
-  final List<String> _biologicalTypes = ["Drzewo", "Krzew", "Zielne", "Grzyb", "Mszaki"];
+  static const List<String> _biologicalTypes = ["Drzewo", "Krzew", "Zielne", "Grzyb", "Mszaki"];
 
-  final Map<String, String> _phenologyOptions = {
+  static const Map<String, String> _phenologyOptions = {
     "Wegetatywny": "Rozwój pędów/liści",
     "Pączkowanie": "Widoczne pąki kwiatowe",
     "Kwitnienie": "Rozwinięte kwiaty",
@@ -22,7 +22,7 @@ class AddObservationLongStep1 extends StatelessWidget {
     "Spoczynek": "Stan zimowy"
   };
 
-  final Map<String, String> _abundanceOptions = {
+  static const Map<String, String> _abundanceOptions = {
     "5": "75-100% pokrycia",
     "4": "50-75%",
     "3": "25-50%",
@@ -31,14 +31,14 @@ class AddObservationLongStep1 extends StatelessWidget {
     "0": "nielicznie"
   };
 
-  final Map<String, String> _vitalityOptions = {
+  static const Map<String, String> _vitalityOptions = {
     "4": "Bardzo dobra",
     "3": "Dobra",
     "2": "Słaba",
     "1": "Zamierająca"
   };
 
-  AddObservationLongStep1({
+  const AddObservationLongStep1({
     super.key,
     required this.selectedType,
     required this.selectedPhenology,

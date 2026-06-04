@@ -5,10 +5,9 @@ import 'package:uuid/uuid.dart';
 import '../models/plant_observation.dart';
 import '../models/plant_species.dart';
 import '../viewmodels/observation_view_model.dart';
-import 'widgets/add_observation_long_step1.dart';
-import 'widgets/add_observation_morphology_step2.dart';
-import 'widgets/add_observation_quick_steps.dart';
-
+import './add_observation_long_step1.dart';
+import './add_observation_morphology_step2.dart';
+import './add_observation_quick_steps.dart';
 class AddObservationScreen extends StatefulWidget {
   final PlantSpecies? preselectedSpecies;
   final bool forcedQuickMode;
@@ -144,7 +143,7 @@ class _AddObservationScreenState extends State<AddObservationScreen> {
               if (_currentPage < (totalPages - 1)) {
                 _pageController.nextPage(duration: const Duration(milliseconds: 250), curve: Curves.easeInOut);
               } else {
-                _finalizeSave(vm);
+                _finalizeSave(obsVm);
               }
             },
             child: Text(_currentPage == (totalPages - 1) ? "ZAPISZ OKAZ" : "DALEJ"),
