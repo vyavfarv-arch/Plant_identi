@@ -22,7 +22,7 @@ class AddObservationMorphologyStep2 extends StatelessWidget {
       children: [
         const Padding(
           padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text("Krok 2: Zaznacz widoczne cechy morfologiczne", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
+          child: Text("Zaznacz widoczne cechy morfologiczne", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
         ),
         Expanded(
           child: ListView.builder(

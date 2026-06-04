@@ -57,7 +57,7 @@ class AddObservationLongStep1 extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Krok 1: Typ biologiczny nieznanego taksonu", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.green)),
+          const Text("Typ biologiczny nieznanego taksonu", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.green)),
           const SizedBox(height: 12),
           GridView.builder(
               shrinkWrap: true,

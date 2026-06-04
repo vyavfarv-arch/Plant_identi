@@ -8,6 +8,8 @@ import '../viewmodels/observation_view_model.dart';
 import './add_observation_long_step1.dart';
 import './add_observation_morphology_step2.dart';
 import './add_observation_quick_steps.dart';
+
+
 class AddObservationScreen extends StatefulWidget {
   final PlantSpecies? preselectedSpecies;
   final bool forcedQuickMode;
@@ -51,8 +53,8 @@ class _AddObservationScreenState extends State<AddObservationScreen> {
     return Scaffold(
       appBar: AppBar(
           title: Text(_isQuickMode
-              ? "Szybki wpis: Krok ${_currentPage + 1}/2"
-              : "Rejestracja okazu: Krok ${_currentPage + 1}/2"),
+              ? "Szybki wpis"
+              : "Rejestracja okazu"),
           backgroundColor: Colors.green.shade700,
           foregroundColor: Colors.white,
           automaticallyImplyLeading: false
@@ -143,7 +145,7 @@ class _AddObservationScreenState extends State<AddObservationScreen> {
               if (_currentPage < (totalPages - 1)) {
                 _pageController.nextPage(duration: const Duration(milliseconds: 250), curve: Curves.easeInOut);
               } else {
-                _finalizeSave(obsVm);
+                _finalizeSave(vm); // POPRAWIONE: Zmiana z obsVm na vm
               }
             },
             child: Text(_currentPage == (totalPages - 1) ? "ZAPISZ OKAZ" : "DALEJ"),

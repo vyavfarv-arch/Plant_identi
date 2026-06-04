@@ -16,7 +16,7 @@ class AddObservationQuickPhotoStep extends StatelessWidget {
         child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("Krok 1: Dokumentacja fotograficzna okazu", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
+              const Text("Dokumentacja fotograficzna okazu", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
               const SizedBox(height: 15),
               Container(
                   height: 240, width: double.infinity,
@@ -88,11 +88,11 @@ class AddObservationQuickPopulationStep extends StatelessWidget {
         child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("Krok 2: Stan stanowiska i populacji", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
+              const Text("Stan stanowiska i populacji", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
               const SizedBox(height: 20),
               _buildDropdown("Etap fenologiczny rozwoju", _phenologyOptions, selectedPhenology, onPhenologyChanged),
               const SizedBox(height: 12),
-              _buildDropdown("Ilościowość w skali Brauna-Blanqueta", _abundanceOptions, selectedAbundance, onAbundanceChanged),
+              _buildDropdown("Ilościowość", _abundanceOptions, selectedAbundance, onAbundanceChanged),
               const SizedBox(height: 12),
               _buildDropdown("Żywotność stanowiska", _vitalityOptions, selectedVitality, onVitalityChanged)
             ]
