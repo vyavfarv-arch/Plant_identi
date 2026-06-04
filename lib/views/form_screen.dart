@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
 import '../viewmodels/observation_view_model.dart';
+import '../viewmodels/releve_view_model.dart';
 import '../models/plant_observation.dart';
 import '../models/description_schema.dart';
+import '../services/identification_assistant_service.dart';
+import '../services/spatial_service.dart';
 
 class FormScreen extends StatefulWidget {
   final PlantObservation observation;
@@ -20,77 +23,77 @@ class _FormScreenState extends State<FormScreen> {
   @override
   void initState() {
     super.initState();
-    // Jeśli obiekt ma już zapisane cechy (np. z edycji), wczytaj je
     _selectedValues.addAll(widget.observation.characteristics);
-  }
-
-  // NOWOŚĆ: Logika asystenta wykrywania anomalii w stosunku do zablokowanego wzorca
-  List<String> _detectAnomalies(ObservationViewModel obsVm) {
-    final species = obsVm.getSpeciesById(widget.observation.speciesId);
-    if (species == null || species.patternTraits.isEmpty) return [];
-
-    List<String> anomalies = [];
-    _selectedValues.forEach((category, traits) {
-      if (species.patternTraits.containsKey(category)) {
-        final expected = species.patternTraits[category]!;
-        for (var t in traits) {
-          if (!expected.contains(t)) {
-            anomalies.add("$category: $t (wzorzec wymaga: ${expected.join('/')})");
-          }
-        }
-      }
-    });
-    return anomalies;
   }
 
   @override
   Widget build(BuildContext context) {
     final obsVm = context.watch<ObservationViewModel>();
+    final releveVm = context.watch<ReleveViewModel>();
     final schema = SchemaGenerator.getForType(widget.observation.tempBiologicalType ?? "Zielne");
-    final anomalies = _detectAnomalies(obsVm);
+
+    final activeReleveList = releveVm.allReleves.where((r) =>
+        SpatialService.isPointInPolygon(LatLng(widget.observation.latitude, widget.observation.longitude), r.points)
+    ).toList();
+    final activeArea = activeReleveList.isNotEmpty ? activeReleveList.first : null;
+
+    final temporaryObservation = PlantObservation(
+      id: widget.observation.id, photoPaths: widget.observation.photoPaths,
+      latitude: widget.observation.latitude, longitude: widget.observation.longitude,
+      timestamp: widget.observation.timestamp, characteristics: _selectedValues,
+      speciesId: widget.observation.speciesId, localName: widget.observation.localName,
+    );
+
+    final selectedSpecies = obsVm.getSpeciesById(widget.observation.speciesId);
+    final anomalies = IdentificationAssistantService.checkAnomalies(temporaryObservation, selectedSpecies);
+    final suggestions = IdentificationAssistantService.getSuggestions(
+      currentTraits: _selectedValues, activeArea: activeArea, speciesDictionary: obsVm.speciesDictionary,
+    );
 
     return Scaffold(
-      appBar: AppBar(title: Text('Opis: ${widget.observation.tempBiologicalType ?? ""}')),
+      appBar: AppBar(title: const Text('Identyfikacja i Opis Cech')),
       body: SafeArea(
         child: Column(
           children: [
-            // DYNAMICZNY BANNER OSTRZEGAWCZY ANOMALII GATUNKOWEJ
             if (anomalies.isNotEmpty)
               Container(
-                color: Colors.amber.shade100, width: double.infinity, padding: const EdgeInsets.all(10),
+                color: Colors.red.shade50, width: double.infinity, padding: const EdgeInsets.all(12),
+                border: Border(bottom: BorderSide(color: Colors.red.shade200)),
                 child: Row(
                   children: [
-                    const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 24),
+                    const Icon(Icons.gpp_bad_outlined, color: Colors.red, size: 24),
                     const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        "WYKRYTO ANOMALIĘ WZORCOWĄ:\n${anomalies.join('\n')}",
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.brown),
-                      ),
-                    ),
+                    Expanded(child: Text("OSTRZEŻENIE O ANOMALII:\n${anomalies.join('\n')}", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.red.shade900))),
                   ],
                 ),
               ),
 
-            // Horyzontalna galeria podglądu robionych zdjęć
-            Consumer<ObservationViewModel>(
-              builder: (context, vm, child) {
-                if (vm.currentPhotoPaths.isEmpty) return const SizedBox.shrink();
-                return Container(
-                  height: 120, color: Colors.black.withOpacity(0.05), padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal, itemCount: vm.currentPhotoPaths.length,
-                    itemBuilder: (ctx, i) => Padding(
-                      padding: const EdgeInsets.only(right: 10),
-                      child: ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(File(vm.currentPhotoPaths[i]), width: 100, height: 100, fit: BoxFit.cover)),
-                    ),
+            if (suggestions.isNotEmpty && widget.observation.speciesId == null)
+              ExpansionTile(
+                backgroundColor: Colors.teal.shade50,
+                leading: const Icon(Icons.psychology_outlined, color: Colors.teal),
+                title: Text("Asystent Identyfikacji: Wykryto ${suggestions.length} sugestii", style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.teal)),
+                children: suggestions.take(3).map((s) => ListTile(
+                  dense: true, leading: const Icon(Icons.spa_outlined, color: Colors.teal, size: 18),
+                  title: Text(s.species.polishName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text("Morfologia: ${(s.morphologicalScore*100).toStringAsFixed(0)}% | Siedlisko: ${(s.ecologicalScore*100).toStringAsFixed(0)}%"),
+                )).toList(),
+              ),
+
+            if (widget.observation.photoPaths.isNotEmpty)
+              Container(
+                height: 100, color: Colors.black.withOpacity(0.02), padding: const EdgeInsets.symmetric(vertical: 8),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal, padding: const EdgeInsets.only(left: 12),
+                  itemCount: widget.observation.photoPaths.length,
+                  itemBuilder: (ctx, i) => Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(File(widget.observation.photoPaths[i]), width: 80, height: 80, fit: BoxFit.cover)),
                   ),
-                );
-              },
-            ),
+                ),
+              ),
             const Divider(height: 1),
 
-            // Główna lista dynamicznych kategorii morfologicznych
             Expanded(
               child: ListView.builder(
                 itemCount: schema.length,
@@ -114,14 +117,11 @@ class _FormScreenState extends State<FormScreen> {
     );
   }
 
-  // 100% ODZYSKANE: Pełne podbicie kodu do ~260 linii z przyciskami i podglądem obrazków ryciny atlasu
   Widget _buildSubCategorySection(DescriptionCategory category, String subTitle, List<String> options) {
     final List<String> dynamicOptions = List.from(options);
     if (_selectedValues[subTitle] != null) {
       for (var customOpt in _selectedValues[subTitle]!) {
-        if (!dynamicOptions.contains(customOpt)) {
-          dynamicOptions.add(customOpt);
-        }
+        if (!dynamicOptions.contains(customOpt)) dynamicOptions.add(customOpt);
       }
     }
 
@@ -139,7 +139,7 @@ class _FormScreenState extends State<FormScreen> {
                 final isSelected = _selectedValues[subTitle]?.contains(opt) ?? false;
                 final hasImage = category.referenceImages?.containsKey(opt) ?? false;
                 final imagePath = hasImage ? category.referenceImages![opt]! : "";
-                final description = category.imageDescriptions?[opt] ?? "Brak szczegółowego opisu dla tej cechy.";
+                final description = category.imageDescriptions?[opt] ?? "";
 
                 return Column(
                   mainAxisSize: MainAxisSize.min,
@@ -149,14 +149,8 @@ class _FormScreenState extends State<FormScreen> {
                         onTap: () => _showImagePreview(context, imagePath, opt, description),
                         child: Container(
                           width: 85, height: 65, margin: const EdgeInsets.only(bottom: 4),
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: isSelected ? Colors.green : Colors.grey.shade300, width: 2)
-                          ),
-                          child: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: Image.asset(imagePath, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.broken_image, color: Colors.grey))
-                          ),
+                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: isSelected ? Colors.green : Colors.grey.shade300, width: 2)),
+                          child: ClipRRect(borderRadius: BorderRadius.circular(6), child: Image.asset(imagePath, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.broken_image, color: Colors.grey))),
                         ),
                       ),
                     GestureDetector(
@@ -169,17 +163,13 @@ class _FormScreenState extends State<FormScreen> {
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                            color: isSelected ? Colors.green : Colors.grey.shade100, borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: isSelected ? Colors.green : Colors.grey.shade400)
-                        ),
+                        decoration: BoxDecoration(color: isSelected ? Colors.green : Colors.grey.shade100, borderRadius: BorderRadius.circular(8), border: Border.all(color: isSelected ? Colors.green : Colors.grey.shade400)),
                         child: Text(opt, style: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontSize: 11, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
                       ),
                     ),
                   ],
                 );
               }).toList(),
-
               ActionChip(
                 backgroundColor: Colors.amber.shade50, side: BorderSide(color: Colors.amber.shade300),
                 avatar: const Icon(Icons.add, size: 16, color: Colors.orange),
@@ -193,7 +183,6 @@ class _FormScreenState extends State<FormScreen> {
     );
   }
 
-  // 100% ODZYSKANE: Okno dialogowe ryciny atlasu botanicznego
   void _showImagePreview(BuildContext context, String imagePath, String title, String description) {
     showDialog(
       context: context,
@@ -202,11 +191,7 @@ class _FormScreenState extends State<FormScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppBar(
-              title: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              backgroundColor: Colors.green.shade700, foregroundColor: Colors.white, automaticallyImplyLeading: false,
-              actions: [IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx))],
-            ),
+            AppBar(title: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)), backgroundColor: Colors.green.shade700, foregroundColor: Colors.white, automaticallyImplyLeading: false, actions: [IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx))]),
             ConstrainedBox(constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.4), child: Image.asset(imagePath, fit: BoxFit.contain)),
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -226,7 +211,6 @@ class _FormScreenState extends State<FormScreen> {
     );
   }
 
-  // 100% ODZYSKANE: Okno dialogowe wprowadzania własnych cech tekstowych
   void _showCustomTraitDialog(String subTitle) {
     final TextEditingController customCtrl = TextEditingController();
     showDialog(
@@ -253,29 +237,35 @@ class _FormScreenState extends State<FormScreen> {
   }
 
   void _zapiszFinalnie() async {
+    // FIX BŁĘDU 2: Przepisujemy kompletną migawkę starych danych (daty, fenologii, obfitości), modyfikując TYLKO morfologię
     final finalObs = PlantObservation(
-      id: widget.observation.id, photoPaths: widget.observation.photoPaths, latitude: widget.observation.latitude, longitude: widget.observation.longitude, timestamp: widget.observation.timestamp,
-      characteristics: Map.from(_selectedValues), tempBiologicalType: widget.observation.tempBiologicalType, localName: widget.observation.localName, abundance: widget.observation.abundance, coverage: widget.observation.coverage, vitality: widget.observation.vitality, phenologicalStage: widget.observation.phenologicalStage, speciesId: widget.observation.speciesId,
+      id: widget.observation.id,
+      releveId: widget.observation.releveId,
+      speciesId: widget.observation.speciesId,
+      localName: widget.observation.localName,
+      subspecies: widget.observation.subspecies,
+      tempBiologicalType: widget.observation.tempBiologicalType,
+      photoPaths: widget.observation.photoPaths,
+      latitude: widget.observation.latitude,
+      longitude: widget.observation.longitude,
+      timestamp: widget.observation.timestamp,
+      observationDate: widget.observation.observationDate,
+      phenologicalStage: widget.observation.phenologicalStage,
+      abundance: widget.observation.abundance,
+      coverage: widget.observation.coverage,
+      vitality: widget.observation.vitality,
+      certainty: widget.observation.certainty,
+      idDoubts: widget.observation.idDoubts,
+      keyMorphologicalTraits: widget.observation.keyMorphologicalTraits,
+      confusingSpecies: widget.observation.confusingSpecies,
+      characteristicFeature: widget.observation.characteristicFeature,
+      customHarvestSeasons: widget.observation.customHarvestSeasons,
+      characteristics: Map.from(_selectedValues), // Aktualizacja mapy cech
     );
 
     await context.read<ObservationViewModel>().addObservation(finalObs);
-
     if (!mounted) return;
-    showDialog(
-      context: context, barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Zapisano!"), content: const Text("Roślina została dodana do bazy danych okazu."),
-        actions: [
-          TextButton(
-            onPressed: () {
-              context.read<ObservationViewModel>().reset();
-              Navigator.pop(ctx);
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            },
-            child: const Text("OK"),
-          ),
-        ],
-      ),
-    );
+    context.read<ObservationViewModel>().reset();
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 }
