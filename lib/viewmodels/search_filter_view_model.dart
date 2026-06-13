@@ -3,32 +3,18 @@ import 'package:flutter/material.dart';
 import '../models/releve.dart';
 import '../models/sought_plant.dart';
 import '../services/database_helper.dart';
+
 /**
  * ============================================================================
  * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
  * ============================================================================
  * Rola pliku:
- * Zarządza stanem globalnych filtrów interfejsu użytkownika dla katalogu, mapy
- * oraz wyszukiwarki. Odpowiada za przechowywanie zaznaczonych rodzin, przedziałów
- * dat, zakresów suwaków pH gleby, typów podłoża oraz asynchroniczne ładowanie
- * i usuwanie celów z listy roślin poszukiwanych.
- *
- * Zależności wewnętrzne (pliki z /lib):
- * * Z pliku '../models/releve.dart':
- * - Klasa [Releve]: Wykorzystywana jako typ zmiennej filtrowania obserwacji
- * według konkretnego wybranego płatu (filterArea).
- * * Z pliku '../models/sought_plant.dart':
- * - Klasa [SoughtPlant]: Rejestruje kolekcję i typ obiektów celów poszukiwań
- * ekologicznych ładowanych do widoków.
- * * Z pliku '../services/database_helper.dart':
- * - Klasa [DatabaseHelper]: Wywoływana do przeprowadzania operacji CRUD
- * (odczyt listy, usunięcie celu) na tabeli bazy danych 'sought_plants'.
+ * Zarządza stanem globalnych filtrów interfejsu użytkownika. Zaktualizowany o pełne
+ * numeryczne i słownikowe odwzorowanie parametrów krytycznych siedliska HabitatInfo.
  * ============================================================================
  */
 class SearchFilterViewModel extends ChangeNotifier {
   final DatabaseHelper _db = DatabaseHelper();
-
-  // NOWE: Ładowanie roślin poszukiwanych z nowej tabeli
   List<SoughtPlant> _soughtPlants = [];
   List<SoughtPlant> get soughtPlants => _soughtPlants;
 
@@ -59,35 +45,76 @@ class SearchFilterViewModel extends ChangeNotifier {
   List<String> get selectedReleveTypes => _selectedReleveTypes;
   String? get soughtPlantLatinName => _soughtPlantLatinName;
   bool get habitatMatchMode => _habitatMatchMode;
-  String? areaFilterType;
-  String? areaFilterCanopy;
-  String? areaFilterWater;
-  String? areaFilterSlope;
+
+  // --- PEŁNE PARAMETRY FILTROWANIA SIEDLISKOWEGO (Zsynchronizowane z HabitatInfo) ---
+  String? areaFilterAreaType;
+  RangeValues areaFilterCanopyRange = const RangeValues(1.0, 9.0);
+  String? areaFilterWaterMovement;
+  String? areaFilterSlopeAngle;
+  String? areaFilterExposure;
+  String? areaFilterHydrologicalContext;
+  String? areaFilterSoilSurfaceCover;
+  String? areaFilterHumanImpact;
   List<String> areaFilterSubstrates = [];
   RangeValues areaFilterPh = const RangeValues(3.0, 9.0);
+  String? areaFilterReleveRank; // Obszar / Podobszar
 
   void updateAreaFilters({
-    String? type, String? canopy, String? water, String? slope,
-    List<String>? substrates, RangeValues? ph
+    String? areaType,
+    RangeValues? canopyRange,
+    String? waterMovement,
+    String? slopeAngle,
+    String? exposure,
+    String? hydrologicalContext,
+    String? soilSurfaceCover,
+    String? humanImpact,
+    List<String>? substrates,
+    RangeValues? ph,
+    String? releveRank,
   }) {
-    areaFilterType = type;
-    areaFilterCanopy = canopy;
-    areaFilterWater = water;
-    areaFilterSlope = slope;
+    areaFilterAreaType = areaType;
+    if (canopyRange != null) areaFilterCanopyRange = canopyRange;
+    areaFilterWaterMovement = waterMovement;
+    areaFilterSlopeAngle = slopeAngle;
+    areaFilterExposure = exposure;
+    areaFilterHydrologicalContext = hydrologicalContext;
+    areaFilterSoilSurfaceCover = soilSurfaceCover;
+    areaFilterHumanImpact = humanImpact;
     if (substrates != null) areaFilterSubstrates = List.from(substrates);
     if (ph != null) areaFilterPh = ph;
+    areaFilterReleveRank = releveRank;
     notifyListeners();
   }
 
   void resetAreaFilters() {
-    areaFilterType = null;
-    areaFilterCanopy = null;
-    areaFilterWater = null;
-    areaFilterSlope = null;
+    areaFilterAreaType = null;
+    areaFilterCanopyRange = const RangeValues(1.0, 9.0);
+    areaFilterWaterMovement = null;
+    areaFilterSlopeAngle = null;
+    areaFilterExposure = null;
+    areaFilterHydrologicalContext = null;
+    areaFilterSoilSurfaceCover = null;
+    areaFilterHumanImpact = null;
     areaFilterSubstrates.clear();
     areaFilterPh = const RangeValues(3.0, 9.0);
+    areaFilterReleveRank = null;
     notifyListeners();
   }
+
+  bool isAnyAreaFilterActive() {
+    return areaFilterAreaType != null ||
+        areaFilterCanopyRange.start > 1.1 || areaFilterCanopyRange.end < 8.9 ||
+        areaFilterWaterMovement != null ||
+        areaFilterSlopeAngle != null ||
+        areaFilterExposure != null ||
+        areaFilterHydrologicalContext != null ||
+        areaFilterSoilSurfaceCover != null ||
+        areaFilterHumanImpact != null ||
+        areaFilterSubstrates.isNotEmpty ||
+        areaFilterPh.start > 3.1 || areaFilterPh.end < 8.9 ||
+        areaFilterReleveRank != null;
+  }
+
   void setFilterDateRange(DateTimeRange? range) {
     _filterDateRange = range;
     notifyListeners();
@@ -141,9 +168,10 @@ class SearchFilterViewModel extends ChangeNotifier {
     _habitatMatchMode = latinName != null;
     notifyListeners();
   }
+
   Future<void> deleteSoughtPlant(String id) async {
     await _db.deleteSoughtPlant(id);
-    await loadSoughtPlants(); // Odświeża listę
+    await loadSoughtPlants();
   }
 
   void resetAllFilters() {

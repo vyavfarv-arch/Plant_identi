@@ -2,39 +2,16 @@
 import '../models/releve.dart';
 import '../models/habitat_info.dart';
 import '../models/plant_species.dart';
-import '../models/has_ellenberg_profile.dart'; // Gwarancja pełnego bezpieczeństwa typów
-/**
- * ============================================================================
- * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
- * ============================================================================
- * Rola pliku:
- * Serce analityczne aplikacji. Klasa [AdvancedEcologicalTranslator] tłumaczy opisowe,
- * fizjograficzne cechy terenu na ciągły profil numeryczny 7 osi Ellenberga. Następnie
- * [EcologicalMatchingService] wylicza odległość matematyczną (kary osiowe) od optimum
- * gatunku, co pozwala na precyzyjne demaskowanie ekologicznych anomalii (outliers).
- *
- * Zależności wewnętrzne (pliki z /lib):
- * * Z pliku '../models/releve.dart':
- * - Klasa [Releve]: Dostarcza instancję płatu poddawanego ewaluacji siedliskowej.
- * * Z pliku '../models/habitat_info.dart':
- * - Klasa [HabitatInfo]: Służy do bezpośredniego odczytu ocienienia okapu, darni,
- * kontekstu hydrologicznego, podłoża i zmierzonej wartości pH.
- * * Z pliku '../models/plant_species.dart':
- * - Klasa [PlantSpecies]: Reprezentuje gatunki z bazy wiedzy, z których pobierany jest
- * profil tolerancji.
- * * Z pliku '../models/has_ellenberg_profile.dart':
- * - Interfejs [HasEllenbergProfile]: Gwarantuje unifikację typów dla obiektów poddawanych
- * analizie porównawczej (gatunki / rośliny poszukiwane).
- * ============================================================================
- */
+import '../models/has_ellenberg_profile.dart';
+
 class ContinuousEcologicalProfile {
-  final double sunlight;   // L
-  final double moisture;   // F
-  final double acidity;    // R
-  final double nitrogen;   // N
-  final double temperature;// T
-  final double continent;  // K
-  final double salinity;   // S
+  final double sunlight;
+  final double moisture;
+  final double acidity;
+  final double nitrogen;
+  final double temperature;
+  final double continent;
+  final double salinity;
 
   ContinuousEcologicalProfile({
     required this.sunlight,
@@ -55,7 +32,7 @@ class AxisPenalty {
 
 class ContinuousEcologicalMatchingResult {
   final double score;
-  final Map<String, String> diagnostics; // Wektor diagnostyczny dla prezentacji UI
+  final Map<String, String> diagnostics;
 
   ContinuousEcologicalMatchingResult({required this.score, required this.diagnostics});
   bool get isPotentialMatch => score >= 0.75;
@@ -63,14 +40,12 @@ class ContinuousEcologicalMatchingResult {
 
 class AdvancedEcologicalTranslator {
   static ContinuousEcologicalProfile translateArea(HabitatInfo h) {
-    // 1. L - ŚWIATŁO (Inwersja 9-stopniowej skali okapu terenu)
     double sunlight = 10.0 - h.canopyDensity;
     if (sunlight > 2.0 && h.slopeAngle != "Płaski (0-2°)") {
       if (h.exposure == "S") sunlight += 0.8;
       if (h.exposure == "N") sunlight -= 0.8;
     }
 
-    // 2. F - WILGOTNOŚĆ (Profil reżimu hydrologicznego zamiast suszy chwilowej)
     double moisture = 4.0;
     final context = h.hydrologicalContext ?? "";
     if (context.contains("Skrajnie suche")) moisture = 1.5;
@@ -87,7 +62,6 @@ class AdvancedEcologicalTranslator {
     if (h.substrateType.any((s) => s.contains("Gliniasta"))) moisture += 0.4;
     if (h.substrateType.any((s) => s.contains("Piaszczysta"))) moisture -= 1.0;
 
-    // 3. R - ODCZYN pH GLEBY
     double acidity = h.ph ?? 5.5;
     if (h.ph == null) {
       if (h.substrateType.any((s) => s.contains("Torfowa")) && movement.contains("Stojąca")) acidity = 2.5;
@@ -96,7 +70,6 @@ class AdvancedEcologicalTranslator {
       if (h.humanImpact == "Składowisko odpadów / Śmietnisko") acidity = 8.0;
     }
 
-    // 4. N - ŻYZNOŚĆ / AZOTOWOŚĆ (Korelacja z okrywą darniową/ściółkową)
     double nitrogen = 3.0;
     final impact = h.humanImpact ?? "";
     if (impact.contains("Śmietnisko")) nitrogen = 8.5;
@@ -108,18 +81,15 @@ class AdvancedEcologicalTranslator {
     if (cover.contains("Zwarta darń")) nitrogen += 1.2;
     if (h.substrateType.any((s) => s.contains("Piaszczysta"))) nitrogen -= 1.0;
 
-    // 5. T - TEMPERATURA STANOWISKA
     double temperature = 5.0;
     if (sunlight > 6.0 && h.exposure == "S" && h.slopeAngle == "Stromy (>25°)") temperature = 6.5;
     if (h.areaType == "Las" && h.canopyDensity >= 6) temperature -= 1.0;
     if (movement.contains("Stojąca")) temperature -= 0.5;
 
-    // 6. K - KONTYNENTALIZM MIKROKLIMATU
     double continent = 3.5;
     if (h.canopyDensity <= 2 && (h.areaType == "Pole" || h.areaType == "Łąka")) continent += 0.8;
     if (h.canopyDensity >= 6 && h.areaType == "Las") continent -= 0.5;
 
-    // 7. S - ZASOLENIE ANTROPOGENICZNE
     double salinity = 0.0;
     if (impact.contains("Zimowe solenie") || h.areaType == "Pobocze drogi") salinity = 2.5;
 
@@ -138,14 +108,14 @@ class AdvancedEcologicalTranslator {
 class EcologicalMatchingService {
   static AxisPenalty calculateAxisPenalty(double areaValue, Map<int, int> speciesMap, int minVal, int maxVal) {
     if (speciesMap.isEmpty || !speciesMap.values.any((state) => state > 0)) {
-      return AxisPenalty(0.0, false); // Pusta oś zostaje pominięta w wyliczaniu średniej kary
+      return AxisPenalty(0.0, false);
     }
 
     int closestNode = areaValue.round().clamp(minVal, maxVal);
     int directState = speciesMap[closestNode] ?? 0;
 
-    if (directState == 2) return AxisPenalty(0.0, true);  // Optimum = brak kary
-    if (directState == 1) return AxisPenalty(0.15, true); // Tolerancja = mała kara ułamkowa
+    if (directState == 2) return AxisPenalty(0.0, true);
+    if (directState == 1) return AxisPenalty(0.15, true);
 
     double minDistance = double.infinity;
     double penaltyModifier = 1.0;
@@ -178,18 +148,18 @@ class EcologicalMatchingService {
     final resS = calculateAxisPenalty(areaProfile.salinity, species.ellenbergS, 0, 9);
 
     double sumPenalty = 0.0;
+    double maxPenalty = 0.0;
     int activeAxesCount = 0;
     Map<String, String> diagMap = {};
 
     void processAxisScore(String axisKey, AxisPenalty res) {
       if (res.isDefined) {
         sumPenalty += res.value;
+        if (res.value > maxPenalty) maxPenalty = res.value;
         activeAxesCount++;
-
-        // POPRAWKA: Usunięcie symbolu ░ na rzecz unifikacji z ✓ (warunki optymalne i tolerowane)
         diagMap[axisKey] = (res.value <= 0.15) ? "✓" : "✗";
       } else {
-        diagMap[axisKey] = "?"; // Oś nieokreślona w bazie wiedzy tego gatunku
+        diagMap[axisKey] = "?";
       }
     }
 
@@ -204,10 +174,26 @@ class EcologicalMatchingService {
     if (activeAxesCount == 0) return ContinuousEcologicalMatchingResult(score: 0.0, diagnostics: diagMap);
 
     double averagePenalty = sumPenalty / activeAxesCount;
+    double combinedPenalty = (averagePenalty * 0.5) + (maxPenalty * 0.5);
+
     return ContinuousEcologicalMatchingResult(
-      score: (1.0 - averagePenalty).clamp(0.0, 1.0),
+      score: (1.0 - combinedPenalty).clamp(0.0, 1.0),
       diagnostics: diagMap,
     );
+  }
+
+  static bool isSevereMismatch(Releve area, PlantSpecies? species) {
+    if (species == null || area.habitat == null) return false;
+
+    if (species.ellenbergL.isEmpty && species.ellenbergF.isEmpty &&
+        species.ellenbergR.isEmpty && species.ellenbergN.isEmpty &&
+        species.ellenbergT.isEmpty && species.ellenbergK.isEmpty &&
+        species.ellenbergS.isEmpty) {
+      return false;
+    }
+
+    final match = calculateCompatibility(area, species);
+    return match.score < 0.55;
   }
 
   static List<MapEntry<PlantSpecies, ContinuousEcologicalMatchingResult>> findPotentialPlantsForArea(

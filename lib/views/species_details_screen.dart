@@ -11,33 +11,13 @@ import '../models/description_schema.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../viewmodels/observation_view_model.dart';
 import '../services/spatial_service.dart';
+import '../services/ecological_matching_service.dart';
 import '../widgets/ellenberg_matrix_card.dart';
 import '../widgets/species_harvest_averages.dart';
 import 'plant_card_view.dart';
 import 'releve_details_screen.dart';
 import 'detail_description_screen.dart';
-/**
- * ============================================================================
- * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
- * ============================================================================
- * Rola pliku:
- * Zaawansowana karta botaniczna gatunku flory. Realizuje procesy dydaktyczne:
- * agreguje zdjęcia w rozwoju (etapy fenologiczne), oblicza statystyczny wektor cech
- * morfologicznych o stałości >= 80% dla danego etapu, prezentuje amplitudę ekologiczną
- * Ellenberga, uśrednia fenologiczne terminy zbioru surowców z terenu oraz linkuje płaty.
- *
- * Zależności wewnętrzne (pliki z /lib):
- * * Z katalogu '../models/':
- * - Klasy [PlantSpecies], [PlantObservation], [Releve], [HarvestSeason], [DescriptionCategory/SchemaGenerator].
- * * Z katalogu '../viewmodels/':
- * - Klasy [ReleveViewModel], [ObservationViewModel]: Odczyt podglądu stanów i operacje usuwania rekordów.
- * * Z katalogu '../services/':
- * - Klasa [SpatialService]: Wykorzystywana do mapowania i odszukania powiązanych geometrycznie płatów.
- * * Z katalogów widoków i widżetów współdzielonych:
- * - Widżety: [EllenbergMatrixCard], [SpeciesHarvestAverages].
- * - Widoki: Dolny arkusz [PlantCardView], ekrany [ReleveDetailsScreen] oraz [DetailDescriptionScreen].
- * ============================================================================
- */
+
 class SpeciesDetailsScreen extends StatelessWidget {
   final String commonName;
   final PlantSpecies? species;
@@ -66,7 +46,6 @@ class SpeciesDetailsScreen extends StatelessWidget {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    // --- NOWY ALGORYTM BOTANICZNEGO WZORCA GATUNKU (PRÓG FREKWENCJI 80%) ---
     final Map<String, List<PlantObservation>> obsByStage = {};
     final List<Map<String, String>> allPhotosWithStage = [];
     final Map<String, List<HarvestSeason>> seasonsByMaterial = {};
@@ -86,12 +65,11 @@ class SpeciesDetailsScreen extends StatelessWidget {
       }
     }
 
-    // Wyliczanie statystycznego wektora cech diagnostycznych ze stałością >= 80%
     final Map<String, Map<String, Set<String>>> patternTraitsByStage = {};
 
     obsByStage.forEach((stage, obsList) {
       final int totalObsInStage = obsList.length;
-      final Map<String, Map<String, int>> traitCounts = {}; // kategoria -> (cecha -> licznik)
+      final Map<String, Map<String, int>> traitCounts = {};
 
       for (var obs in obsList) {
         obs.characteristics.forEach((category, traits) {
@@ -106,7 +84,6 @@ class SpeciesDetailsScreen extends StatelessWidget {
       traitCounts.forEach((category, traitMap) {
         final Set<String> matchingTraits = {};
         traitMap.forEach((trait, count) {
-          // KRYTERIUM STAŁOŚCI: Cecha wchodzi do opisu tylko jeśli ma min. 80% wystąpień na tym etapie
           if ((count / totalObsInStage) >= 0.8) {
             matchingTraits.add(trait);
           }
@@ -117,7 +94,6 @@ class SpeciesDetailsScreen extends StatelessWidget {
       patternTraitsByStage[stage] = filteredCategoryMap;
     });
 
-    // Średnie terminy zbioru surowców
     final List<Map<String, dynamic>> calculatedAverageSeasons = [];
     seasonsByMaterial.forEach((material, list) {
       int totalStartMs = 0; int totalEndMs = 0; int count = list.length;
@@ -187,7 +163,46 @@ class SpeciesDetailsScreen extends StatelessWidget {
             const Divider(height: 40),
 
             _sectionHeader("OBSZARY WYSTĘPOWANIA"),
-            if (uniqueAreas.isEmpty) const Text("Brak powiązanych płatów.", style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)) else ...uniqueAreas.map((area) => Card(color: Colors.indigo.shade50, margin: const EdgeInsets.symmetric(vertical: 4), child: ListTile(leading: const Icon(Icons.layers, color: Colors.indigo), title: Text(area.commonName, style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Text("Typ jednostki: ${area.type}"), trailing: const Icon(Icons.chevron_right, size: 20), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReleveDetailsScreen(releve: area)))))),
+            if (uniqueAreas.isEmpty)
+              const Text("Brak powiązanych płatów.", style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey))
+            else
+              ...uniqueAreas.map((area) {
+                final isAreaMismatch = EcologicalMatchingService.isSevereMismatch(area, species);
+
+                return Card(
+                  color: isAreaMismatch ? Colors.amber.shade50 : Colors.indigo.shade50,
+                  margin: const EdgeInsets.symmetric(vertical: 4),
+                  child: ListTile(
+                      leading: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Icon(Icons.layers, color: isAreaMismatch ? Colors.orange.shade800 : Colors.indigo),
+                          if (isAreaMismatch)
+                            const Positioned(
+                              right: -6,
+                              top: -6,
+                              child: Icon(Icons.warning_rounded, color: Colors.amber, size: 18),
+                            ),
+                        ],
+                      ),
+                      title: Row(
+                        children: [
+                          Text(area.commonName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          if (isAreaMismatch)
+                            const Padding(
+                              padding: EdgeInsets.only(left: 8.0),
+                              child: Text("[ANOMALIA]", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 10)),
+                            ),
+                        ],
+                      ),
+                      subtitle: Text(isAreaMismatch
+                          ? "Wskaźniki Ellenberga tego gatunku kłócą się z tym siedliskiem!"
+                          : "Typ jednostki: ${area.type}"),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReleveDetailsScreen(releve: area)))
+                  ),
+                );
+              }),
             const Divider(height: 40),
 
             _sectionHeader("HISTORIA SPOTKANYCH OKAZÓW"),
@@ -259,6 +274,4 @@ class SpeciesDetailsScreen extends StatelessWidget {
       }).toList(),
     );
   }
-
-  static Widget _sectionHeader(String title) => Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.teal, letterSpacing: 1.1)));
 }

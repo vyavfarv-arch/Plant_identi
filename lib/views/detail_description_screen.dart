@@ -1,6 +1,7 @@
 // lib/views/detail_description_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart'; // DODANO TEN IMPORT - naprawia błąd "The name 'Uuid' isn't a class"
 import '../models/plant_observation.dart';
 import '../models/plant_species.dart';
 import '../models/harvest_season.dart';
@@ -9,6 +10,7 @@ import '../widgets/ecological_amplitude_picker.dart';
 import '../widgets/harvest_season_picker.dart';
 import '../widgets/specimen_reference_card.dart';
 import 'form_screen.dart'; // Import ekranu modyfikacji cech
+
 /**
  * ============================================================================
  * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
@@ -190,29 +192,78 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       return;
     }
 
+    final obsVm = context.read<ObservationViewModel>();
+    final String enteredLatinName = _controllers['latinName']!.text.trim();
+    final String enteredPolishName = _controllers['localName']!.text.trim();
+
+    // 1. Sprawdzamy, czy gatunek o takiej nazwie już istnieje w lokalnym atlasie użytkownika (zapobiega dublowaniu)
+    final existingSpecies = obsVm.findSpeciesByLatinName(enteredLatinName) ??
+        obsVm.findSpeciesByPolishName(enteredPolishName);
+
+    // 2. Ustalamy inteligentne ID dla gatunku (likwidacja krytycznego błędu pustego ID "")
+    String targetSpeciesId = widget.observation.speciesId ?? "";
+
+    if (targetSpeciesId.isEmpty) {
+      if (existingSpecies != null) {
+        // Jeśli użytkownik wpisał nazwę istniejącego gatunku, używamy jego oryginalnego ID
+        targetSpeciesId = existingSpecies.speciesID;
+      } else {
+        // Jeśli to całkowicie nowy unikalny gatunek, tworzymy dla niego świeże UUID
+        targetSpeciesId = const Uuid().v4();
+      }
+    }
+
+    // 3. Budujemy poprawny obiekt wzorca gatunku (Atlasu)
     final species = PlantSpecies(
-      speciesID: widget.observation.speciesId ?? "", latinName: _controllers['latinName']!.text, polishName: _controllers['localName']!.text,
-      family: _controllers['family']!.text, biologicalType: widget.observation.tempBiologicalType ?? "Zielne",
-      plantUsage: _controllers['usage']!.text, cultivation: _controllers['cultivation']!.text,
-      ellenbergL: Map.from(_ecoController.ellenbergL), ellenbergF: Map.from(_ecoController.ellenbergF),
-      ellenbergR: Map.from(_ecoController.ellenbergR), ellenbergN: Map.from(_ecoController.ellenbergN),
-      ellenbergT: Map.from(_ecoController.ellenbergT), ellenbergK: Map.from(_ecoController.ellenbergK), ellenbergS: Map.from(_ecoController.ellenbergS),
+      speciesID: targetSpeciesId,
+      latinName: enteredLatinName,
+      polishName: enteredPolishName,
+      family: _controllers['family']!.text.trim(),
+      biologicalType: widget.observation.tempBiologicalType ?? "Zielne",
+      plantUsage: _controllers['usage']!.text.trim(),
+      cultivation: _controllers['cultivation']!.text.trim(),
+      ellenbergL: Map.from(_ecoController.ellenbergL),
+      ellenbergF: Map.from(_ecoController.ellenbergF),
+      ellenbergR: Map.from(_ecoController.ellenbergR),
+      ellenbergN: Map.from(_ecoController.ellenbergN),
+      ellenbergT: Map.from(_ecoController.ellenbergT),
+      ellenbergK: Map.from(_ecoController.ellenbergK),
+      ellenbergS: Map.from(_ecoController.ellenbergS),
       harvestSeasons: _selectedSeasons,
     );
 
-    await context.read<ObservationViewModel>().addSpecies(species);
+    // Zapisujemy/aktualizujemy gatunek w słowniku użytkownika
+    await obsVm.addSpecies(species);
 
+    // 4. Aktualizujemy rekord obserwacji terenowej, trwale wiążąc go z prawidłowym ID gatunku
     final updatedObs = PlantObservation(
-      id: widget.observation.id, releveId: widget.observation.releveId, speciesId: species.speciesID,
-      localName: species.polishName, subspecies: _controllers['subspecies']!.text, tempBiologicalType: widget.observation.tempBiologicalType,
-      photoPaths: widget.observation.photoPaths, characteristics: widget.observation.characteristics, latitude: widget.observation.latitude, longitude: widget.observation.longitude,
-      timestamp: widget.observation.timestamp, observationDate: widget.observation.observationDate, phenologicalStage: widget.observation.phenologicalStage,
-      abundance: widget.observation.abundance, coverage: widget.observation.coverage, vitality: widget.observation.vitality,
-      certainty: _selectedCertainty, idDoubts: _controllers['idDoubts']!.text, keyMorphologicalTraits: _controllers['keyTraits']!.text, confusingSpecies: _controllers['confusing']!.text, characteristicFeature: _controllers['characteristic']!.text,
+      id: widget.observation.id,
+      releveId: widget.observation.releveId,
+      speciesId: species.speciesID, // Przypisanie bezpiecznego, niepustego identyfikatora
+      localName: species.polishName,
+      subspecies: _controllers['subspecies']!.text.trim(),
+      tempBiologicalType: widget.observation.tempBiologicalType,
+      photoPaths: widget.observation.photoPaths,
+      characteristics: widget.observation.characteristics,
+      latitude: widget.observation.latitude,
+      longitude: widget.observation.longitude,
+      timestamp: widget.observation.timestamp,
+      observationDate: widget.observation.observationDate ?? DateTime.now(),
+      phenologicalStage: widget.observation.phenologicalStage,
+      abundance: widget.observation.abundance,
+      coverage: widget.observation.coverage,
+      vitality: widget.observation.vitality,
+      certainty: _selectedCertainty,
+      idDoubts: _controllers['idDoubts']!.text.trim(),
+      keyMorphologicalTraits: _controllers['keyTraits']!.text.trim(),
+      confusingSpecies: _controllers['confusing']!.text.trim(),
+      characteristicFeature: _controllers['characteristic']!.text.trim(),
       customHarvestSeasons: widget.observation.customHarvestSeasons,
     );
 
-    await context.read<ObservationViewModel>().addObservation(updatedObs);
+    // Zapisujemy zaktualizowaną obserwację w bazie danych
+    await obsVm.addObservation(updatedObs);
+
     if (mounted) Navigator.pop(context);
   }
 }
