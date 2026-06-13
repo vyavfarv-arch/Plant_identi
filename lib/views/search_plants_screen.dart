@@ -7,7 +7,27 @@ import '../viewmodels/search_filter_view_model.dart';
 import 'add_sought_plant_screen.dart';
 import 'results_map_screen.dart';
 import '../models/sought_plant.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Ekran wyszukiwania obszarów za pomocą matrycy ekologicznej. Pozwala użytkownikowi
+ * na wybór celu poszukiwań z bazy lokalnej (Magazynu lub listy poszukiwanych),
+ * zarządzanie (usuwanie, edycja) wpisami oraz inicjalizację mapy wyników.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../models/sought_plant.dart':
+ * - Klasa [SoughtPlant]: Model danych reprezentujący cel poszukiwań.
+ * * Z katalogu '../viewmodels/':
+ * - Klasa [ObservationViewModel]: Dostarcza gatunki z bazy (Magazynu) do unifikacji listy.
+ * - Klasa [ReleveViewModel]: Udostępnia listę wszystkich płatów fitosocjologicznych.
+ * - Klasa [SearchFilterViewModel]: Zarządza stanem i ładowaniem danych tabeli 'sought_plants'.
+ * * Z katalogu widoków:
+ * - Ekran [AddSoughtPlantScreen]: Nawigacja do kreatora nowego poszukiwania.
+ * - Ekran [ResultsMapScreen]: Przekierowanie do mapy prezentującej dopasowania poligonów.
+ * ============================================================================
+ */
 class _SearchListItem {
   final String id;
   final String name;

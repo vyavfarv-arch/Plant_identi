@@ -9,7 +9,22 @@ import 'recipe_list_screen.dart';
 import 'reminder_list_screen.dart';
 import '../services/data_export_service.dart';
 import 'add_plant_choice_screen.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Pulpit główny (Dashboard) aplikacji. Renderuje siatkę 9 klocków nawigacyjnych
+ * dających dostęp do głównych modułów oraz obsługuje wywołanie okna ładowania
+ * i eksportu danych dla modeli uczenia maszynowego (ML).
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Widoki nawigacyjne: [DescriptionGridScreen], [BrowsePlantsScreen], [MapScreen],
+ * [ReleveListMapScreen], [SearchPlantsScreen], [RecipeListScreen],
+ * [ReminderListScreen], [AddPlantChoiceScreen].
+ * * Usługi: [DataExportService] (wyzwalanie kompilacji bazy do pliku CSV).
+ * ============================================================================
+ */
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 

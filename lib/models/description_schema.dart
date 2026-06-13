@@ -1,3 +1,21 @@
+
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Dostarcza kompleksowe schematy, kategorie oraz cechy taksonomiczne z podziałem
+ * na typy biologiczne (Drzewo, Krzew, Zielne, Grzyb, Mszaki). Pełni funkcję
+ * bazy dydaktycznej (podpowiedzi edukacyjne), dostarczając opisy cech morfologicznych
+ * oraz ścieżki do grafik referencyjnych ułatwiających terenową identyfikację.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * - Brak bezpośrednich importów innych plików z /lib. Stanowi zamkniętą, niezależną
+ * strukturę wiedzy morfologicznej (klucz oznaczeń), z której korzystają formularze
+ * oraz ekrany identyfikacji (warstwa widoków).
+ * ============================================================================
+ */
+
 class DescriptionCategory {
   final String number;
   final String title;

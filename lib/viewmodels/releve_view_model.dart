@@ -3,7 +3,28 @@ import 'package:flutter/material.dart';
 import '../models/releve.dart';
 import '../models/habitat_info.dart';
 import '../services/database_helper.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Koordynuje stan i cykl życia płatów fitosocjologicznych (releves). Obsługuje
+ * operacje ładowania z dysku, geometrycznego dodawania nowych obszarów, bezpiecznej
+ * aktualizacji struktur siedliskowych, wyliczania hierarchii podobszarów
+ * oraz utrwalania map predykcji ekologicznych dla roślin potencjalnych.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../models/releve.dart':
+ * - Klasa [Releve]: Encja bazowa stanowiąca jądro przechowywanej i modyfikowanej
+ * w widokach kolekcji obszarów terenowych.
+ * * Z pliku '../models/habitat_info.dart':
+ * - Klasa [HabitatInfo]: Struktura przekazywana jako argument metody aktualizacji
+ * cech fizjograficzno-glebowych danego płatu.
+ * * Z pliku '../services/database_helper.dart':
+ * - Klasa [DatabaseHelper]: Realizuje operacje CRUD (insert, query, delete)
+ * bezpośrednio na tabeli 'releves' w bazie danych.
+ * ============================================================================
+ */
 class ReleveViewModel extends ChangeNotifier {
   final DatabaseHelper _db = DatabaseHelper();
   List<Releve> _releves = [];

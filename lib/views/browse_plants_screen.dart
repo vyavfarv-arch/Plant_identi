@@ -10,7 +10,29 @@ import '../viewmodels/search_filter_view_model.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../services/spatial_service.dart';
 import 'species_details_screen.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Ekran katalogu i atlasu zebranych gatunków flory. Grupuje kompletne obserwacje
+ * według unikalnej nazwy zwyczajowej, zabezpiecza przed dublowaniem wpisów,
+ * aplikuje filtry globalne (rodzina, daty, płat roślinny) i przekierowuje użytkownika
+ * do karty szczegółowej taksonu.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z katalogu '../models/':
+ * - Klasy [PlantObservation], [PlantSpecies]: Encje danych do filtrowania i mapowania list.
+ * * Z katalogu '../viewmodels/':
+ * - Klasa [ObservationViewModel]: Dostarcza kompletną listę zaobserwowanych okazów oraz słownik.
+ * - Klasa [SearchFilterViewModel]: Służy do odczytu i modyfikacji filtrów dat, rodzin oraz płatów.
+ * - Klasa [ReleveViewModel]: Dostarcza listę płatów w celu obsłużenia okna dialogowego wyboru obszaru.
+ * * Z katalogu '../services/':
+ * - Klasa [SpatialService]: Wywoływana do sprawdzenia, czy pozycje okazów mieszczą się w wybranym płacie.
+ * * Z katalogu widoków:
+ * - Ekran [SpeciesDetailsScreen]: Wywoływany w celu wyświetlenia głębokiej karty botanicznej gatunku.
+ * ============================================================================
+ */
 class BrowsePlantsScreen extends StatelessWidget {
   const BrowsePlantsScreen({super.key});
 

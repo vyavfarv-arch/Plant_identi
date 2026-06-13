@@ -1,6 +1,19 @@
 // lib/views/widgets/add_observation_long_step1.dart
 import 'package:flutter/material.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Widżet reprezentujący Krok 1 w trybie długiej (szczegółowej) rejestracji okazu.
+ * Udostępnia edukacyjną siatkę wyboru typu biologicznego (Drzewo, Grzyb itp.)
+ * oraz rozwijane menu dla parametrów populacyjnych stanowiska leśnego/łąkowego.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * - Brak bezpośrednich importów. Komponent czysty widokowo, przekazuje zdarzenia
+ * wyboru (ValueRead/Changed) wyżej do ekranu nadrzędnego.
+ * ============================================================================
+ */
 class AddObservationLongStep1 extends StatelessWidget {
   final String? selectedType;
   final String? selectedPhenology;

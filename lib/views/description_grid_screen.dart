@@ -3,7 +3,22 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/observation_view_model.dart';
 import 'detail_description_screen.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Interfejs w postaci siatki zdjęć (Grid) reprezentujący okazy niekompletne.
+ * Grupuje znalezione rośliny terenowe, które oczekują na identyfikację botaniczną,
+ * opis taksonomii oraz cech siedliskowych przez użytkownika.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../viewmodels/observation_view_model.dart':
+ * - Klasa [ObservationViewModel]: Służy do odczytu odfiltrowanej listy okazów niekompletnych.
+ * * Z katalogu widoków:
+ * - Ekran [DetailDescriptionScreen]: Wywoływany po dotknięciu kafelka siatki w celu opisu okazu.
+ * ============================================================================
+ */
 class DescriptionGridScreen extends StatelessWidget {
   const DescriptionGridScreen({super.key});
 

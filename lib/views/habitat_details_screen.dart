@@ -7,6 +7,25 @@ import '../models/releve.dart';
 import '../models/habitat_info.dart';
 import '../viewmodels/releve_view_model.dart';
 
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Formularz inicjalizacyjny dla nowo narysowanego poligonu mapy. Odpowiada za
+ * walidację nazwy zwyczajowej, wybór rangi struktury (Obszar / Podobszar),
+ * zebranie krytycznych parametrów ekologicznych terenu, spakowanie ich do
+ * nowej encji [Releve] i wykonanie pierwszego zapisu.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z katalogu '../models/':
+ * - Klasy [Releve], [HabitatInfo]: Służą jako struktury docelowego zapisu danych i definicji słowników.
+ * * Z pliku '../viewmodels/releve_view_model.dart':
+ * - Klasa [ReleveViewModel]: Wywoływana do asynchronicznego wstrzyknięcia i zapisu
+ * nowej instancji wielokąta w bazie danych.
+ * ============================================================================
+ */
+
 class HabitatDetailsScreen extends StatefulWidget {
   final List<LatLng> points;
   const HabitatDetailsScreen({super.key, required this.points});

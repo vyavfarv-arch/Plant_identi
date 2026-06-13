@@ -1,4 +1,20 @@
 // lib/models/harvest_season.dart
+
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Reprezentuje model danych pojedynczego sezonu zbioru konkretnego surowca zielarskiego
+ * (np. ziele, kłącze, owoce). Definiuje ramy czasowe (datę rozpoczęcia i zakończenia)
+ * oraz zarządza stanem powiadomień/przypomnień dla danego surowca.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * - Brak bezpośrednich importów plików wewnętrznych. Wykorzystywany jako model
+ * składowy (kompozycja) w encjach [PlantSpecies], [SoughtPlant] oraz [PlantObservation].
+ * ============================================================================
+ */
+
 class HarvestSeason {
   final String material;
   final DateTime? startDate; // ZMIANA: Początek zbiorów (z kalendarza)

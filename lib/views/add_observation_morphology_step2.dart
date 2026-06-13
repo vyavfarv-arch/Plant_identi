@@ -1,7 +1,21 @@
 // lib/views/widgets/add_observation_morphology_step2.dart
 import 'package:flutter/material.dart';
 import '../../models/description_schema.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Widżet reprezentujący Krok 2 w trybie szczegółowej ewidencji. Generuje
+ * dynamiczne drzewo ExpansionTile z cechami organów roślinnych dopasowane
+ * do wybranego wcześniej typu biologicznego taksonu.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../../models/description_schema.dart':
+ * - Klasa [SchemaGenerator]: Wywoływana w celu pobrania sformalizowanego schematu
+ * cech diagnostycznych i ścieżek edukacyjnych grafik referencyjnych.
+ * ============================================================================
+ */
 class AddObservationMorphologyStep2 extends StatelessWidget {
   final String? selectedType;
   final Map<String, List<String>> morphologyValues;

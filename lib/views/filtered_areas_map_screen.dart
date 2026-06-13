@@ -4,6 +4,25 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/releve.dart';
 import 'releve_details_screen.dart';
 
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Interfejs mapy dedykowany dla prezentacji wyfiltrowanych płatów fitosocjologicznych.
+ * Renderuje przekazaną kolekcję obszarów jako interaktywne wielokąty (Polygons).
+ * Centruje kamerę na pierwszym dopasowanym płacie i umożliwia bezpośrednią
+ * nawigację do szczegółów po kliknięciu w dany obszar.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../models/releve.dart':
+ * - Klasa [Releve]: Model danych reprezentujący kolekcję wejściową płatów.
+ * * Z katalogu widoków:
+ * - Ekran [ReleveDetailsScreen]: Wywoływany w celu wyświetlenia szczegółowych statystyk
+ * i analizy ekologicznej po kliknięciu w poligon płatu.
+ * ============================================================================
+ */
+
 class FilteredAreasMapScreen extends StatelessWidget {
   final List<Releve> filteredAreas;
 

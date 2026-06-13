@@ -3,7 +3,22 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'database_helper.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Moduł przygotowania danych pod kątem Machine Learning. Odpowiada za konsolidację
+ * lokalnych baz danych, parowanie kompletnych obserwacji terenowych z fizjograficznym
+ * opisem płatów florystycznych, ujednolicanie ich struktur oraz eksport do pliku CSV
+ * w celu zasilenia zewnętrznych modeli uczenia maszynowego.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku 'database_helper.dart':
+ * - Klasa [DatabaseHelper]: Służy do asynchronicznego wyciągnięcia pełnych list
+ * obserwacji, płatów (releves) oraz bazy gatunków z lokalnego motoru SQLite.
+ * ============================================================================
+ */
 class DataExportService {
   final DatabaseHelper _db = DatabaseHelper();
 

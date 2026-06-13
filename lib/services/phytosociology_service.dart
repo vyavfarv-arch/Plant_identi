@@ -4,7 +4,28 @@ import 'package:flutter/services.dart';
 import '../models/syntaxon.dart';
 import '../models/plant_observation.dart';
 import '../models/plant_species.dart'; // DODANO SŁOWNIK
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Silnik diagnozy syntaksonomicznej zbiorowisk roślinnych. Ładuje zewnętrzny plik
+ * słownika (syntaxa.json), buduje hierarchiczne drzewo klasyfikacji, a następnie
+ * porównuje skład florystyczny płatu z gatunkami charakterystycznymi. Wykrywa
+ * stopień pokrycia i generuje ostrzeżenia o niejednorodności (wymieszaniu klas).
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../models/syntaxon.dart':
+ * - Klasa [Syntaxon] oraz [SyntaxonRank]: Służą do mapowania obiektów bazy wiedzy
+ * o zespołach, związkach, rzędach i klasach roślinnych.
+ * * Z pliku '../models/plant_observation.dart':
+ * - Klasa [PlantObservation]: Lista wejściowa okazów, na podstawie której badany
+ * jest rzeczywisty skład gatunkowy na płacie.
+ * * Z pliku '../models/plant_species.dart':
+ * - Klasa [PlantSpecies]: Słownik referencyjny (atlas) służący do bezpiecznego
+ * odkodowania identyfikatorów okazów (speciesId) na ich botaniczne nazwy łacińskie.
+ * ============================================================================
+ */
 class PhytosociologyService {
   static final PhytosociologyService _instance = PhytosociologyService._internal();
   factory PhytosociologyService() => _instance;

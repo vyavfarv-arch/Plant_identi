@@ -4,7 +4,21 @@ import 'package:flutter/material.dart';
 import '../models/plant_species.dart';
 import '../models/plant_observation.dart';
 import '../models/description_schema.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Widok dolnego arkusza modalnego (BottomSheet) prezentujący skumulowaną
+ * specyfikację morfologiczną i ekologiczną gatunku. Zawiera skumulowany bank zdjęć,
+ * cechy pogrupowane etapami fenologicznymi oraz wyciągnięte z mapy optima Ellenberga.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z katalogu '../models/':
+ * - Klasy [PlantSpecies], [PlantObservation]: Obiekty wejściowe do akumulacji cech populacji.
+ * - Klasa [SchemaGenerator]: Wywoływana do budowania dynamicznego układu ExpansionTile cech.
+ * ============================================================================
+ */
 class PhotoWithStage {
   final String path;
   final String stage;

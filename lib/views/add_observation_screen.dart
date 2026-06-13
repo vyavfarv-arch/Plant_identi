@@ -8,7 +8,25 @@ import '../viewmodels/observation_view_model.dart';
 import './add_observation_long_step1.dart';
 import './add_observation_morphology_step2.dart';
 import './add_observation_quick_steps.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Kontroler PageView zarządzający wielokrokowym kreatorem dodawania okazu.
+ * Koordynuje przepływ walidacji, zarządza stanami lokalnymi kroków i finalizuje
+ * zapis rekordu botanicznego w lokalnej bazie danych poprzez ViewModel.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z katalogu '../models/':
+ * - Klasy [PlantObservation], [PlantSpecies]: Służą jako struktury inicjalizacyjne.
+ * * Z pliku '../viewmodels/observation_view_model.dart':
+ * - Klasa [ObservationViewModel]: Służy do asynchronicznego zapisu gotowego okazu.
+ * * Pod-kroki formularza (Widżety):
+ * - [AddObservationQuickPhotoStep], [AddObservationQuickPopulationStep],
+ * [AddObservationLongStep1], [AddObservationMorphologyStep2].
+ * ============================================================================
+ */
 
 class AddObservationScreen extends StatefulWidget {
   final PlantSpecies? preselectedSpecies;

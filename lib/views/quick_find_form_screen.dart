@@ -10,7 +10,25 @@ import '../models/plant_observation.dart';
 import '../models/plant_species.dart';
 import '../viewmodels/observation_view_model.dart';
 import '../services/database_helper.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Terenowy formularz weryfikacji i sukcesu ("Znalazłem!") poszukiwanego gatunku.
+ * Wymusza wykonanie dokumentacji fotograficznej za pomocą podglądu aparatu,
+ * pobiera statusy fenologii/ilościowości, przepisuje profil Ellenberga do atlasu
+ * i automatycznie zapisuje nowy okaz związany z wybranym płatem roślinności.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z katalogu '../models/':
+ * - Klasy [Releve], [SoughtPlant], [PlantObservation], [PlantSpecies]: Definicje obiektów bazy i struktur.
+ * * Z pliku '../viewmodels/observation_view_model.dart':
+ * - Klasa [ObservationViewModel]: Steruje obsługą kamery i realizuje dodanie okazu do Magazynu.
+ * * Z pliku '../services/database_helper.dart':
+ * - Klasa [DatabaseHelper]: Bezpośrednio wstrzykuje i zapisuje brakujący gatunek do bazy lokalnej.
+ * ============================================================================
+ */
 class QuickFindFormScreen extends StatefulWidget {
   final Releve area;
   final SoughtPlant targetPlant;

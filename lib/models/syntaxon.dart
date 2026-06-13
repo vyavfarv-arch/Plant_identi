@@ -1,5 +1,18 @@
 import 'package:flutter/material.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Definiuje strukturę danych dla jednostek fitosocjologicznych (syntaksonów)
+ * oraz ich rang (zespół, związek, rząd, klasa). Klasa służy do klasyfikacji
+ * zbiorowisk roślinnych i określania ich jednorodności.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * - Brak bezpośrednich importów innych plików wewnętrznych. Plik stanowi niezależną
+ * encję bazową, która jest parsowana i procesowana przez PhytosociologyService.
+ * ============================================================================
+ */
 enum SyntaxonRank { zespol, zwiazek, rzad, klasa }
 
 class Syntaxon {

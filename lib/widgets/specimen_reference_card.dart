@@ -2,7 +2,22 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/plant_observation.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Wizualna karta kontekstu okazu zebranego w terenie. Renderuje sekcję
+ * rozwijaną (ExpansionTile) zawierającą horyzontalną miniaturową galerię zdjęć
+ * z obsługą swobodnego zoomu (InteractiveViewer), odznaki parametrów populacji
+ * oraz pigułki (Chips) oznaczonych cech morfologicznych.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../models/plant_observation.dart':
+ * - Klasa [PlantObservation]: Obiekt źródłowy, z którego wyciągane są ścieżki
+ * plików zdjęciowych, wskaźniki witalności, obfitości i dynamiczne mapy cech.
+ * ============================================================================
+ */
 class SpecimenReferenceCard extends StatelessWidget {
   final PlantObservation observation;
 

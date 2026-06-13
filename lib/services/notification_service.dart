@@ -3,7 +3,21 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Menadżer powiadomień systemowych urządzenia. Odpowiada za integrację z natywnym
+ * API Androida w celu planowania dokładnych alarmów (`exactAllowWhileIdle`)
+ * dla minutników laboratoryjnych oraz przypomnień o fenologicznych zbiorach
+ * surowców z zachowaniem lokalnych stref czasowych.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * - Brak bezpośrednich importów innych plików z /lib. Usługa niskopoziomowa,
+ * z której metod korzysta bezpośrednio warstwa ReminderViewModel.
+ * ============================================================================
+ */
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;

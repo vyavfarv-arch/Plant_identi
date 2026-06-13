@@ -8,7 +8,29 @@ import '../models/plant_species.dart';
 import '../models/plant_observation.dart';
 import 'plant_card_view.dart';
 import 'releve_details_screen.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Główna mapa terenowa aplikacji. Odpowiada za jednoczesne nakładanie
+ * poligonów płatów na widok hybrydowy oraz renderowanie markerów znalezionych okazów.
+ * Obsługuje interaktywny tryb relokalizacji (korekta współrzędnych GPS okazu za pomocą
+ * celownika na środku ekranu) oraz lokalny dialog wyszukiwania i filtrowania rodzin/gatunków.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z katalogu '../models/':
+ * - Klasy [PlantSpecies], [PlantObservation]: Wykorzystywane do dynamicznej filtracji,
+ * obsługi menu kontekstowego markera oraz wyświetlania nazw taksonów.
+ * * Z katalogu '../viewmodels/':
+ * - Klasa [ObservationViewModel]: Dostarcza kolekcję wszystkich obserwacji oraz słownik
+ * i wykonuje operację relokalizacji GPS.
+ * - Klasa [ReleveViewModel]: Dostarcza zbiór obiektów wielokątów do wyrenderowania.
+ * * Z katalogu widoków:
+ * - Klasa [PlantCardView]: Służy do otwierania dolnego arkusza szczegółów okazu z menu pinezki.
+ * - Ekran [ReleveDetailsScreen]: Wywoływany po stuknięciu w poligon danego obszaru.
+ * ============================================================================
+ */
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
 

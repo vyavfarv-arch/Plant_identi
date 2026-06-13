@@ -1,7 +1,21 @@
 // lib/widgets/ellenberg_matrix_card.dart
 import 'package:flutter/material.dart';
 import '../models/plant_species.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Widżet prezentacyjny wyświetlający profil wymagań ekologicznych danego gatunku.
+ * Renderuje uproszczoną, nieklikalną matrycę 7 osi Ellenberga z graficznym
+ * wyróżnieniem poziomów optimum i tolerancji oraz informacją o widełkach pH gleby.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../models/plant_species.dart':
+ * - Klasa [PlantSpecies]: Służy jako obiekt wejściowy (kontekst) do odczytania
+ * i rozrysowania map wskaźników ekologicznych przypisanych do gatunku.
+ * ============================================================================
+ */
 class EllenbergMatrixCard extends StatelessWidget {
   final PlantSpecies species;
   const EllenbergMatrixCard({super.key, required this.species});

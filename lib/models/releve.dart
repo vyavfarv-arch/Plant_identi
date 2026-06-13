@@ -2,7 +2,20 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'habitat_info.dart';
 import 'dart:convert';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Reprezentuje zdjęcie fitosocjologiczne / płat roślinny wyznaczany za pomocą
+ * współrzędnych wielokąta. Agreguje dane środowiskowe oraz mapę predykcji ML.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku 'habitat_info.dart':
+ * - Klasa [HabitatInfo]: Używana jako pole strukturalne `habitat` do pełnego
+ * opisu właściwości fizjograficzno-glebowych siedliska oraz ich serializacji do bazy SQL.
+ * ============================================================================
+ */
 class Releve {
   final String id;
   final String commonName;

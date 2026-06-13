@@ -3,7 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../viewmodels/reminder_view_model.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Widżet listy uśrednionych terminów fenologicznych zbioru surowca. Wyświetla
+ * statystyczne ramy czasowe obliczone z prób terenowych i udostępnia interaktywną
+ * ikonę dzwonka wyzwalającą asystenta czasowego i powiadomienie push w telefonie.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../viewmodels/reminder_view_model.dart':
+ * - Klasa [ReminderViewModel]: Wywoływana po kliknięciu przycisku w celu
+ * zaplanowania systemowego powiadomienia o nadejściu optymalnego czasu zbiorów.
+ * ============================================================================
+ */
 class SpeciesHarvestAverages extends StatelessWidget {
   final String commonName;
   final String? speciesId;

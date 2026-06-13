@@ -8,7 +8,28 @@ import '../viewmodels/search_filter_view_model.dart';
 import '../models/app_reminder.dart';
 import 'plant_card_view.dart';
 import 'add_sought_plant_screen.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Interfejs modułu "Asystent Czasowy" podzielony na zakładki "W TOKU" oraz "HISTORIA".
+ * Odpowiada za wyświetlanie osi czasu aktywnych alarmów, renderowanie reaktywnego
+ * widżetu odliczającego czas (`_CountdownText`), obsługę wyciszeń oraz
+ * głębokie powiązania (LongPress) przekierowujące do okazów lub celów poszukiwań.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../models/app_reminder.dart':
+ * - Klasa [AppReminder]: Model danych sterujący zachowaniem elementów osi czasu.
+ * * Z katalogu '../viewmodels/':
+ * - Klasa [ReminderViewModel]: Główny zarządca powiadomień, wyciszeń i zmian statusu ukończenia.
+ * - Klasa [ObservationViewModel]: Służy do odszukania powiązanego okazu w terenie na bazie id.
+ * - Klasa [SearchFilterViewModel]: Służy do odszukania powiązanego celu poszukiwań na bazie id.
+ * * Z katalogu widoków:
+ * - [PlantCardView]: Wyświetlenie dolnego arkusza powiązanej rośliny.
+ * - [AddSoughtPlantScreen]: Przekierowanie do edycji celu poszukiwań.
+ * ============================================================================
+ */
 class ReminderListScreen extends StatelessWidget {
   const ReminderListScreen({super.key});
 

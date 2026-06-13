@@ -8,6 +8,28 @@ import 'releve_details_screen.dart';
 import 'releve_map_screen.dart';
 import 'area_filter_screen.dart'; // IMPORT NOWEGO EKRANU
 
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Ekran modułu "Obszary" zarządzający zarejestrowanymi płatami roślinności.
+ * Odpowiada za aplikowanie filtrów środowiskowych, dynamiczne zliczanie i prezentację
+ * podobszarów niższej rangi w strukturze hierarchicznej oraz udostępnianie akcji resetu.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../models/releve.dart':
+ * - Klasa [Releve]: Encja danych reprezentująca pojedynczy rekord płatu na liście.
+ * * Z katalogu '../viewmodels/':
+ * - Klasa [ReleveViewModel]: Dostarcza kompletną listę płatów oraz wylicza relacje nadrzędne.
+ * - Klasa [SearchFilterViewModel]: Służy do pobierania aktywnych filtrów mineralnych i odczynu pH.
+ * * Z katalogu widoków:
+ * - Ekran [AreaFilterScreen]: Wywoływany w celu konfiguracji zaawansowanych filtrów środowiskowych.
+ * - Ekran [ReleveMapScreen]: Służy do przejścia do kreatora rysowania nowego wielokąta.
+ * - Ekran [ReleveDetailsScreen]: Otwierany po kliknięciu w kafelek obszaru w celu wejścia w jego głębokie szczegóły.
+ * ============================================================================
+ */
+
 class ReleveListMapScreen extends StatefulWidget {
   const ReleveListMapScreen({super.key});
 

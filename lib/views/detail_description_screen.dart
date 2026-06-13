@@ -9,7 +9,26 @@ import '../widgets/ecological_amplitude_picker.dart';
 import '../widgets/harvest_season_picker.dart';
 import '../widgets/specimen_reference_card.dart';
 import 'form_screen.dart'; // Import ekranu modyfikacji cech
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Kompletny edytor wiedzy o gatunku i taksonomii okazu. Pozwala na powiązanie
+ * okazu z nazwą łacińską za pomocą Autocomplete (podpowiedzi z bazy), edycję rodziny,
+ * wywołanie formularza modyfikacji cech organów, konfigurację kalendarza zbioru
+ * oraz sterowanie suwakami i siatką amplitudy ekologicznej Ellenberga.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z katalogu '../models/':
+ * - Klasy [PlantObservation], [PlantSpecies], [HarvestSeason]: Odczyt i pakowanie do zapisu SQL.
+ * * Z katalogu '../viewmodels/':
+ * - Klasa [ObservationViewModel]: Służy do asynchronicznego wstrzyknięcia i zapisu encji gatunku oraz okazu.
+ * * Z katalogów widoków i widżetów współdzielonych:
+ * - Widżety: [EcologicalAmplitudePicker], [HarvestSeasonPicker], [SpecimenReferenceCard].
+ * - Widoki: Ekran modyfikacji cech organowych [FormScreen].
+ * ============================================================================
+ */
 class DetailDescriptionScreen extends StatefulWidget {
   final PlantObservation observation;
   const DetailDescriptionScreen({super.key, required this.observation});

@@ -1,6 +1,20 @@
 // lib/widgets/ecological_amplitude_picker.dart
 import 'package:flutter/material.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Interaktywny komponent i kontroler stanu wyboru liczb wskaźnikowych Ellenberga.
+ * Implementuje trzystanową siatkę wyboru kafelków (1 kliknięcie = Tolerancja,
+ * 2 kliknięcia = Optimum, 3 kliknięcia = brak powiązania) dla wszystkich 7 osi
+ * diagnostycznych oraz suwak zakresu (RangeSlider) preferowanego pH gleby.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * - Brak bezpośrednich importów innych plików z /lib. Stanowi samodzielny,
+ * uniwersalny widżet formularzowy wstrzykiwany do ekranów edycji i poszukiwań.
+ * ============================================================================
+ */
 class EcologicalDataController extends ChangeNotifier {
   double phMin = 5.5;
   double phMax = 7.5;

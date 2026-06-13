@@ -9,7 +9,31 @@ import '../viewmodels/search_filter_view_model.dart';
 import '../viewmodels/observation_view_model.dart';
 import '../widgets/ecological_amplitude_picker.dart';
 import '../widgets/harvest_season_picker.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Kreator i edytor nowej "Rośliny Poszukiwanej" (celu poszukiwań matrycowych).
+ * Pozwala na ręczny wpis lub skorzystanie z pola Autocomplete, które podpowiada
+ * nazwy łacińskie bezpośrednio z Magazynu (atlasu zbudowanego przez użytkownika).
+ * Integruje widżety wyboru sezonu zbiorów surowców oraz trzystanowej siatki amplitudy
+ * ekologicznej Ellenberga, zapisując dane do tabeli 'sought_plants'.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z katalogu '../models/':
+ * - Klasa [SoughtPlant]: Docelowa encja danych tworzona, mapowana i utrwalana w bazie.
+ * - Klasa [HarvestSeason]: Struktura przekazywana do obsługi listy preferowanych terminów zbioru.
+ * * Z katalogu '../services/':
+ * - Klasa [DatabaseHelper]: Realizuje asynchroniczny zapis (insert) nowego celu poszukiwań w SQLite.
+ * * Z katalogu '../viewmodels/':
+ * - Klasa [ObservationViewModel]: Służy do wyciągnięcia unikalnych nazw łacińskich dla podpowiedzi w polu wyszukiwania.
+ * - Klasa [SearchFilterViewModel]: Wywoływana po udanym zapisie w celu przeładowania i odświeżenia listy celów w UI.
+ * * Z katalogu '../widgets/':
+ * - Widżet [EcologicalAmplitudePicker]: Panel trzystanowej siatki i suwaka do określania optymalnych liczb Ellenberga.
+ * - Widżet [HarvestSeasonPicker]: Kalendarz do definiowania i dodawania terminów zbioru surowców zielarskich.
+ * ============================================================================
+ */
 class AddSoughtPlantScreen extends StatefulWidget {
   const AddSoughtPlantScreen({super.key});
 

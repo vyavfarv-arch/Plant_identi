@@ -2,7 +2,21 @@
 import 'package:flutter/material.dart';
 import '../models/harvest_season.dart';
 import 'package:intl/intl.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Widżet zarządzania kalendarzem zbioru surowców roślinnych. Udostępnia listę
+ * zdefiniowanych okresów oraz okno modalne (DateRangePicker) do precyzyjnego
+ * definiowania przedziałów czasowych zbioru dla konkretnych części roślin (np. kwiaty, kłącza).
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../models/harvest_season.dart':
+ * - Klasa [HarvestSeason]: Służy do mapowania, modyfikacji i eksportu obiektów
+ * przedziałów czasowych wegetacji surowców flory.
+ * ============================================================================
+ */
 class HarvestSeasonPicker extends StatefulWidget {
   final String title;
   final List<HarvestSeason> initialSeasons;

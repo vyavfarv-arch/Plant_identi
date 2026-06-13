@@ -1,5 +1,21 @@
 // lib/models/habitat_info.dart
 import 'dart:convert';
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Model danych przechowujący szczegółowe, fizjograficzne parametry siedliskowe
+ * płatu roślinności. Zawiera listy predefiniowanych słowników (opcje podłoża,
+ * kąty nachylenia, stopnie ocienienia, antropopresja). Służy jako źródło danych
+ * wejściowych dla algorytmu tłumaczącego warunki opisowe na wektor numeryczny Ellenberga.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * - Brak bezpośrednich importów innych plików z /lib. Stanowi niezależny moduł
+ * słownikowo-strukturalny wykorzystywany przez model [Releve].
+ * ============================================================================
+ */
+
 
 class HabitatInfo {
   static const List<String> areaTypeOptions = ["Las", "Łąka", "Mokradło", "Zarośla", "Pole", "Pobocze drogi", "Nadrzecze / Brzeg", "Skraj lasu"];

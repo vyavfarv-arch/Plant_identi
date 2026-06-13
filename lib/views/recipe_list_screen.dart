@@ -4,7 +4,24 @@ import 'package:provider/provider.dart';
 import '../viewmodels/recipe_view_model.dart';
 import '../viewmodels/reminder_view_model.dart';
 import 'recipe_form_screen.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Menedżer i księga przepisów zielarskich użytkownika. Obsługuje grupowanie
+ * i zaawansowane filtrowanie przepisów za pomocą unikalnych etykiet (#labeli),
+ * prezentuje rozwijane karty detali, listy składników, surowców oraz udostępnia
+ * przyciski "START" wyzwalające laboratoryjne minutniki procesów.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z katalogu '../viewmodels/':
+ * - Klasa [RecipeViewModel]: Ładuje z dysku i udostępnia posortowaną kolekcję przepisów.
+ * - Klasa [ReminderViewModel]: Odpowiada za aktywację minutnika systemowego po kliknięciu "START".
+ * * Z katalogu widoków:
+ * - Ekran [RecipeFormScreen]: Nawigacja do edytora lub kreatora nowych receptur.
+ * ============================================================================
+ */
 class RecipeListScreen extends StatefulWidget {
   const RecipeListScreen({super.key});
 

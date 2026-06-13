@@ -6,6 +6,26 @@ import 'package:provider/provider.dart';
 import 'add_observation_screen.dart';
 import '../viewmodels/observation_view_model.dart';
 
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Ekran seryjnego zbierania dokumentacji fotograficznej dla nieznanych taksonów.
+ * Zapewnia pełnoekranowy podgląd z aparatu urządzenia, dynamiczny licznik zdjęć
+ * (limit do 10) oraz boczny przycisk nawigacyjny (FloatingActionButton) kierujący
+ * do trybu długiej identyfikacji morfologicznej.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../viewmodels/observation_view_model.dart':
+ * - Klasa [ObservationViewModel]: Bezpośrednio kontroluje warstwę sprzętową kamery,
+ * wyzwala operację takePhoto, pobiera ścieżki zdjęć i sprawdza warunek canTakePhoto.
+ * * Z katalogu widoków:
+ * - Ekran [AddObservationScreen]: Wywoływany po zebraniu zdjęć w celu przejścia
+ * do trybu długiego opisu morfologicznego (forcedQuickMode: false).
+ * ============================================================================
+ */
+
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
 

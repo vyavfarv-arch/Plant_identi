@@ -1,3 +1,18 @@
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Encja danych reprezentująca pojedyncze przypomnienie lub licznik czasowy.
+ * Obsługuje flagę [type], która kategoryzuje alarmy na minutniki kuchenno-laboratoryjne
+ * ('RECIPE') oraz powiadomienia o fenologicznych terminach zbiorów ('HARVEST').
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * - Brak bezpośrednich importów. Klasa stanowi niezależną encję, zarządzaną
+ * przez warstwę ReminderViewModel oraz NotificationService.
+ * ============================================================================
+ */
+
 class AppReminder {
   final String id;
   final String title;

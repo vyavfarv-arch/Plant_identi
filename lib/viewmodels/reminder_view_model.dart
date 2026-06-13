@@ -4,7 +4,27 @@ import 'package:uuid/uuid.dart';
 import '../models/app_reminder.dart';
 import '../services/database_helper.dart';
 import '../services/notification_service.dart'; // DODANY IMPORT
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Odpowiada za logikę biznesową asystenta czasowego. Obsługuje procesy
+ * dodawania, usuwania i zmiany stanów przypomnień laboratoryjnych (timery procesów
+ * przepisu 'RECIPE') oraz alertów fenologicznych w kalendarzu zbiorów surowca ('HARVEST').
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../models/app_reminder.dart':
+ * - Klasa [AppReminder]: Model danych, na którym operuje kolekcja i metody
+ * aktualizacji statusu ukończenia oraz wyciszenia dzwonka.
+ * * Z pliku '../services/database_helper.dart':
+ * - Klasa [DatabaseHelper]: Zapewnia trwałość stanów alarmów, rejestrując
+ * i modyfikując wpisy bezpośrednio w bazie SQLite.
+ * * Z pliku '../services/notification_service.dart':
+ * - Klasa [NotificationService]: Kluczowy moduł wykonawczy, który rejestruje
+ * lub anuluje dokładne powiadomienia w systemie operacyjnym Android.
+ * ============================================================================
+ */
 class ReminderViewModel extends ChangeNotifier {
   final DatabaseHelper _db = DatabaseHelper();
   final NotificationService _notifService = NotificationService(); // DODANY SERWIS

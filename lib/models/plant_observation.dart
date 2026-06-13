@@ -1,7 +1,23 @@
 // lib/models/plant_observation.dart
 import 'dart:convert';
 import 'harvest_season.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Model danych reprezentujący pojedynczy zaobserwowany okaz rośliny lub grzyba
+ * w terenie. Przechowuje unikalne cechy populacyjne (faza fenologiczna, obfitość,
+ * witalność), współrzędne GPS, ścieżki zdjęć oraz mapę dynamicznie zebranych
+ * cech morfologicznych (characteristics).
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku 'harvest_season.dart':
+ * - Klasa [HarvestSeason]: Służy do obsługi listy dedykowanych, zmodyfikowanych
+ * przez użytkownika terminów zbiorów surowca dla konkretnego znalezionego okazu
+ * (pole `customHarvestSeasons`).
+ * ============================================================================
+ */
 class PlantObservation {
   final String id;
   final String? releveId;

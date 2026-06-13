@@ -5,6 +5,27 @@ import '../models/releve.dart';
 import '../models/habitat_info.dart';
 import '../viewmodels/releve_view_model.dart';
 
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Formularz szczegółowej edycji parametrów glebowo-środowiskowych istniejącego płatu.
+ * Pozwala użytkownikowi na modyfikację ocienienia okapu, reżimu wód, nachylenia,
+ * ekspozycji stoku, wielokrotny wybór darni/ściółki oraz ręczny wpis wartości pH gleby.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../models/releve.dart':
+ * - Klasa [Releve]: Dostarcza instancję płatu, którego cechy środowiskowe są modyfikowane.
+ * * Z pliku '../models/habitat_info.dart':
+ * - Klasa [HabitatInfo]: Dostarcza słowniki predefiniowanych opcji i służy jako
+ * obiekt strukturalny zapisu nowych właściwości.
+ * * Z pliku '../viewmodels/releve_view_model.dart':
+ * - Klasa [ReleveViewModel]: Służy do asynchronicznego utrwalenia zaktualizowanego
+ * opisu siedliska w lokalnym motorze SQLite.
+ * ============================================================================
+ */
+
 class HabitatFormScreen extends StatefulWidget {
   final Releve releve;
   const HabitatFormScreen({super.key, required this.releve});

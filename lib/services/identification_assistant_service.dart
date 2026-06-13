@@ -3,7 +3,31 @@ import '../models/plant_species.dart';
 import '../models/plant_observation.dart';
 import '../models/releve.dart';
 import 'ecological_matching_service.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Silnik reguł eksperckich asystenta identyfikacji. Odpowiada za wykrywanie
+ * anomalii morfologicznych (niezgodności z oficjalnym wzorcem botanicznym gatunku)
+ * oraz generowanie wagowego rankingu sugestii taksonomicznych (60% waga cech
+ * morfologicznych, 40% waga kompatybilności ekologicznej siedliska).
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../models/plant_species.dart':
+ * - Klasa [PlantSpecies]: Służy do odczytu zdefiniowanych matryc cech dopuszczalnych
+ * (patternTraits) dla każdego gatunku referencyjnego z bazy użytkownika.
+ * * Z pliku '../models/plant_observation.dart':
+ * - Klasa [PlantObservation]: Wykorzystywana do pobrania zestawu cech diagnostycznych
+ * zaobserwowanych i zaznaczonych przez użytkownika w terenie.
+ * * Z pliku '../models/releve.dart':
+ * - Klasa [Releve]: Dostarcza kontekst aktywnego płatu (habitat) niezbędny do
+ * przeprowadzenia analizy biogeograficznej.
+ * * Z pliku 'ecological_matching_service.dart':
+ * - Klasa [EcologicalMatchingService]: Wywoływana do obliczenia ekologicznego
+ * scoringu kompatybilności stanowiska z wymaganiami gatunku.
+ * ============================================================================
+ */
 class SuggestionResult {
   final PlantSpecies species;
   final double morphologicalScore;

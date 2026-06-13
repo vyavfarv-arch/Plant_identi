@@ -1,6 +1,20 @@
 import 'package:camera/camera.dart';
 
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Sterownik warstwy sprzętowej aparatu fotograficznego. Zapewnia poprawną
+ * inicjalizację kontrolera wideo, dba o zwalnianie zasobów pamięci (dispose)
+ * przy rekonfiguracji, wymusza format kompresji graficznej JPEG i przechwytuje
+ * surowe zdjęcia dokumentujące detale morfologiczne okazów.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * - Brak bezpośrednich importów innych plików wewnętrznych z /lib. Usługa
+ * niskopoziomowa dostarczająca ścieżki plików bezpośrednio do ViewModelu obserwacji.
+ * ============================================================================
+ */
 class CameraService {
   CameraController? _controller;
   List<CameraDescription>? _cameras;

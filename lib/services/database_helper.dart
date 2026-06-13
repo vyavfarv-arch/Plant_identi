@@ -7,7 +7,23 @@ import '../models/plant_species.dart';
 import '../models/sought_plant.dart';
 import '../models/recipe.dart';
 import '../models/app_reminder.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Centralny zarządca trwałego składowania danych (Wzorzec Singleton). Inicjalizuje
+ * lokalny silnik SQLite (`planticator.db` wersja v23), wymusza kaskadowe powiązania
+ * relacyjne kluczy obcych (foreign keys) oraz udostępnia metody CRUD dla całego projektu,
+ * zabezpieczając integralność unikalnego klucza budowanego przez użytkownika.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z katalogu '../models/':
+ * - Klasy [Releve], [PlantObservation], [PlantSpecies], [SoughtPlant], [Recipe],
+ * [AppReminder]: Służą jako ścisłe typy mapowane z rekordów bazodanowych na obiekty
+ * języka Dart (wykorzystanie fabryk z map oraz metod eksportu struktur toMap).
+ * ============================================================================
+ */
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;

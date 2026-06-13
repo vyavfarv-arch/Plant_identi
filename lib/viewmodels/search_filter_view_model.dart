@@ -3,7 +3,28 @@ import 'package:flutter/material.dart';
 import '../models/releve.dart';
 import '../models/sought_plant.dart';
 import '../services/database_helper.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Zarządza stanem globalnych filtrów interfejsu użytkownika dla katalogu, mapy
+ * oraz wyszukiwarki. Odpowiada za przechowywanie zaznaczonych rodzin, przedziałów
+ * dat, zakresów suwaków pH gleby, typów podłoża oraz asynchroniczne ładowanie
+ * i usuwanie celów z listy roślin poszukiwanych.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../models/releve.dart':
+ * - Klasa [Releve]: Wykorzystywana jako typ zmiennej filtrowania obserwacji
+ * według konkretnego wybranego płatu (filterArea).
+ * * Z pliku '../models/sought_plant.dart':
+ * - Klasa [SoughtPlant]: Rejestruje kolekcję i typ obiektów celów poszukiwań
+ * ekologicznych ładowanych do widoków.
+ * * Z pliku '../services/database_helper.dart':
+ * - Klasa [DatabaseHelper]: Wywoływana do przeprowadzania operacji CRUD
+ * (odczyt listy, usunięcie celu) na tabeli bazy danych 'sought_plants'.
+ * ============================================================================
+ */
 class SearchFilterViewModel extends ChangeNotifier {
   final DatabaseHelper _db = DatabaseHelper();
 

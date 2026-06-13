@@ -11,7 +11,29 @@ import '../viewmodels/releve_view_model.dart';
 import '../services/ecological_matching_service.dart';
 import '../services/spatial_service.dart';
 import 'quick_find_form_screen.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Mapa prezentacji wyników analizy matrycowej dla rośliny poszukiwanej.
+ * Dynamicznie koloruje poligony płatów na podstawie stanu (Potwierdzona obecność – zielony,
+ * Zweryfikowana nieobecność – szary, Potencjalna zgodność z wektorem 7 osi Ellenberga – bursztynowy).
+ * Udostępnia menu akcji oznaczania nieobecności lub szybkiego formularza sukcesu.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z katalogu '../models/':
+ * - Klasy [Releve], [SoughtPlant], [PlantObservation]: Struktury danych do analizy i zapisu nieobecności.
+ * * Z katalogu '../viewmodels/':
+ * - Klasa [ObservationViewModel]: Odczyt i zapis obserwacji (weryfikacja statusów w płacie).
+ * - Klasa [ReleveViewModel]: Udostępnia poligony płatów zarejestrowanych w systemie.
+ * * Z katalogu '../services/':
+ * - Klasa [EcologicalMatchingService]: Wylicza stopień zgodności i dostarcza sygnaturę [L:✓ F:✗ ...].
+ * - Klasa [SpatialService]: Sprawdza, czy koordynaty okazów mieszczą się geometrycznie w płatach.
+ * * Z katalogu widoków:
+ * - Ekran [QuickFindFormScreen]: Otwierany w momencie potwierdzenia znalezienia rośliny.
+ * ============================================================================
+ */
 class ResultsMapScreen extends StatefulWidget {
   final SoughtPlant targetPlant;
   const ResultsMapScreen({super.key, required this.targetPlant});

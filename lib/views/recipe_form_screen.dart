@@ -4,7 +4,24 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/recipe.dart';
 import '../viewmodels/recipe_view_model.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Kreator i formularz edycji receptur medycyny naturalnej. Udostępnia zaawansowany
+ * mechanizm wprowadzania składników (gatunek, surowiec, ilość), tworzenia etykiet
+ * oraz dynamicznego definiowania kroków przygotowania z podziałem na opisy tekstowe
+ * oraz akcje czasowe z określeniem jednostki (Minuty, Godziny, Dni).
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../models/recipe.dart':
+ * - Klasy [Recipe], [RecipeIngredient], [RecipeStep]: Struktury kompozycji budowanego przepisu.
+ * * Z pliku '../viewmodels/recipe_view_model.dart':
+ * - Klasa [RecipeViewModel]: Wywoływana w celu odczytu wszystkich istniejących labeli oraz
+ * asynchronicznego utrwalenia lub aktualizacji rekordu przepisu w bazie.
+ * ============================================================================
+ */
 class _IngredientControllers {
   final TextEditingController name;
   final TextEditingController part;

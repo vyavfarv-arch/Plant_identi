@@ -9,7 +9,28 @@ import '../services/camera_service.dart';
 import '../services/location_service.dart';
 import '../models/harvest_season.dart';
 import '../services/database_helper.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Najbardziej rozbudowany kontroler logiki biznesowej (MVVM). Steruje procesem
+ * terenowego zbierania danych: integruje warstwę sprzętową (aparat, odczyt GPS z guardem),
+ * zarządza dynamiczną listą zdjęć, koordynuje ewidencję okazów oraz budowanie unikalnego,
+ * lokalnego atlasu/klucza gatunków (PlantSpecies) wraz z kaskadowym usuwaniem
+ * osieroconych taksonów.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z katalogu '../models/':
+ * - Klasy [PlantObservation], [PlantSpecies], [HarvestSeason]: Wykorzystywane jako
+ * modele danych do mapowania, edycji szczegółowej oraz walidacji unikalności
+ * wprowadzanych rekordów botanicznych.
+ * * Z katalogu '../services/':
+ * - Klasa [CameraService]: Służy do inicjalizacji sprzętowej i pobierania kontrolera podglądu aparatu.
+ * - Klasa [LocationService]: Wywoływana do asynchronicznego pobrania koordynatów GPS stanowiska.
+ * - Klasa [DatabaseHelper]: Centralny silnik zapisu operacji CRUD na tabelach 'observations' oraz 'plant_species'.
+ * ============================================================================
+ */
 class ObservationViewModel extends ChangeNotifier {
   final CameraService _cameraService = CameraService();
   final LocationService _locationService = LocationService();

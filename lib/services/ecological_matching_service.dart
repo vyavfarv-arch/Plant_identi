@@ -3,7 +3,30 @@ import '../models/releve.dart';
 import '../models/habitat_info.dart';
 import '../models/plant_species.dart';
 import '../models/has_ellenberg_profile.dart'; // Gwarancja pełnego bezpieczeństwa typów
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Serce analityczne aplikacji. Klasa [AdvancedEcologicalTranslator] tłumaczy opisowe,
+ * fizjograficzne cechy terenu na ciągły profil numeryczny 7 osi Ellenberga. Następnie
+ * [EcologicalMatchingService] wylicza odległość matematyczną (kary osiowe) od optimum
+ * gatunku, co pozwala na precyzyjne demaskowanie ekologicznych anomalii (outliers).
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../models/releve.dart':
+ * - Klasa [Releve]: Dostarcza instancję płatu poddawanego ewaluacji siedliskowej.
+ * * Z pliku '../models/habitat_info.dart':
+ * - Klasa [HabitatInfo]: Służy do bezpośredniego odczytu ocienienia okapu, darni,
+ * kontekstu hydrologicznego, podłoża i zmierzonej wartości pH.
+ * * Z pliku '../models/plant_species.dart':
+ * - Klasa [PlantSpecies]: Reprezentuje gatunki z bazy wiedzy, z których pobierany jest
+ * profil tolerancji.
+ * * Z pliku '../models/has_ellenberg_profile.dart':
+ * - Interfejs [HasEllenbergProfile]: Gwarantuje unifikację typów dla obiektów poddawanych
+ * analizie porównawczej (gatunki / rośliny poszukiwane).
+ * ============================================================================
+ */
 class ContinuousEcologicalProfile {
   final double sunlight;   // L
   final double moisture;   // F

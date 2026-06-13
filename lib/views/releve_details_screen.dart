@@ -9,7 +9,29 @@ import '../services/spatial_service.dart';
 import 'plant_card_view.dart';
 import 'habitat_form_screen.dart';
 import 'filtered_areas_map_screen.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Kompleksowa karta szczegółów płatu fitosocjologicznego. Prezentuje listę
+ * rzeczywistych okazów występujących w jego granicach (powiązanych geometrycznie),
+ * wylicza listę gatunków potencjalnych na bazie silnika dopasowań Ellenberga,
+ * prezentuje zunifikowane sygnatury osi diagnostycznych oraz wyzwala asynchroniczną analizę.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../models/releve.dart':
+ * - Klasa [Releve]: Główny obiekt kontekstowy poddawany ewaluacji.
+ * * Z katalogu '../viewmodels/':
+ * - Klasa [ReleveViewModel]: Obsługuje akcje kasowania płatu oraz zapis predykcji ekologicznych.
+ * - Klasa [ObservationViewModel]: Udostępnia słownik gatunków oraz listę wszystkich kompletnych obserwacji.
+ * * Z katalogu '../services/':
+ * - Klasa [SpatialService]: Odfiltrowuje rzeczywiste rośliny znajdujące się wewnątrz poligonu obszaru.
+ * - Klasa [EcologicalMatchingService]: Główny motor obliczeniowy: dostarcza diagnozę osi (✓/✗/?) oraz rankinguje gatunki potencjalne.
+ * * Z katalogu widoków:
+ * - [PlantCardView], [FilteredAreasMapScreen], [HabitatFormScreen], [ReleveDetailsScreen] (rekurencyjna nawigacja podobszarów).
+ * ============================================================================
+ */
 class ReleveDetailsScreen extends StatefulWidget {
   final Releve releve;
   const ReleveDetailsScreen({super.key, required this.releve});

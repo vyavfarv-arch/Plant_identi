@@ -10,7 +10,27 @@ import '../viewmodels/releve_view_model.dart';
 import '../viewmodels/observation_view_model.dart';
 import '../services/spatial_service.dart';
 import 'releve_details_screen.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Widok dolnego arkusza modalnego (BottomSheet) szczegółowego podglądu pojedynczego okazu.
+ * Wyświetla galerię zdjęć terenu, pozycję systematyczną, oceny kondycji populacji,
+ * zaobserwowane cechy organów, terminy surowcowe, optimum wskaźnikowe Ellenberga
+ * oraz aktywne odnośniki do płatów fitosocjologicznych, w których okaz geometrycznie występuje.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z katalogu '../models/':
+ * - Klasy [PlantObservation], [HarvestSeason], [DescriptionCategory/SchemaGenerator].
+ * * Z katalogu '../viewmodels/':
+ * - Klasy [ReleveViewModel], [ObservationViewModel]: Odczyt słowników, gatunków i obszarów bazy.
+ * * Z katalogu '../services/':
+ * - Klasa [SpatialService]: Pobiera listę powiązanych geometrycznie płatów dla pozycji okazu.
+ * * Z katalogu widoków:
+ * - Ekran [ReleveDetailsScreen]: Służy do nawigacji po kliknięciu w powiązany płat roślinny.
+ * ============================================================================
+ */
 class PlantCardView {
   static void show(BuildContext context, PlantObservation obs) {
     final obsVm = context.read<ObservationViewModel>();

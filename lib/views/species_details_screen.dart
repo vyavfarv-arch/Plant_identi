@@ -16,7 +16,28 @@ import '../widgets/species_harvest_averages.dart';
 import 'plant_card_view.dart';
 import 'releve_details_screen.dart';
 import 'detail_description_screen.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Zaawansowana karta botaniczna gatunku flory. Realizuje procesy dydaktyczne:
+ * agreguje zdjęcia w rozwoju (etapy fenologiczne), oblicza statystyczny wektor cech
+ * morfologicznych o stałości >= 80% dla danego etapu, prezentuje amplitudę ekologiczną
+ * Ellenberga, uśrednia fenologiczne terminy zbioru surowców z terenu oraz linkuje płaty.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z katalogu '../models/':
+ * - Klasy [PlantSpecies], [PlantObservation], [Releve], [HarvestSeason], [DescriptionCategory/SchemaGenerator].
+ * * Z katalogu '../viewmodels/':
+ * - Klasy [ReleveViewModel], [ObservationViewModel]: Odczyt podglądu stanów i operacje usuwania rekordów.
+ * * Z katalogu '../services/':
+ * - Klasa [SpatialService]: Wykorzystywana do mapowania i odszukania powiązanych geometrycznie płatów.
+ * * Z katalogów widoków i widżetów współdzielonych:
+ * - Widżety: [EllenbergMatrixCard], [SpeciesHarvestAverages].
+ * - Widoki: Dolny arkusz [PlantCardView], ekrany [ReleveDetailsScreen] oraz [DetailDescriptionScreen].
+ * ============================================================================
+ */
 class SpeciesDetailsScreen extends StatelessWidget {
   final String commonName;
   final PlantSpecies? species;

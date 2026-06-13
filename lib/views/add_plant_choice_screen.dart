@@ -4,7 +4,23 @@ import 'package:provider/provider.dart';
 import '../viewmodels/observation_view_model.dart';
 import 'camera_screen.dart';
 import 'add_observation_screen.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Menu wyboru rodzaju ewidencji okazu terenowego. Udostępnia wyszukiwarkę
+ * do szybkiego wpisu znanej rośliny lub duży przycisk dla rośliny nieznanej.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../viewmodels/observation_view_model.dart':
+ * - Klasa [ObservationViewModel]: Służy do odczytu słownika gatunków (atlasu)
+ * oraz filtrowania podpowiedzi wpisywanych przez użytkownika.
+ * * Widoki:
+ * - [AddObservationScreen]: Przekierowanie do szybkiej ścieżki (znana roślina).
+ * - [CameraScreen]: Przekierowanie do seryjnych zdjęć detali (nieznana roślina).
+ * ============================================================================
+ */
 class AddPlantChoiceScreen extends StatefulWidget {
   const AddPlantChoiceScreen({super.key});
 

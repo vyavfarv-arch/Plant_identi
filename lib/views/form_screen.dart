@@ -10,6 +10,29 @@ import '../models/description_schema.dart';
 import '../services/identification_assistant_service.dart';
 import '../services/spatial_service.dart';
 
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Główny formularz terenowej ewidencji i modyfikacji szczegółowych cech morfologicznych.
+ * Integruje asystenta identyfikacji: wyświetla czerwone banery ostrzeżeń o anomaliach
+ * oraz dynamiczny panel sugestii taksonomicznych na bazie cech i siedliska.
+ * Umożliwia dodawanie niestandardowych cech organów za pomocą dialogu ("Inna cecha...").
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z katalogu '../viewmodels/':
+ * - Klasa [ObservationViewModel]: Udostępnia słownik gatunków oraz finalizuje zapis okazu.
+ * - Klasa [ReleveViewModel]: Służy do wyciągnięcia pełnej listy płatów w celu analizy siedliskowej.
+ * * Z katalogu '../models/':
+ * - Klasa [PlantObservation]: Struktura wejściowa i wyjściowa modyfikowanego okazu.
+ * - Klasa [SchemaGenerator]: Służy do wyciągnięcia opisów, kategorii i grafik referencyjnych dla typu biologicznego.
+ * * Z katalogu '../services/':
+ * - Klasa [IdentificationAssistantService]: Wywoływana do weryfikacji anomalii morfologicznych oraz pobrania sugestii.
+ * - Klasa [SpatialService]: Służy do geometrycznej weryfikacji, w obrębie którego płatu znajduje się badany okaz.
+ * ============================================================================
+ */
+
 class FormScreen extends StatefulWidget {
   final PlantObservation observation;
   const FormScreen({super.key, required this.observation});

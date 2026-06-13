@@ -2,7 +2,24 @@
 import 'dart:convert';
 import 'harvest_season.dart';
 import 'has_ellenberg_profile.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Definiuje kluczową encję [PlantSpecies], reprezentującą wzorzec botaniczny (atlas)
+ * tworzony samodzielnie przez użytkownika w toku nauki botaniki. Przechowuje wzorzec
+ * cech morfologicznych (`patternTraits`) oraz rygorystyczne profile ekologiczne Ellenberga.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku 'harvest_season.dart':
+ * - Klasa [HarvestSeason]: Wykorzystywana jako struktura do rejestrowania oraz
+ * serializacji uśrednionych i referencyjnych okresów zbioru surowca.
+ * * Z pliku 'has_ellenberg_profile.dart':
+ * - Interfejs [HasEllenbergProfile]: Implementowany przez klasę [PlantSpecies],
+ * co zapewnia unifikację typów przy analizie zgodności siedlisk oraz demaskowaniu outliers.
+ * ============================================================================
+ */
 class PlantSpecies implements HasEllenbergProfile {
   final String speciesID;
   final String latinName;

@@ -3,7 +3,21 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import '../../viewmodels/observation_view_model.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Zbiorczy plik widżetów dla szybkiej ścieżki zapisu znanego gatunku. Zawiera
+ * krok fotograficzny [AddObservationQuickPhotoStep] (z podglądem kamery urządzenia)
+ * oraz krok populacyjny [AddObservationQuickPopulationStep].
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../../viewmodels/observation_view_model.dart':
+ * - Klasa [ObservationViewModel]: Steruje bezpośrednio braniem zdjęcia, czyszczeniem
+ * listy fotografii oraz obsługą kontrolera kamery.
+ * ============================================================================
+ */
 class AddObservationQuickPhotoStep extends StatelessWidget {
   final ObservationViewModel vm;
 

@@ -2,7 +2,25 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/plant_observation.dart';
 import '../models/releve.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Moduł obliczeń przestrzennych i geometrycznych. Odpowiada za weryfikację algorytmem
+ * powłoki (Ray-casting), czy dany punkt GPS (okaz) znajduje się fizycznie wewnątrz
+ * poligonu (granic płatu fitosocjologicznego). Umożliwia automatyczne wiązanie
+ * obserwacji z obszarami w terenie.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../models/plant_observation.dart':
+ * - Klasa [PlantObservation]: Wykorzystywana do mapowania i filtrowania list okazów
+ * pod kątem ich szerokości i długości geograficznej (latitude/longitude).
+ * * Z pliku '../models/releve.dart':
+ * - Klasa [Releve]: Używana do odczytu wektora punktów granicznych (area.points)
+ * tworzących wielokąt płatu roślinności.
+ * ============================================================================
+ */
 class SpatialService {
   static bool isPointInPolygon(LatLng point, List<LatLng> polygon) {
     int i, j = polygon.length - 1;

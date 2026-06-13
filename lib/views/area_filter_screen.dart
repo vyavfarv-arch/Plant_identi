@@ -4,6 +4,24 @@ import 'package:provider/provider.dart';
 import '../models/habitat_info.dart';
 import '../viewmodels/search_filter_view_model.dart';
 
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Ekran zaawansowanego filtrowania parametrów środowiskowych i glebowych płatów.
+ * Pozwala użytkownikowi na określenie tymczasowych kryteriów wyszukiwania (typ obszaru,
+ * natlenienie wody, nachylenie stoku, podłoże mineralne oraz zakres pH gleby).
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../models/habitat_info.dart':
+ * - Klasa [HabitatInfo]: Dostarcza statyczne opcje słownikowe (areaTypeOptions,
+ * waterMovementOptions, substrateOptions itp.) do zasilenia kontrolek UI.
+ * * Z pliku '../viewmodels/search_filter_view_model.dart':
+ * - Klasa [SearchFilterViewModel]: Służy do odczytu i aplikowania ustawionych
+ * filtrów środowiskowych do globalnego stanu aplikacji.
+ * ============================================================================
+ */
 
 class AreaFilterScreen extends StatefulWidget {
   const AreaFilterScreen({super.key});

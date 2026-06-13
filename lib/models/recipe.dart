@@ -1,7 +1,20 @@
 // lib/models/recipe.dart
 import 'dart:convert';
 import 'package:uuid/uuid.dart';
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Definiuje modele struktur danych dla zielarskich przepisów i receptur. Składa
+ * się z klas: [RecipeIngredient] (składniki), [RecipeStep] (zarządzanie krokami tekstowymi
+ * oraz mechanicznymi minutnikami) i [Recipe] (główny pojemnik receptury z obsługą etykiet).
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * - Brak bezpośrednich importów innych plików z katalogu /lib. Plik stanowi niezależną,
+ * zamkniętą domenę danych zarządzaną bezpośrednio przez warstwę RecipeViewModel.
+ * ============================================================================
+ */
 class RecipeIngredient {
   final String speciesName;
   final String plantPart;

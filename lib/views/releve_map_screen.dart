@@ -5,6 +5,26 @@ import 'package:provider/provider.dart';
 import '../viewmodels/releve_view_model.dart';
 import '../services/location_service.dart';
 import 'habitat_details_screen.dart';
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Satelitarny interfejs wyznaczania granic nowego płatu fitosocjologicznego.
+ * Pobiera startową pozycję użytkownika w terenie. Pozwala na interaktywne
+ * dodawanie i usuwanie punktów poligonu przez dotknięcie mapy, a po zebraniu minimum
+ * 3 węzłów aktywuje przycisk przejścia do formularza opisu siedliska.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku '../viewmodels/releve_view_model.dart':
+ * - Klasa [ReleveViewModel]: Odczytuje istniejące obszary, by wyświetlić je w tle
+ * jako szary punkt odniesienia (zapobiega nakładaniu się płatów w terenie).
+ * * Z pliku '../services/location_service.dart':
+ * - Klasa [LocationService]: Służy do pobrania startowej pozycji GPS dla kamery mapy.
+ * * Z katalogu widoków:
+ * - Ekran [HabitatDetailsScreen]: Otwierany w celu uzupełnienia parametrów krytycznych nowej strefy.
+ * ============================================================================
+ */
 class ReleveMapScreen extends StatefulWidget {
   const ReleveMapScreen({super.key});
 

@@ -2,7 +2,23 @@
 import 'dart:convert';
 import 'harvest_season.dart';
 import 'has_ellenberg_profile.dart'; // Import wymaganego interfejsu
-
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Reprezentuje encję rośliny poszukiwanej przez użytkownika za pomocą matrycy ekologicznej.
+ * Zawiera preferowane "widełki" pH oraz cyfrowe, trzystanowe mapy 7 indeksów Ellenberga.
+ *
+ * Zależności wewnętrzne (pliki z /lib):
+ * * Z pliku 'harvest_season.dart':
+ * - Klasa [HarvestSeason]: Wykorzystywana do obsługi listy preferowanych terminów
+ * zbioru surowca oraz ich serializacji do formatu JSON.
+ * * Z pliku 'has_ellenberg_profile.dart':
+ * - Interfejs [HasEllenbergProfile]: Implementowany przez klasę [SoughtPlant],
+ * co gwarantuje polimorfizm i możliwość obliczania kar w EcologicalMatchingService.
+ * ============================================================================
+ */
 class SoughtPlant implements HasEllenbergProfile {
   final String id;
   final String polishName;
