@@ -10,57 +10,66 @@ import 'releve_details_screen.dart';
  * ============================================================================
  * Rola pliku:
  * Interfejs mapy dedykowany dla prezentacji wyfiltrowanych płatów fitosocjologicznych.
- * Renderuje przekazaną kolekcję obszarów jako interaktywne wielokąty (Polygons).
- * Centruje kamerę na pierwszym dopasowanym płacie i umożliwia bezpośrednią
- * nawigację do szczegółów po kliknięciu w dany obszar.
- *
- * Zależności wewnętrzne (pliki z /lib):
- * * Z pliku '../models/releve.dart':
- * - Klasa [Releve]: Model danych reprezentujący kolekcję wejściową płatów.
- * * Z katalogu widoków:
- * - Ekran [ReleveDetailsScreen]: Wywoływany w celu wyświetlenia szczegółowych statystyk
- * i analizy ekologicznej po kliknięciu w poligon płatu.
+ * Renderuje pełną pulę obszarów jako wielokąty, wyróżniając kolorem niebieskim
+ * dopasowane płaty i wyszarzając pozostałe strefy.
  * ============================================================================
  */
-
 class FilteredAreasMapScreen extends StatelessWidget {
-  final List<Releve> filteredAreas;
+  final List<Releve> allAreas;
+  final Set<String> matchedAreaIds;
 
-  const FilteredAreasMapScreen({super.key, required this.filteredAreas});
+  const FilteredAreasMapScreen({
+    super.key,
+    required this.allAreas,
+    required this.matchedAreaIds,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Punkt startowy mapy (pierwszy element lub centrum Polski)
     LatLng initialTarget = const LatLng(52.23, 21.01);
-    if (filteredAreas.isNotEmpty && filteredAreas.first.points.isNotEmpty) {
-      initialTarget = filteredAreas.first.points.first;
+
+    // Centrujemy widok kamery na pierwszym pasującym (niebieskim) obszarze
+    final matchedAreas = allAreas.where((r) => matchedAreaIds.contains(r.id) && r.points.isNotEmpty);
+    if (matchedAreas.isNotEmpty) {
+      initialTarget = matchedAreas.first.points.first;
+    } else if (allAreas.isNotEmpty && allAreas.first.points.isNotEmpty) {
+      initialTarget = allAreas.first.points.first;
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Wyniki na mapie (${filteredAreas.length})"),
+        title: Text("Wyniki na mapie (${matchedAreaIds.length})"),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
-      body: SafeArea(child:  GoogleMap(
-        initialCameraPosition: CameraPosition(target: initialTarget, zoom: 14),
-        mapType: MapType.hybrid,
-        myLocationEnabled: true,
-        polygons: filteredAreas.where((r) => r.points.isNotEmpty).map((area) {
-          return Polygon(
-            polygonId: PolygonId(area.id),
-            points: area.points,
-            fillColor: Colors.indigo.withOpacity(0.5),
-            strokeColor: Colors.indigo,
-            strokeWidth: 2,
-            consumeTapEvents: true,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => ReleveDetailsScreen(releve: area)),
-            ),
-          );
-        }).toSet(),
-      ),),
+      body: SafeArea(
+        child: GoogleMap(
+          initialCameraPosition: CameraPosition(target: initialTarget, zoom: 14),
+          mapType: MapType.hybrid,
+          myLocationEnabled: true,
+          polygons: allAreas.where((r) => r.points.isNotEmpty).map((area) {
+            final isMatched = matchedAreaIds.contains(area.id);
+
+            return Polygon(
+              polygonId: PolygonId(area.id),
+              points: area.points,
+              // Wybór koloru na podstawie dopasowania do filtra
+              fillColor: isMatched
+                  ? Colors.indigo.withOpacity(0.5)
+                  : Colors.grey.withOpacity(0.15),
+              strokeColor: isMatched
+                  ? Colors.indigo
+                  : Colors.grey.shade400,
+              strokeWidth: 2,
+              consumeTapEvents: true,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => ReleveDetailsScreen(releve: area)),
+              ),
+            );
+          }).toSet(),
+        ),
+      ),
     );
   }
 }

@@ -18,6 +18,16 @@ import 'plant_card_view.dart';
 import 'releve_details_screen.dart';
 import 'detail_description_screen.dart';
 
+/**
+ * ============================================================================
+ * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
+ * ============================================================================
+ * Rola pliku:
+ * Zaawansowana karta botaniczna gatunku flory. Zaktualizowana o system
+ * detekcji i oznaczania płatów wykazujących anomalie preferencji wskaźnikowych
+ * na bazie końcowego wyniku numerycznego (score) z silnika ekologicznego.
+ * ============================================================================
+ */
 class SpeciesDetailsScreen extends StatelessWidget {
   final String commonName;
   final PlantSpecies? species;
@@ -228,6 +238,21 @@ class SpeciesDetailsScreen extends StatelessWidget {
             )),
             const SizedBox(height: 40),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Colors.teal,
+          letterSpacing: 1.1,
         ),
       ),
     );

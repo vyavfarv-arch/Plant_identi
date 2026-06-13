@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/habitat_info.dart';
 import '../viewmodels/search_filter_view_model.dart';
-import '../viewmodels/releve_view_model.dart'; // DODANO: Obsługa pobierania listy płatów
-import 'filtered_areas_map_screen.dart'; // DODANO: Nawigacja do poligonów na mapie
+import '../viewmodels/releve_view_model.dart';
+import 'filtered_areas_map_screen.dart';
 
 /**
  * ============================================================================
@@ -12,18 +12,7 @@ import 'filtered_areas_map_screen.dart'; // DODANO: Nawigacja do poligonów na m
  * ============================================================================
  * Rola pliku:
  * Ekran zaawansowanego filtrowania parametrów środowiskowych i glebowych płatów.
- * Zaktualizowany o podwójną akcję wykonawczą: zatwierdzenie filtrów dla widoku
- * listy oraz bezpośrednie przejście do wizualizacji satelitarnej dopasowanych poligonów.
- *
- * Zależności wewnętrzne (pliki z /lib):
- * * Z pliku '../models/habitat_info.dart':
- * - Klasa [HabitatInfo]: Dostarcza statyczne opcje słownikowe do zasilenia kontrolek UI.
- * * Z pliku '../viewmodels/search_filter_view_model.dart':
- * - Klasa [SearchFilterViewModel]: Służy do odczytu i aplikowania ustawionych filtrów.
- * * Z pliku '../viewmodels/releve_view_model.dart':
- * - Klasa [ReleveViewModel]: Wykorzystywana do pobrania pełnej puli płatów przed mapowaniem.
- * * Z katalogu widoków:
- * - Ekran [FilteredAreasMapScreen]: Otwierany po kliknięciu dedykowanego przycisku mapy.
+ * Przekazuje pełne listy i zestawy ID do wielokolorowej mapy satelitarnej.
  * ============================================================================
  */
 class AreaFilterScreen extends StatefulWidget {
@@ -117,16 +106,14 @@ class _AreaFilterScreenState extends State<AreaFilterScreen> {
             ),
             const SizedBox(height: 40),
 
-            // PIERWSZY PRZYCISK: Filtrowanie dla widoku tradycyjnej listy
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 15)),
               onPressed: () { _applyFiltersToViewModel(); Navigator.pop(context); },
-              child: const Text("ZASTOSUJ FILTRY", style: TextStyle(fontWeight: FontWeight.bold)),
+              child: const Text("ZASTOSUJ FILTRY (LISTA)", style: TextStyle(fontWeight: FontWeight.bold)),
             ),
 
-            const SizedBox(height: 12), // Odstęp między przyciskami wykonawczymi
+            const SizedBox(height: 12),
 
-            // DRUGI PRZYCISK: NOWOŚĆ - Aplikowanie kryteriów i natychmiastowy rzut na mapę satelitarną
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange.shade800,
@@ -135,7 +122,7 @@ class _AreaFilterScreenState extends State<AreaFilterScreen> {
               ),
               onPressed: _showOnMap,
               icon: const Icon(Icons.map),
-              label: const Text("Pokaż na mapie", style: TextStyle(fontWeight: FontWeight.bold)),
+              label: const Text("ZASTOSUJ FILTRY (MAPA)", style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -171,15 +158,12 @@ class _AreaFilterScreenState extends State<AreaFilterScreen> {
     );
   }
 
-  // Akcja filtrująca i przekierowująca bezpośrednio na ekran wielokątów mapy
   void _showOnMap() {
-    // 1. Zapisujemy aktualne tymczasowe stany kontrolek do globalnego stanu filtrów
     _applyFiltersToViewModel();
-
     final releveVm = context.read<ReleveViewModel>();
+    final allAreas = releveVm.allReleves;
 
-    // 2. Wyliczamy dopasowane płaty na podstawie identycznej logiki jak w ReleveListMapScreen
-    final filtered = releveVm.allReleves.where((r) {
+    final filtered = allAreas.where((r) {
       final h = r.habitat;
       if (h == null) return !_hasAnyActiveFilter();
 
@@ -205,7 +189,6 @@ class _AreaFilterScreenState extends State<AreaFilterScreen> {
       return true;
     }).toList();
 
-    // 3. Sprawdzamy guard czy cokolwiek znaleziono, aby nie otwierać pustej mapy
     if (filtered.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -216,11 +199,15 @@ class _AreaFilterScreenState extends State<AreaFilterScreen> {
       return;
     }
 
-    // 4. Przekierowujemy bezpośrednio na mapę ze skompletowaną listą poligonów
+    final matchedIds = filtered.map((e) => e.id).toSet();
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => FilteredAreasMapScreen(filteredAreas: filtered),
+        builder: (_) => FilteredAreasMapScreen(
+          allAreas: allAreas,
+          matchedAreaIds: matchedIds,
+        ),
       ),
     );
   }

@@ -9,27 +9,14 @@ import '../services/spatial_service.dart';
 import 'plant_card_view.dart';
 import 'habitat_form_screen.dart';
 import 'filtered_areas_map_screen.dart';
+
 /**
  * ============================================================================
  * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
  * ============================================================================
  * Rola pliku:
- * Kompleksowa karta szczegółów płatu fitosocjologicznego. Prezentuje listę
- * rzeczywistych okazów występujących w jego granicach (powiązanych geometrycznie),
- * wylicza listę gatunków potencjalnych na bazie silnika dopasowań Ellenberga,
- * prezentuje zunifikowane sygnatury osi diagnostycznych oraz wyzwala asynchroniczną analizę.
- *
- * Zależności wewnętrzne (pliki z /lib):
- * * Z pliku '../models/releve.dart':
- * - Klasa [Releve]: Główny obiekt kontekstowy poddawany ewaluacji.
- * * Z katalogu '../viewmodels/':
- * - Klasa [ReleveViewModel]: Obsługuje akcje kasowania płatu oraz zapis predykcji ekologicznych.
- * - Klasa [ObservationViewModel]: Udostępnia słownik gatunków oraz listę wszystkich kompletnych obserwacji.
- * * Z katalogu '../services/':
- * - Klasa [SpatialService]: Odfiltrowuje rzeczywiste rośliny znajdujące się wewnątrz poligonu obszaru.
- * - Klasa [EcologicalMatchingService]: Główny motor obliczeniowy: dostarcza diagnozę osi (✓/✗/?) oraz rankinguje gatunki potencjalne.
- * * Z katalogu widoków:
- * - [PlantCardView], [FilteredAreasMapScreen], [HabitatFormScreen], [ReleveDetailsScreen] (rekurencyjna nawigacja podobszarów).
+ * Kompleksowa karta szczegółów płatu fitosocjologicznego. Zaktualizowana o nową
+ * strukturę wywołania mapy satelitarnej wyfiltrowanych poligonów.
  * ============================================================================
  */
 class ReleveDetailsScreen extends StatefulWidget {
@@ -47,7 +34,6 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
   Widget build(BuildContext context) {
     final releveVm = context.watch<ReleveViewModel>();
     final obsVm = context.watch<ObservationViewModel>();
-    // FIX WARNINGA: Usunięto nieużywany obiekt filterVm, czyszcząc konsolę lintera
 
     final currentReleve = releveVm.allReleves.firstWhere(
             (r) => r.id == widget.releve.id,
@@ -81,7 +67,7 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
       ),
       body: SafeArea(child: ListView(
         children: [
-          _buildActionSection(context, currentReleve, childrenAreas),
+          _buildActionSection(context, currentReleve, childrenAreas, releveVm),
           const Divider(),
 
           _buildSectionHeader("Gatunki w płacie (${actualPlants.length}):", Colors.grey[100]!),
@@ -102,13 +88,11 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
               final plantSpecies = obsVm.speciesDictionary.firstWhere((s) => s.polishName.toLowerCase() == entry.key.toLowerCase());
               final match = EcologicalMatchingService.calculateCompatibility(currentReleve, plantSpecies);
 
-              // Mapowanie unikalnego wektora osi diagnostycznych Ellenberga (7 osi)
               final diagStr = match.diagnostics.entries.map((e) => "${e.key}:${e.value}").join("  ");
 
               return ListTile(
                 leading: const Icon(Icons.auto_awesome, color: Colors.purple),
                 title: Text(entry.key),
-                // FIX UX: Usunięto informacje procentowe zgodnie z prośbą, zostawiając czystą, zunifikowaną sygnaturę [L:✓ F:✓ R:✗ ...]
                 subtitle: Text("Siedlisko: [$diagStr]"),
               );
             }).toList(),
@@ -133,12 +117,27 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
 
   Widget _buildSectionHeader(String title, Color color) => Container(padding: const EdgeInsets.all(16), color: color, child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)));
 
-  Widget _buildActionSection(BuildContext context, Releve currentReleve, List<Releve> children) {
+  Widget _buildActionSection(BuildContext context, Releve currentReleve, List<Releve> children, ReleveViewModel releveVm) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Column(
         children: [
-          ListTile(leading: const Icon(Icons.map, color: Colors.indigo), title: const Text("Wyświetl obszar na mapie", style: TextStyle(fontWeight: FontWeight.bold)), subtitle: const Text("Centrowanie widoku na granicach płatu"), trailing: const Icon(Icons.open_in_new, size: 20), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => FilteredAreasMapScreen(filteredAreas: [currentReleve])))),
+          ListTile(
+            leading: const Icon(Icons.map, color: Colors.indigo),
+            title: const Text("Wyświetl obszar na mapie", style: TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: const Text("Centrowanie widoku na granicach płatu"),
+            trailing: const Icon(Icons.open_in_new, size: 20),
+            // ZAKTUALIZOWANO: Przekazujemy wszystkie płaty z bazy i podświetlamy tylko ten jeden aktywny
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => FilteredAreasMapScreen(
+                  allAreas: releveVm.allReleves,
+                  matchedAreaIds: {currentReleve.id},
+                ),
+              ),
+            ),
+          ),
           ListTile(leading: const Icon(Icons.landscape, color: Colors.brown), title: const Text("Informacje o siedlisku"), subtitle: Text(currentReleve.habitat == null ? "Brak opisu gleby i terenu" : "Siedlisko opisane szczegółowo"), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HabitatFormScreen(releve: currentReleve)))),
           if (children.isNotEmpty)
             ExpansionTile(leading: const Icon(Icons.account_tree_outlined, color: Colors.blueGrey), title: Text("Podobszary / Jednostki niższe (${children.length})"), children: children.map((c) => ListTile(title: Text(c.commonName), subtitle: Text("${c.type}: ${c.phytosociologicalName}"), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReleveDetailsScreen(releve: c))))).toList()),
