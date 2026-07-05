@@ -161,8 +161,13 @@ class _ResultsMapScreenState extends State<ResultsMapScreen> {
 
   void _markAsAbsent(BuildContext context, Releve area) async {
     final obsVm = context.read<ObservationViewModel>();
+
+    // POPRAWKA LOGIKI: Wyszukujemy klucz z tabeli 'plant_species' na podstawie nazwy łacińskiej zamiast wstrzykiwać ID z 'sought_plants' (zapobiega Foreign Key Constraint Failed crashowi)
+    final existingSpecies = obsVm.findSpeciesByLatinName(widget.targetPlant.latinName);
+    final String? targetSpeciesId = existingSpecies?.speciesID;
+
     final absentObs = PlantObservation(
-      id: const Uuid().v4(), releveId: area.id, speciesId: widget.targetPlant.id, localName: widget.targetPlant.polishName, subspecies: "",
+      id: const Uuid().v4(), releveId: area.id, speciesId: targetSpeciesId, localName: widget.targetPlant.polishName, subspecies: "",
       latitude: area.points.first.latitude, longitude: area.points.first.longitude, timestamp: DateTime.now(), photoPaths: [], characteristics: {}, abundance: "Brak", observationDate: DateTime.now(),
     );
     await obsVm.addObservation(absentObs);

@@ -1,6 +1,7 @@
-// lib/views/widgets/add_observation_morphology_step2.dart
+// lib/views/add_observation_morphology_step2.dart
 import 'package:flutter/material.dart';
 import '../../models/description_schema.dart';
+
 /**
  * ============================================================================
  * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
@@ -8,29 +9,32 @@ import '../../models/description_schema.dart';
  * Rola pliku:
  * Widżet reprezentujący Krok 2 w trybie szczegółowej ewidencji. Generuje
  * dynamiczne drzewo ExpansionTile z cechami organów roślinnych dopasowane
- * do wybranego wcześniej typu biologicznego taksonu.
+ * do wybranego wcześniej typu biologicznego oraz filtru fenologicznego taksonu.
  *
  * Zależności wewnętrzne (pliki z /lib):
  * * Z pliku '../../models/description_schema.dart':
  * - Klasa [SchemaGenerator]: Wywoływana w celu pobrania sformalizowanego schematu
- * cech diagnostycznych i ścieżek edukacyjnych grafik referencyjnych.
+ * cech diagnostycznych przefiltrowanego pod kątem etapu rozwoju fenologicznego.
  * ============================================================================
  */
 class AddObservationMorphologyStep2 extends StatelessWidget {
   final String? selectedType;
+  final String? selectedPhenology; // NOWOŚĆ: Przekazanie etapu z kroku 1
   final Map<String, List<String>> morphologyValues;
   final Function(String, String, bool) onTraitToggled;
 
   const AddObservationMorphologyStep2({
     super.key,
     required this.selectedType,
+    this.selectedPhenology, // NOWOŚĆ
     required this.morphologyValues,
     required this.onTraitToggled,
   });
 
   @override
   Widget build(BuildContext context) {
-    final schema = SchemaGenerator.getForType(selectedType ?? "Zielne");
+    // POPRAWKA: Przekazanie selectedPhenology do dynamicznego odfiltrowania organów
+    final schema = SchemaGenerator.getForType(selectedType ?? "Zielne", phenologicalStage: selectedPhenology);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -109,6 +109,7 @@ class _AddObservationScreenState extends State<AddObservationScreen> {
                   )
                       : AddObservationMorphologyStep2(
                     selectedType: _selectedType,
+                    selectedPhenology: _selectedPhenology, // POPRAWKA: Przekazanie wybranego stanu fenologii
                     morphologyValues: _morphologyValues,
                     onTraitToggled: (category, trait, isSelected) {
                       setState(() {

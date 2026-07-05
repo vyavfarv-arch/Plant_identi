@@ -37,7 +37,7 @@ class PlantCardView {
     final species = obsVm.getSpeciesById(obs.speciesId);
 
     final biologicalType = species?.biologicalType ?? obs.tempBiologicalType ?? "Zielne";
-    final schema = SchemaGenerator.getForType(biologicalType);
+    final schema = SchemaGenerator.getForType(biologicalType, phenologicalStage: obs.phenologicalStage);
 
     final harvestData = obs.customHarvestSeasons.isNotEmpty
         ? obs.customHarvestSeasons

@@ -76,6 +76,11 @@ class _FormScreenState extends State<FormScreen> {
       currentTraits: _selectedValues, activeArea: activeArea, speciesDictionary: obsVm.speciesDictionary,
     );
 
+    final stageFilteredSchema = SchemaGenerator.getForType(
+      widget.observation.tempBiologicalType ?? "Zielne",
+      phenologicalStage: widget.observation.phenologicalStage,
+    );
+
     return Scaffold(
       appBar: AppBar(title: const Text('Identyfikacja i Opis Cech')),
       body: SafeArea(

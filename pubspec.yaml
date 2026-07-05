@@ -12,37 +12,25 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Zarządzanie stanem i formatowanie
   provider: ^6.1.1
   intl: ^0.19.0
+  sqflite: ^2.3.0
+  path: ^1.9.1
+  path_provider: ^2.1.0
+  file_picker: ^8.0.0      # NOWOŚĆ: Dodane do obsługi przywracania bazy z pliku
 
-  # Przechowywanie danych (Lokalna baza i cache)
-  shared_preferences: ^2.2.0
-  sqflite: ^2.3.0        # NOWE: Silnik bazy danych SQLite
-  path: ^1.9.1           # NOWE: Zarządzanie ścieżkami bazy danych
-  path_provider: ^2.1.0  # Dostęp do folderów systemowych
-
-  # Moduły sprzętowe i Mapy
   camera: ^0.11.0+1
   geolocator: ^12.0.0
   google_maps_flutter: ^2.5.0
-
-  # Narzędzia dodatkowe
-  uuid: ^4.3.3           # Generowanie unikalnych ID dla rekordów w bazie
+  uuid: ^4.3.3
   timezone: ^0.9.2
   flutter_local_notifications: ^17.0.0
   flutter_timezone: ^3.0.0
   cupertino_icons: ^1.0.8
   share_plus: ^10.1.0
 
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^2.0.0
-
 flutter:
   uses-material-design: true
-
   assets:
     - assets/grass.png
     - assets/ref/

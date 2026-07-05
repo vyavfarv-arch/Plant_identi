@@ -1,3 +1,4 @@
+// lib/models/description_schema.dart
 
 /**
  * ============================================================================
@@ -8,6 +9,7 @@
  * na typy biologiczne (Drzewo, Krzew, Zielne, Grzyb, Mszaki). Pełni funkcję
  * bazy dydaktycznej (podpowiedzi edukacyjne), dostarczając opisy cech morfologicznych
  * oraz ścieżki do grafik referencyjnych ułatwiających terenową identyfikację.
+ * Zaktualizowany o dynamiczne filtrowanie struktur na podstawie etapu fenologicznego.
  *
  * Zależności wewnętrzne (pliki z /lib):
  * - Brak bezpośrednich importów innych plików z /lib. Stanowi zamkniętą, niezależną
@@ -20,7 +22,6 @@ class DescriptionCategory {
   final String number;
   final String title;
   final Map<String, List<String>> subCategories;
-  // Mapa przechowująca ścieżki do zdjęć poglądowych dla konkretnych opcji
   final Map<String, String>? referenceImages;
   final Map<String, String>? imageDescriptions;
 
@@ -34,15 +35,81 @@ class DescriptionCategory {
 }
 
 class SchemaGenerator {
-  static List<DescriptionCategory> getForType(String type) {
+  // POPRAWKA: Dodanie parametru phenologicalStage do inteligentnego filtrowania cech organów
+  static List<DescriptionCategory> getForType(String type, {String? phenologicalStage}) {
+    List<DescriptionCategory> categories;
     switch (type) {
       case "Grzyb": return _fungusSchema();
       case "Mszaki": return _bryophyteSchema();
-      case "Zielne": return _herbaceousSchema();
-      case "Drzewo": return _treeSchema();
-      case "Krzew": return _shrubSchema();
-      default: return _herbaceousSchema();
+      case "Zielne": categories = _herbaceousSchema(); break;
+      case "Drzewo": categories = _treeSchema(); break;
+      case "Krzew": categories = _shrubSchema(); break;
+      default: categories = _herbaceousSchema(); break;
     }
+
+    // Jeśli etap fenologiczny nie został określony, zwracamy pełny schemat bazowy
+    if (phenologicalStage == null || phenologicalStage.isEmpty) {
+      return categories;
+    }
+
+    List<DescriptionCategory> filtered = [];
+    for (var cat in categories) {
+      final title = cat.title.toLowerCase().trim();
+
+      // REGÓŁA 1: W fazie czysto wegetatywnej ukrywamy wszelkie organy generatywne (kwiaty, owoce)
+      if (phenologicalStage == "Wegetatywny") {
+        if (title.contains("kwiat") || title.contains("owoc") || title.contains("rozrodcze")) {
+          continue;
+        }
+      }
+      // REGÓŁA 2: W fazie pączkowania i kwitnienia ukrywamy rozwinięte owoce, ale zostawiamy kwiaty
+      else if (phenologicalStage == "Pączkowanie" || phenologicalStage == "Kwitnienie") {
+        if (title.contains("owoc")) {
+          continue;
+        }
+        // Dla drzew (kategoria połączona): odfiltrowujemy wyłącznie podkategorię "Typ" zawierającą owoce
+        if (title == "organy rozrodcze") {
+          final newSub = Map<String, List<String>>.from(cat.subCategories)..remove("Typ");
+          filtered.add(DescriptionCategory(
+            number: cat.number,
+            title: cat.title,
+            subCategories: newSub,
+            referenceImages: cat.referenceImages,
+            imageDescriptions: cat.imageDescriptions,
+          ));
+          continue;
+        }
+      }
+      // REGÓŁA 3: W fazie owocowania i rozsiewania nasion ukrywamy świeże kwiaty, eksponujemy owoce
+      else if (phenologicalStage == "Owocowanie" || phenologicalStage == "Rozsiewanie") {
+        if (title == "kwiatostany" || title == "kwiaty i kwiatostany") {
+          continue;
+        }
+        // Dla drzew: odfiltrowujemy podkategorie czysto kwitnieniowe z organów rozrodczych
+        if (title == "organy rozrodcze") {
+          final newSub = Map<String, List<String>>.from(cat.subCategories)
+            ..remove("Kwitnienie")
+            ..remove("Kwiatostany");
+          filtered.add(DescriptionCategory(
+            number: cat.number,
+            title: cat.title,
+            subCategories: newSub,
+            referenceImages: cat.referenceImages,
+            imageDescriptions: cat.imageDescriptions,
+          ));
+          continue;
+        }
+      }
+      // REGÓŁA 4: W stanie spoczynku zimowego ukrywamy liście oraz organy generatywne (zostaje kora, pędy, pąki zimowe)
+      else if (phenologicalStage == "Spoczynek") {
+        if (title.contains("kwiat") || title.contains("owoc") || title.contains("rozrodcze") || title == "liście") {
+          continue;
+        }
+      }
+
+      filtered.add(cat);
+    }
+    return filtered;
   }
 
   static List<DescriptionCategory> _fungusSchema() {
@@ -214,12 +281,12 @@ class SchemaGenerator {
         },
       ),
       DescriptionCategory(
-        number: "2",
-        title: "Kora",
-        subCategories: {
-          "Struktura": ["gładka","spękana", "spękana podłużnie", "łuszcząca się płatami", "z przetchlinkami"],
-          "Barwa korowiny": ["srebrzystobiała", "popielata", "oliwkowa", "miedziana", "brunatna", "czarniawa"],
-        },
+          number: "2",
+          title: "Kora",
+          subCategories: {
+            "Struktura": ["gładka","spękana", "spękana podłużnie", "łuszcząca się płatami", "z przetchlinkami"],
+            "Barwa korowiny": ["srebrzystobiała", "popielata", "oliwkowa", "miedziana", "brunatna", "czarniawa"],
+          },
           referenceImages: {
             "gładka": "assets/ref/drzewo/kora/kora_gladka.png",
             "łuszcząca się płatami": "assets/ref/drzewo/kora/kora_odchodzaca.png",
@@ -264,21 +331,21 @@ class SchemaGenerator {
   static List<DescriptionCategory> _herbaceousSchema() {
     return [
       DescriptionCategory(
-          number: "1",
-          title: "System korzeniowy",
-          subCategories: {
-            "Typ": ["palowy", "wiązkowy", "kłączowy","bulwy", "cebula"],
-            "Głębokość": ["płytki", "średni", "głęboki"]
-          },
+        number: "1",
+        title: "System korzeniowy",
+        subCategories: {
+          "Typ": ["palowy", "wiązkowy", "kłączowy","bulwy", "cebula"],
+          "Głębokość": ["płytki", "średni", "głęboki"]
+        },
         referenceImages: {
           "palowy": "assets/ref/zielne/korzen/korzen_palowy.png",
           "wiązkowy": "assets/ref/zielne/korzen/korzen_wiazkowy.png",
           "kłączowy": "assets/ref/zielne/korzen/korzen_klacze.png",
           "bulwy": "assets/ref/zielne/korzen/korzen_bulwa.png",
           "cebula": "assets/ref/zielne/korzen/korzen_cebula.png",
-          "płytki": "assets/grass.png",
-          "średni": "assets/grass.png",
-          "głęboki": "assets/grass.png",
+          "płytki": "assets/ref/zielne/korzen/korzen_plytki.png",
+          "średni": "assets/ref/zielne/korzen/korzen_sredni.png",
+          "głęboki": "assets/ref/zielne/korzen/korzen_gleboki.png",
         },
         imageDescriptions: {
           "palowy": "System z jednym wyraźnym korzeniem głównym rosnącym pionowo w dół i mniejszymi korzeniami bocznymi.",
@@ -303,7 +370,7 @@ class SchemaGenerator {
           "Mleczko": ["przezroczyste", "białe","inne"],
         },
         referenceImages: {
-          "zielna": "assets/grass.png", "zdrewniała": "assets/grass.png", "półzdrewniała": "assets/grass.png",
+          "zielna": "assets/ref/zielne/lodyga/lodyga_zielna.png", "zdrewniała": "assets/grass.png", "półzdrewniała": "assets/grass.png",
           "okrągły": "assets/grass.png", "kanciasty": "assets/grass.png", "bruzdowany": "assets/grass.png", "spłaszczony": "assets/grass.png",
           "gładka": "assets/grass.png", "owłosiona": "assets/grass.png", "szorstka": "assets/grass.png", "lepka": "assets/grass.png", "woskowa": "assets/grass.png",
           "proste": "assets/grass.png", "gruczołowe": "assets/grass.png", "haczykowate": "assets/grass.png", "kutnerowate": "assets/grass.png",
@@ -337,49 +404,37 @@ class SchemaGenerator {
 
       ),
       DescriptionCategory(
-          number: "3",
-          title: "Liście",
-          subCategories: {
-            "Ulistnienie": ["skrętoległe", "naprzeciwległe", "okółkowe"],
-            "Typ liścia": ["niepodzielne","wrębne", "dzielne", "klapowate", "sieczne"],
-            "Kształt blaszki": ["igiełkowy", "równowąski", "lancetowaty", "eliptyczny", "jajowaty", "sercowaty", "łopatowaty", "owalny", "odwrotnie jajowaty", "strzałkowaty", "nerkowy"],
-            "Brzeg Liścia": ["całobrzegi", "piłkowany", "ząbkowany", "karbowany", "falisty", "kolczasty","podwójnie pikowany","podwójnie ząbkowany", "podwójnie karbowany"],
-            "Unerwienie": ["pierzaste", "dłoniaste", "równoległe"],
-          },referenceImages: {
-        // Ulistnienie
+        number: "3",
+        title: "Liście",
+        subCategories: {
+          "Ulistnienie": ["skrętoległe", "naprzeciwległe", "okółkowe"],
+          "Typ liścia": ["niepodzielne","wrębne", "dzielne", "klapowate", "sieczne"],
+          "Kształt blaszki": ["igiełkowy", "równowąski", "lancetowaty", "eliptyczny", "jajowaty", "sercowaty", "łopatowaty", "owalny", "odwrotnie jajowaty", "strzałkowaty", "nerkowy"],
+          "Brzeg Liścia": ["całobrzegi", "piłkowany", "ząbkowany", "karbowany", "falisty", "kolczasty","podwójnie pikowany","podwójnie ząbkowany", "podwójnie karbowany"],
+          "Unerwienie": ["pierzaste", "dłoniaste", "równoległe"],
+        },referenceImages: {
         "skrętoległe": "assets/ref/zielne/liscie/lisc_skretolegly.png",
         "naprzeciwległe": "assets/ref/zielne/liscie/liscie_naprzeciwlegle.png",
         "okółkowe": "assets/ref/zielne/liscie/lisc_okolkowe.png",
-
-        // Typ liścia (używamy dostępnych lub dummy)
         "niepodzielne": "assets/grass.png", "wrębne": "assets/grass.png", "dzielne": "assets/grass.png",
         "klapowate": "assets/grass.png", "sieczne": "assets/grass.png",
         "pierzasty": "assets/ref/zielne/liscie/lisc_pierzasty.png",
         "dłoniasty": "assets/ref/zielne/liscie/lisc_dloniasty.png",
-
-        // Kształt blaszki (dummy)
         "igiełkowy": "assets/grass.png", "równowąski": "assets/grass.png", "lancetowaty": "assets/grass.png",
         "eliptyczny": "assets/grass.png", "jajowaty": "assets/grass.png", "sercowaty": "assets/grass.png",
         "łopatowaty": "assets/grass.png", "owalny": "assets/grass.png", "odwrotnie jajowaty": "assets/grass.png",
         "strzałkowaty": "assets/grass.png", "nerkowy": "assets/grass.png",
-
-        // Brzeg (dummy)
         "całobrzegi": "assets/grass.png", "piłkowany": "assets/grass.png", "ząbkowany": "assets/grass.png",
         "karbowany": "assets/grass.png", "falisty": "assets/grass.png", "kolczasty": "assets/grass.png",
         "podwójnie pikowany": "assets/grass.png", "podwójnie ząbkowany": "assets/grass.png", "podwójnie karbowany": "assets/grass.png",
-
-        // Unerwienie
         "pierzaste": "assets/ref/zielne/liscie/lisc_pierzasty.png",
         "dłoniaste": "assets/ref/zielne/liscie/lisc_dloniasty.png",
         "równoległe": "assets/ref/zielne/liscie/lisc_rownolegly.png",
       },
         imageDescriptions: {
-          // Ulistnienie
           "skrętoległe": "Liście wyrastają pojedynczo z węzłów, tworząc spiralę wokół łodygi.",
           "naprzeciwległe": "Z jednego węzła wyrastają dwa liście położone po przeciwnych stronach łodygi.",
           "okółkowe": "Z jednego węzła wyrastają co najmniej trzy liście, tworząc pierścień (okółek) dookoła pędu.",
-
-          // Typ liścia
           "niepodzielne": "Blaszka liściowa o ciągłym obrysie, bez głębokich wcięć sięgających nerwu głównego.",
           "wrębne": "Wcięcia w blaszce są płytkie, sięgają nie dalej niż do 1/4 odległości od brzegu do nerwu głównego.",
           "dzielne": "Głębokie wcięcia sięgające do około połowy szerokości blaszki liściowej.",
@@ -387,8 +442,6 @@ class SchemaGenerator {
           "sieczne": "Bardzo głębokie wcięcia sięgające niemal do samego nerwu głównego lub nasady liścia.",
           "pierzasty": "Liść złożony z mniejszych listków wyrastających parami wzdłuż wspólnej osi (ogonka pomocniczego).",
           "dłoniasty": "Listki lub klapy liścia wyrastają promieniście z jednego wspólnego punktu u nasady ogonka.",
-
-          // Kształt blaszki
           "igiełkowy": "Liście bardzo wąskie, sztywne i zwykle ostro zakończone, przypominające igły (np. u iglaków).",
           "równowąski": "Liść o niemal stałej szerokości na całej długości, znacznie dłuższy niż szerszy.",
           "lancetowaty": "Kształt wydłużony, najszerszy poniżej środka, zwężający się ku obu końcom (jak grot lancy).",
@@ -400,8 +453,6 @@ class SchemaGenerator {
           "odwrotnie jajowaty": "Podobny do jajowatego, ale szerszy u góry (przy szczycie) niż przy nasadzie.",
           "strzałkowaty": "Nasada liścia posiada ostre klapy skierowane w dół, przypominając grot strzały.",
           "nerkowy": "Szeroki, zaokrąglony liść z głębokim, łagodnym wcięciem u nasady.",
-
-          // Brzeg liścia
           "całobrzegi": "Krawędź blaszki liściowej jest całkowicie gładka, bez żadnych wycięć.",
           "piłkowany": "Brzeg z ostrymi ząbkami skierowanymi wyraźnie w stronę szczytu liścia.",
           "ząbkowany": "Ząbki o równych bokach, skierowane prostopadle do krawędzi liścia.",
@@ -411,8 +462,6 @@ class SchemaGenerator {
           "podwójnie pikowany": "Większe ząbki piłkowane posiadają na sobie dodatkowe, mniejsze ząbki.",
           "podwójnie ząbkowany": "System zębów, gdzie każdy ząb główny jest dodatkowo powcinany.",
           "podwójnie karbowany": "Krawędź z dużymi karbami, które same są dodatkowo delikatnie karbowane.",
-
-          // Unerwienie
           "pierzaste": "Jeden wyraźny nerw główny przebiega przez środek, a od niego odchodzą nerwy boczne.",
           "dłoniaste": "Kilka głównych nerwów o podobnej grubości rozchodzi się promieniście od nasady blaszki.",
           "równoległe": "Liczne, drobne nerwy biegną wzdłuż liścia niemal równolegle do siebie (typowe dla traw).",
@@ -439,7 +488,6 @@ class SchemaGenerator {
           "wiecha": "assets/ref/zielne/kwiat/kwiat_wiecha.png",
           "wiechotka": "assets/ref/zielne/kwiat/kwiat_wiechotka.png",
           "wiechotka złożona": "assets/ref/zielne/kwiat/kwiat_wiechotka_wielo.PNG",
-          // Dodane dla zapachu (dummy picture)
           "brak": "assets/grass.png",
           "słaby": "assets/grass.png",
           "intensywny": "assets/grass.png",
@@ -453,7 +501,7 @@ class SchemaGenerator {
           "kłos": "Kwiaty bezszypułkowe (siedzące) osadzone bezpośrednio wzdłuż wydłużonej osi głównej.",
           "główka": "Kwiaty siedzące lub na bardzo krótkich szypułkach, gęsto skupione na skróconej, kulistej osi (np. u koniczyny).",
           "baldach podwójny": "Z osi głównej wyrastają baldaszki (baldachy mniejszego rzędu) zamiast pojedynczych kwiatów (typowy dla selerowatych).",
-          "kłos złożony": "Na osi głównej zamiast pojedynczych kwiatów osadzone są mniejsze kłoski (charakterystyczny dla traw).",
+          "kłos złożony": "Na osi głównej zamiast pojedynczych kwiatów osadzone są mniejsze kłoski (charakterystyczny dla traz).",
           "sierpik": "Kwiatostan wierzchotkowy, w którym kolejne osie boczne wyrastają zawsze po jednej stronie, zwijając się na kształt sierpa.",
           "wachlarz": "Odmiana wierzchotki, w której kwiaty wyrastają naprzemiennie po obu stronach osi, tworząc płaską strukturę przypominającą wachlarz.",
           "wiechotka": "Kwiatostan, w którym oś główna kończy się kwiatem, a poniżej wyrastają jedna lub dwie osie boczne (również zakończone kwiatami).",
@@ -476,7 +524,6 @@ class SchemaGenerator {
           "torebka": "assets/ref/zielne/owoce/owoc_torebka.png",
           "niełupka": "assets/ref/zielne/owoce/owoc_nielupka.png",
           "strąk": "assets/ref/zielne/owoce/owoc_strak.png",
-          // Zdjęcia zastępcze dla smaków
           "gorzki": "assets/grass.png",
           "słodki": "assets/grass.png",
           "cierpki": "assets/grass.png",
@@ -489,7 +536,6 @@ class SchemaGenerator {
           "torebka": "Owoc suchy, pękający, wielonasienny.",
           "niełupka": "Owoc suchy, jednonasienny, o skórzastej owocni (np. słonecznik).",
           "strąk": "Owoc suchy, pękający dwoma szwami (np. fasola).",
-          // Opisy smaków
           "gorzki": "Smak wywołujący wrażenie goryczy, często związany z obecnością alkaloidów lub glikozydów.",
           "słodki": "Przyjemny smak kojarzony z obecnością cukrów, często zachęcający zwierzęta do zjadania owoców i rozsiewania nasion.",
           "cierpki": "Wrażenie ściągania w ustach, typowe dla owoców bogatych w garbniki lub kwasy organiczne.",

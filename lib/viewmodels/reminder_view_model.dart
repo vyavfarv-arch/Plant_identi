@@ -46,9 +46,9 @@ class ReminderViewModel extends ChangeNotifier {
     );
     await _db.insertReminder(reminder);
 
-    // WYSYŁAMY DO SYSTEMU ANDROID
     if (!reminder.isMuted) {
-      await _notifService.scheduleNotification(id: reminder.id.hashCode, title: reminder.title, body: reminder.body, scheduledTime: reminder.scheduledTime);
+      // POPRAWKA: .abs() zabezpiecza przed ujemnymi ID odrzucanymi przez Androida
+      await _notifService.scheduleNotification(id: reminder.id.hashCode.abs(), title: reminder.title, body: reminder.body, scheduledTime: reminder.scheduledTime);
     }
     await loadFromDisk();
   }
@@ -60,36 +60,39 @@ class ReminderViewModel extends ChangeNotifier {
     );
     await _db.insertReminder(reminder);
 
-    // WYSYŁAMY DO SYSTEMU ANDROID (np. przypomnienie o 9:00 rano w dniu startu)
     if (!reminder.isMuted) {
       final alarmTime = DateTime(startDate.year, startDate.month, startDate.day, 9, 0);
-      await _notifService.scheduleNotification(id: reminder.id.hashCode, title: reminder.title, body: reminder.body, scheduledTime: alarmTime);
+      // POPRAWKA: .abs()
+      await _notifService.scheduleNotification(id: reminder.id.hashCode.abs(), title: reminder.title, body: reminder.body, scheduledTime: alarmTime);
     }
     await loadFromDisk();
   }
 
   Future<void> toggleMute(String id, bool currentMute) async {
     final newMuteStatus = !currentMute;
-
     await _db.updateReminderMuteStatus(id, newMuteStatus);
 
     final reminder = _reminders.firstWhere((r) => r.id == id);
     if (newMuteStatus) {
-      await _notifService.cancelNotification(reminder.id.hashCode);
+      // POPRAWKA: .abs()
+      await _notifService.cancelNotification(reminder.id.hashCode.abs());
     } else if (!reminder.isCompleted && reminder.scheduledTime.isAfter(DateTime.now())) {
-      await _notifService.scheduleNotification(id: reminder.id.hashCode, title: reminder.title, body: reminder.body, scheduledTime: reminder.scheduledTime);
+      // POPRAWKA: .abs()
+      await _notifService.scheduleNotification(id: reminder.id.hashCode.abs(), title: reminder.title, body: reminder.body, scheduledTime: reminder.scheduledTime);
     }
-
     await loadFromDisk();
   }
+
   Future<void> toggleReminderStatus(String id, bool isCompleted) async {
     await _db.updateReminderStatus(id, isCompleted);
-    if (isCompleted) await _notifService.cancelNotification(id.hashCode); // Jeśli zakończono ręcznie, anuluj powiadomienie
+    // POPRAWKA: Spójne odwołanie do przekazanego id.hashCode.abs() zapobiega anulowaniu złego powiadomienia
+    if (isCompleted) await _notifService.cancelNotification(id.hashCode.abs());
     await loadFromDisk();
   }
 
   Future<void> deleteReminder(String id) async {
-    await _notifService.cancelNotification(id.hashCode); // Kasujemy z systemu telefonu
+    // POPRAWKA: .abs()
+    await _notifService.cancelNotification(id.hashCode.abs());
     await _db.deleteReminder(id);
     await loadFromDisk();
   }

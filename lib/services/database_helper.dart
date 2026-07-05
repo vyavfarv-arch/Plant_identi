@@ -143,4 +143,11 @@ class DatabaseHelper {
   Future<void> updateReminderStatus(String id, bool isCompleted) async { final db = await database; await db.update('app_reminders', {'isCompleted': isCompleted ? 1 : 0}, where: 'id = ?', whereArgs: [id]); }
   Future<void> updateReminderMuteStatus(String id, bool isMuted) async { final db = await database; await db.update('app_reminders', {'isMuted': isMuted ? 1 : 0}, where: 'id = ?', whereArgs: [id]); }
   Future<void> deleteReminder(String id) async { final db = await database; await db.delete('app_reminders', where: 'id = ?', whereArgs: [id]); }
+
+  Future<void> closeDatabase() async {
+    if (_database != null) {
+      await _database!.close();
+      _database = null; // Czyszczenie instancji, aby get database zainicjalizował ją na nowo
+    }
+  }
 }

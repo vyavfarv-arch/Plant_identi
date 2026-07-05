@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/plant_species.dart';
 import '../models/plant_observation.dart';
 import '../models/description_schema.dart';
+
 /**
  * ============================================================================
  * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
@@ -12,6 +13,7 @@ import '../models/description_schema.dart';
  * Widok dolnego arkusza modalnego (BottomSheet) prezentujący skumulowaną
  * specyfikację morfologiczną i ekologiczną gatunku. Zawiera skumulowany bank zdjęć,
  * cechy pogrupowane etapami fenologicznymi oraz wyciągnięte z mapy optima Ellenberga.
+ * Zaktualizowany o dynamiczne pobieranie pod-schematów organów per faza wegetacji.
  *
  * Zależności wewnętrzne (pliki z /lib):
  * * Z katalogu '../models/':
@@ -28,7 +30,6 @@ class PhotoWithStage {
 class SpeciesCardView {
   static void show(BuildContext context, PlantSpecies species, List<PlantObservation> speciesObservations) {
     final String biologicalType = species.biologicalType;
-    final schema = SchemaGenerator.getForType(biologicalType);
 
     final Map<String, Map<String, Set<String>>> accumulatedTraitsByStage = {};
     final List<PhotoWithStage> allPhotosWithStage = [];
@@ -96,10 +97,10 @@ class SpeciesCardView {
               ],
 
               _sectionHeader("SPECYFIKACJA MORFOLOGICZNA (ETAPY FENOLOGICZNE)"),
-              _buildPhenologicalTraitsWidget(accumulatedTraitsByStage, schema),
+              // ZMIANA: Przekazujemy typ biologiczny zamiast predefiniowanej, statycznej listy struktur
+              _buildPhenologicalTraitsWidget(accumulatedTraitsByStage, biologicalType),
               const SizedBox(height: 20),
 
-              // FIX: Zsynchronizowana sekcja prezentacji liczb Ellenberga dla skumulowanej karty gatunku
               _sectionHeader("AMPLITUDA EKOLOGICZNA GATUNKU"),
               _infoItem(Icons.science, "Odczyn gleby pH (R)", _getMapOptimum(species.ellenbergR)),
               _infoItem(Icons.wb_sunny, "Wymagania świetlne (L)", _getMapOptimum(species.ellenbergL)),
@@ -120,7 +121,8 @@ class SpeciesCardView {
     return "${optimums.join(', ')} (Optimum)";
   }
 
-  static Widget _buildPhenologicalTraitsWidget(Map<String, Map<String, Set<String>>> traitsByStage, List<DescriptionCategory> schema) {
+  // ZMIANA: Dynamiczne mapowanie pod-schematów dopasowanych do faz wegetacyjnych
+  static Widget _buildPhenologicalTraitsWidget(Map<String, Map<String, Set<String>>> traitsByStage, String biologicalType) {
     if (traitsByStage.isEmpty) {
       return const Text("Brak zarejestrowanych cech morfologicznych we wszystkich okazach.", style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey));
     }
@@ -130,7 +132,10 @@ class SpeciesCardView {
         final Map<String, Set<String>> categoryMap = stageEntry.value;
         List<Widget> traitRows = [];
 
-        for (var cat in schema) {
+        // ZMIANA: Wywołanie generatora dla konkretnego etapu fenologicznego pętli (ukrywa nieaktywne organy)
+        final stageSchema = SchemaGenerator.getForType(biologicalType, phenologicalStage: stageName);
+
+        for (var cat in stageSchema) {
           List<String> combinedValues = [];
           for (var subTitle in cat.subCategories.keys) {
             if (categoryMap.containsKey(subTitle)) {

@@ -26,6 +26,7 @@ import 'detail_description_screen.dart';
  * Zaawansowana karta botaniczna gatunku flory. Zaktualizowana o system
  * detekcji i oznaczania płatów wykazujących anomalie preferencji wskaźnikowych
  * na bazie końcowego wyniku numerycznego (score) z silnika ekologicznego.
+ * Dostosowana do inteligentnej filtracji organów we wzorcu morfologicznym.
  * ============================================================================
  */
 class SpeciesDetailsScreen extends StatelessWidget {
@@ -60,7 +61,6 @@ class SpeciesDetailsScreen extends StatelessWidget {
     final List<Map<String, String>> allPhotosWithStage = [];
     final Map<String, List<HarvestSeason>> seasonsByMaterial = {};
     final String biologicalType = species?.biologicalType ?? "Zielne";
-    final schema = SchemaGenerator.getForType(biologicalType);
 
     for (var obs in currentObservations) {
       final String stage = obs.phenologicalStage ?? "Nieokreślony etap";
@@ -140,7 +140,8 @@ class SpeciesDetailsScreen extends StatelessWidget {
               SizedBox(
                 height: 140,
                 child: ListView.builder(
-                  scrollDirection: Axis.horizontal, itemCount: allPhotosWithStage.length,
+                  scrollDirection: Axis.horizontal,
+                  itemCount: allPhotosWithStage.length,
                   itemBuilder: (ctx, i) {
                     final item = allPhotosWithStage[i];
                     return Padding(
@@ -159,7 +160,8 @@ class SpeciesDetailsScreen extends StatelessWidget {
             ],
 
             _sectionHeader("WZORZEC MORFOLOGICZNY GATUNKU (STAŁOŚĆ CECH ≥80% W ETAPACH)"),
-            _buildPhenologicalTraitsWidget(patternTraitsByStage, schema),
+            // ZMIANA: Przekazujemy typ biologiczny do elastycznej i zlokalizowanej dekompozycji cech
+            _buildPhenologicalTraitsWidget(patternTraitsByStage, biologicalType),
             const Divider(height: 30),
 
             if (species != null) ...[
@@ -248,17 +250,13 @@ class SpeciesDetailsScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Text(
         title,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          color: Colors.teal,
-          letterSpacing: 1.1,
-        ),
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.teal, letterSpacing: 1.1),
       ),
     );
   }
 
-  static Widget _buildPhenologicalTraitsWidget(Map<String, Map<String, Set<String>>> traitsByStage, List<DescriptionCategory> schema) {
+  // ZMIANA: Dynamiczne pobieranie pod-schematów dopasowanych do faz wegetacyjnych
+  static Widget _buildPhenologicalTraitsWidget(Map<String, Map<String, Set<String>>> traitsByStage, String biologicalType) {
     if (traitsByStage.isEmpty) return const Text("Brak powtarzalnych cech diagnostycznych dla tego gatunku.", style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey));
     return Column(
       children: traitsByStage.entries.map((stageEntry) {
@@ -266,7 +264,10 @@ class SpeciesDetailsScreen extends StatelessWidget {
         final Map<String, Set<String>> categoryMap = stageEntry.value;
         List<Widget> traitRows = [];
 
-        for (var cat in schema) {
+        // ZMIANA: Wywołanie generatora dla konkretnego etapu fenologicznego pętli (ukrywa nieaktywne organy we wzorcu)
+        final stageSchema = SchemaGenerator.getForType(biologicalType, phenologicalStage: stageName);
+
+        for (var cat in stageSchema) {
           List<String> combinedValues = [];
           for (var subTitle in cat.subCategories.keys) {
             if (categoryMap.containsKey(subTitle)) combinedValues.addAll(categoryMap[subTitle]!);
