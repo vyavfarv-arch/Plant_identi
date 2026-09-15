@@ -43,6 +43,9 @@ class PlantSpecies implements HasEllenbergProfile {
   final List<String> associatedSyntaxa;
   final List<HarvestSeason> harvestSeasons;
 
+  // Tagi użytkownika wykorzystywane m.in. do filtrowania katalogu gatunków.
+  final List<String> tags;
+
   // NOWOŚĆ: Słownik wzorcowych cech morfologicznych gatunku (Kategoria -> Cechy Wzorcowe)
   final Map<String, List<String>> patternTraits;
 
@@ -54,6 +57,7 @@ class PlantSpecies implements HasEllenbergProfile {
     this.prefPhMin, this.prefPhMax, this.ellenbergL = const {}, this.ellenbergF = const {}, this.ellenbergR = const {},
     this.ellenbergN = const {}, this.ellenbergT = const {}, this.ellenbergK = const {}, this.ellenbergS = const {},
     this.plantUsage, this.cultivation, this.properties, this.associatedSyntaxa = const [], this.harvestSeasons = const [],
+    this.tags = const [],
     this.patternTraits = const {},
   });
 
@@ -74,6 +78,7 @@ class PlantSpecies implements HasEllenbergProfile {
       'prefAreaTypesJson': jsonEncode(extraAxes),
       'plantUsage': plantUsage, 'cultivation': cultivation, 'properties': properties,
       'associatedSyntaxaJson': jsonEncode(associatedSyntaxa), 'harvestSeasonsJson': jsonEncode(harvestSeasons.map((e) => e.toMap()).toList()),
+      'tagsJson': jsonEncode(tags),
       'patternTraitsJson': jsonEncode(patternTraits), // Zapis wzorca do bazy
     };
   }
@@ -116,12 +121,20 @@ class PlantSpecies implements HasEllenbergProfile {
       try { decodedSeasons = (jsonDecode(map['harvestSeasonsJson']) as List).map((e) => HarvestSeason.fromMap(e)).toList(); } catch (_) {}
     }
 
+    List<String> decodedTags = [];
+    if (map['tagsJson'] != null && map['tagsJson'].toString().isNotEmpty) {
+      try {
+        decodedTags = List<String>.from(jsonDecode(map['tagsJson']));
+      } catch (_) {}
+    }
+
     return PlantSpecies(
       speciesID: map['speciesID'] ?? '', latinName: map['latinName'] ?? '', polishName: map['polishName'] ?? '', family: map['family'] ?? '', biologicalType: map['biologicalType'] ?? 'Zielne',
       prefPhMin: map['prefPhMin']?.toDouble(), prefPhMax: map['prefPhMax']?.toDouble(),
       ellenbergL: lMap, ellenbergF: fMap, ellenbergR: rMap, ellenbergN: nMap, ellenbergT: tMap, ellenbergK: kMap, ellenbergS: sMap,
       plantUsage: map['plantUsage'], cultivation: map['cultivation'], properties: map['properties'],
       associatedSyntaxa: map['associatedSyntaxaJson'] != null ? List<String>.from(jsonDecode(map['associatedSyntaxaJson'])) : const [], harvestSeasons: decodedSeasons,
+      tags: decodedTags,
       patternTraits: decodedPattern,
     );
   }

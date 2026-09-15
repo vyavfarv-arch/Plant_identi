@@ -146,7 +146,20 @@ class ObservationViewModel extends ChangeNotifier {
     } catch (_) { return null; }
   }
 
-  List<String> get uniqueFamilies => _speciesDictionary.map((s) => s.family).where((f) => f.isNotEmpty).toSet().toList();
+  List<String> get uniqueFamilies =>
+      _speciesDictionary.map((s) => s.family).where((f) => f.isNotEmpty).toSet().toList();
+
+  List<String> get uniqueTags {
+    final tags = _speciesDictionary
+        .expand((species) => species.tags)
+        .map((tag) => tag.trim())
+        .where((tag) => tag.isNotEmpty)
+        .toSet()
+        .toList();
+
+    tags.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    return tags;
+  }
 
   // FIX: Sygnatura zintegrowana z mapami indeksów Ellenberga
   Future<void> updateObservationDetailed({
@@ -163,6 +176,7 @@ class ObservationViewModel extends ChangeNotifier {
     String? characteristic,
     String? usage,
     String? cultivation,
+    List<String>? tags,
     double? prefPhMin,
     double? prefPhMax,
     List<HarvestSeason>? harvestSeasons,
@@ -179,6 +193,7 @@ class ObservationViewModel extends ChangeNotifier {
     if (index == -1) return;
     final old = _observations[index];
     final String targetSpeciesId = old.speciesId ?? const Uuid().v4();
+    final existingSpecies = getSpeciesById(old.speciesId);
 
     final species = PlantSpecies(
       speciesID: targetSpeciesId,
@@ -188,6 +203,10 @@ class ObservationViewModel extends ChangeNotifier {
       biologicalType: biologicalType ?? "Zielne",
       plantUsage: usage,
       cultivation: cultivation,
+      properties: existingSpecies?.properties,
+      associatedSyntaxa: existingSpecies?.associatedSyntaxa ?? const [],
+      tags: tags ?? existingSpecies?.tags ?? const [],
+      patternTraits: existingSpecies?.patternTraits ?? const {},
       prefPhMin: prefPhMin,
       prefPhMax: prefPhMax,
       harvestSeasons: harvestSeasons ?? [],

@@ -43,6 +43,8 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
   final Map<String, TextEditingController> _controllers = {};
   String? _selectedCertainty;
   List<HarvestSeason> _selectedSeasons = [];
+  List<String> _selectedTags = [];
+  final TextEditingController _tagController = TextEditingController();
   final EcologicalDataController _ecoController = EcologicalDataController();
 
   @override
@@ -77,6 +79,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       _controllers['usage']!.text = s.plantUsage ?? "";
       _controllers['cultivation']!.text = s.cultivation ?? "";
       _selectedSeasons = List.from(s.harvestSeasons);
+      _selectedTags = List.from(s.tags);
     });
     _ecoController.updateFromSpeciesData(
       newPhMin: s.prefPhMin, newPhMax: s.prefPhMax,
@@ -88,6 +91,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
   void dispose() {
     // FIX CODE REVIEW: Likwidacja wycieków pamięci RAM
     for (var controller in _controllers.values) { controller.dispose(); }
+    _tagController.dispose();
     super.dispose();
   }
 
@@ -120,6 +124,7 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
                   _section("ZBIORY", Icons.shopping_basket, HarvestSeasonPicker(initialSeasons: _selectedSeasons, onChanged: (s) => _selectedSeasons = s)),
                   _section("EKOLOGIA", Icons.landscape, EcologicalAmplitudePicker(controller: _ecoController)),
                   _section("WYKORZYSTANIE", Icons.menu_book, _buildUsageFields()),
+                  _section("TAGI", Icons.label_outline, _buildTagsSection()),
                   const SizedBox(height: 30),
                   _buildSaveButton(),
                   const SizedBox(height: 50),
@@ -162,6 +167,87 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       _input(_controllers['family']!, "Rodzina (np. Jaskrowate)"),
       _input(_controllers['subspecies']!, "Podgatunek"),
     ]);
+  }
+
+
+  Widget _buildTagsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _tagController,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _addTag(),
+                decoration: const InputDecoration(
+                  labelText: "Dodaj tag",
+                  hintText: "np. jadalna, lecznicza, cienioznośna",
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.sell_outlined),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              height: 56,
+              child: ElevatedButton(
+                onPressed: _addTag,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Icon(Icons.add),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        if (_selectedTags.isEmpty)
+          const Text(
+            "Brak tagów. Tagi będą dostępne jako filtr w katalogu roślin.",
+            style: TextStyle(color: Colors.grey, fontSize: 12),
+          )
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _selectedTags.map((tag) {
+              return InputChip(
+                label: Text(tag),
+                avatar: const Icon(Icons.label_outline, size: 18),
+                onDeleted: () {
+                  setState(() {
+                    _selectedTags.remove(tag);
+                  });
+                },
+              );
+            }).toList(),
+          ),
+      ],
+    );
+  }
+
+  void _addTag() {
+    final tag = _tagController.text.trim();
+    if (tag.isEmpty) return;
+
+    final alreadyExists = _selectedTags.any(
+      (existing) => existing.toLowerCase() == tag.toLowerCase(),
+    );
+
+    if (!alreadyExists) {
+      setState(() {
+        _selectedTags.add(tag);
+        _selectedTags.sort(
+          (a, b) => a.toLowerCase().compareTo(b.toLowerCase()),
+        );
+      });
+    }
+
+    _tagController.clear();
   }
 
   Widget _buildUsageFields() => Column(children: [
@@ -213,6 +299,10 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       }
     }
 
+    // Dane gatunku, które nie są edytowane na tym ekranie, zachowujemy przy zapisie.
+    final sourceSpecies =
+        obsVm.getSpeciesById(targetSpeciesId) ?? existingSpecies;
+
     // 3. Budujemy poprawny obiekt wzorca gatunku (Atlasu)
     final species = PlantSpecies(
       speciesID: targetSpeciesId,
@@ -222,6 +312,10 @@ class _DetailDescriptionScreenState extends State<DetailDescriptionScreen> {
       biologicalType: widget.observation.tempBiologicalType ?? "Zielne",
       plantUsage: _controllers['usage']!.text.trim(),
       cultivation: _controllers['cultivation']!.text.trim(),
+      properties: sourceSpecies?.properties,
+      associatedSyntaxa: sourceSpecies?.associatedSyntaxa ?? const [],
+      tags: List<String>.from(_selectedTags),
+      patternTraits: sourceSpecies?.patternTraits ?? const {},
       ellenbergL: Map.from(_ecoController.ellenbergL),
       ellenbergF: Map.from(_ecoController.ellenbergF),
       ellenbergR: Map.from(_ecoController.ellenbergR),

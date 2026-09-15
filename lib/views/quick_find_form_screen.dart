@@ -10,6 +10,8 @@ import '../models/plant_observation.dart';
 import '../models/plant_species.dart';
 import '../viewmodels/observation_view_model.dart';
 import '../services/database_helper.dart';
+import 'detail_description_screen.dart';
+import 'browse_plants_screen.dart';
 /**
  * ============================================================================
  * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
@@ -149,37 +151,118 @@ class _QuickFindFormScreenState extends State<QuickFindFormScreen> {
 
   void _saveObservation() async {
     final obsVm = context.read<ObservationViewModel>();
-    final existingSpecies = obsVm.findSpeciesByLatinName(widget.targetPlant.latinName);
-    final String targetSpeciesId = existingSpecies?.speciesID ?? const Uuid().v4();
 
-    if (existingSpecies == null) {
-      // FIX: Konstruktor gatunku przekazuje mapy wegetacji Ellenberga z poszukiwanej rośliny
+    // Zapamiętujemy stan PRZED zapisem. To rozstrzyga, dokąd użytkownik
+    // powinien trafić po dodaniu znalezionego okazu.
+    final existingSpecies =
+        obsVm.findSpeciesByLatinName(widget.targetPlant.latinName);
+    final bool speciesAlreadyExisted = existingSpecies != null;
+    final String targetSpeciesId =
+        existingSpecies?.speciesID ?? const Uuid().v4();
+
+    if (!speciesAlreadyExisted) {
       final newSpecies = PlantSpecies(
-        speciesID: targetSpeciesId, latinName: widget.targetPlant.latinName, polishName: widget.targetPlant.polishName,
-        family: "Nieokreślona (Wymaga edycji)", biologicalType: "Zielne",
-        prefPhMin: widget.targetPlant.prefPhMin, prefPhMax: widget.targetPlant.prefPhMax,
-        ellenbergL: widget.targetPlant.ellenbergL, ellenbergF: widget.targetPlant.ellenbergF,
-        ellenbergR: widget.targetPlant.ellenbergR, ellenbergN: widget.targetPlant.ellenbergN,
-        ellenbergT: widget.targetPlant.ellenbergT, ellenbergK: widget.targetPlant.ellenbergK,
+        speciesID: targetSpeciesId,
+        latinName: widget.targetPlant.latinName,
+        polishName: widget.targetPlant.polishName,
+        family: "Nieokreślona (Wymaga edycji)",
+        biologicalType: "Zielne",
+        prefPhMin: widget.targetPlant.prefPhMin,
+        prefPhMax: widget.targetPlant.prefPhMax,
+        ellenbergL: widget.targetPlant.ellenbergL,
+        ellenbergF: widget.targetPlant.ellenbergF,
+        ellenbergR: widget.targetPlant.ellenbergR,
+        ellenbergN: widget.targetPlant.ellenbergN,
+        ellenbergT: widget.targetPlant.ellenbergT,
+        ellenbergK: widget.targetPlant.ellenbergK,
         ellenbergS: widget.targetPlant.ellenbergS,
       );
       await DatabaseHelper().insertSpecies(newSpecies);
     }
 
+    // Preferujemy rzeczywistą pozycję GPS pobraną przez ObservationViewModel.
+    // Pierwszy punkt płatu pozostaje wyłącznie awaryjnym fallbackiem.
+    final currentPosition = obsVm.currentPosition;
+    final fallbackPoint = widget.area.points.isNotEmpty
+        ? widget.area.points.first
+        : null;
+
+    if (currentPosition == null && fallbackPoint == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.redAccent,
+          content: Text(
+            "Nie udało się ustalić lokalizacji okazu ani pozycji obszaru.",
+          ),
+        ),
+      );
+      return;
+    }
+
+    final double latitude =
+        currentPosition?.latitude ?? fallbackPoint!.latitude;
+    final double longitude =
+        currentPosition?.longitude ?? fallbackPoint!.longitude;
+
     final newObs = PlantObservation(
-      id: const Uuid().v4(), releveId: widget.area.id, speciesId: targetSpeciesId,
-      localName: widget.targetPlant.polishName, subspecies: "",
-      latitude: widget.area.points.first.latitude, longitude: widget.area.points.first.longitude,
-      timestamp: DateTime.now(), photoPaths: List.from(obsVm.currentPhotoPaths), characteristics: {},
-      phenologicalStage: _selectedPhenology, abundance: _selectedAbundance, vitality: _selectedVitality,
+      id: const Uuid().v4(),
+      releveId: widget.area.id,
+      speciesId: targetSpeciesId,
+      localName: widget.targetPlant.polishName,
+      subspecies: "",
+      latitude: latitude,
+      longitude: longitude,
+      timestamp: DateTime.now(),
+      observationDate: DateTime.now(),
+      photoPaths: List.from(obsVm.currentPhotoPaths),
+      characteristics: {},
+      phenologicalStage: _selectedPhenology,
+      abundance: _selectedAbundance,
+      vitality: _selectedVitality,
     );
 
     await obsVm.addObservation(newObs);
     obsVm.reset();
 
-    if (mounted) {
-      Navigator.pop(context); // Powrót do mapy
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Colors.teal, content: Text("Sukces! Okaz został zaewidencjonowany w Magazynie.")));
+    if (!mounted) return;
+
+    if (speciesAlreadyExisted) {
+      // Istniejący gatunek: kończymy przepływ wyszukiwania i przechodzimy
+      // bezpośrednio do głównego katalogu.
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => const BrowsePlantsScreen(),
+        ),
+        (route) => route.isFirst,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.teal,
+          content: Text("Okaz dodano do istniejącego gatunku w katalogu."),
+        ),
+      );
+    } else {
+      // Nowy gatunek: świeżo zapisany okaz staje się punktem wejścia do
+      // pełnego formularza opisu rośliny.
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => DetailDescriptionScreen(
+            observation: newObs,
+          ),
+        ),
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.teal,
+          content: Text(
+            "Nowy gatunek został dodany. Uzupełnij jego opis.",
+          ),
+        ),
+      );
     }
   }
+
 }

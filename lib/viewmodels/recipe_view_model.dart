@@ -1,43 +1,54 @@
 // lib/viewmodels/recipe_view_model.dart
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../models/recipe.dart';
 import '../services/database_helper.dart';
+
 /**
  * ============================================================================
  * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
  * ============================================================================
  * Rola pliku:
- * Zarządza bazą wiedzy użytkownika w zakresie receptur i przepisów zielarskich.
- * Odpowiada za asynchroniczne pobieranie danych z dysku, chronologiczne sortowanie
- * przepisów (najnowsze na górze), dodawanie nowych form, edycję oraz ich usuwanie.
+ * Zarządza kolekcją przepisów zielarskich przechowywanych w lokalnej bazie
+ * SQLite. Udostępnia widokom aktualną, posortowaną listę receptur oraz operacje
+ * wczytywania, dodawania/aktualizacji i usuwania przepisów.
  *
- * Zależności wewnętrzne (pliki z /lib):
- * * Z pliku '../models/recipe.dart':
- * - Klasa [Recipe]: Model danych reprezentujący strukturę receptury zielarskiej,
- * wykorzystywany do zasilania interfejsu list i formularzy.
- * * Z pliku '../services/database_helper.dart':
- * - Klasa [DatabaseHelper]: Komponent dostępu do danych, realizujący operacje
- * zapisu i kasowania rekordów w tabeli 'recipes'.
+ * Zależności wewnętrzne:
+ * - Recipe: model receptury.
+ * - DatabaseHelper: trwały zapis i odczyt tabeli recipes.
  * ============================================================================
  */
 class RecipeViewModel extends ChangeNotifier {
   final DatabaseHelper _db = DatabaseHelper();
+
   List<Recipe> _recipes = [];
 
-  List<Recipe> get recipes => _recipes;
+  /// Przepisy są udostępniane jako lista tylko do odczytu.
+  List<Recipe> get recipes => List.unmodifiable(_recipes);
 
+  /// Wczytuje wszystkie przepisy z SQLite.
+  ///
+  /// Najnowsze przepisy znajdują się na początku listy.
   Future<void> loadFromDisk() async {
-    _recipes = await _db.getRecipes();
-    // Sortuj najnowsze na górze
-    _recipes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final loadedRecipes = await _db.getRecipes();
+
+    loadedRecipes.sort(
+      (a, b) => b.createdAt.compareTo(a.createdAt),
+    );
+
+    _recipes = loadedRecipes;
     notifyListeners();
   }
 
+  /// Dodaje nowy przepis albo aktualizuje istniejący.
+  ///
+  /// DatabaseHelper.insertRecipe korzysta z ConflictAlgorithm.replace,
+  /// dlatego ten sam zapis obsługuje oba przypadki na podstawie Recipe.id.
   Future<void> addOrUpdateRecipe(Recipe recipe) async {
     await _db.insertRecipe(recipe);
     await loadFromDisk();
   }
 
+  /// Usuwa przepis o podanym ID i odświeża kolekcję.
   Future<void> deleteRecipe(String id) async {
     await _db.deleteRecipe(id);
     await loadFromDisk();

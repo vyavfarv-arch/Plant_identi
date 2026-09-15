@@ -34,8 +34,10 @@ flutter:
   assets:
     - assets/grass.png
     - assets/ref/
+    - assets/ref/zielne/liscie/
     - assets/ref/zielne/owoce/
     - assets/ref/zielne/kwiat/
     - assets/ref/zielne/korzen/
+    - assets/ref/zielne/lodyga/
     - assets/ref/drzewo/kora/
-    - assets/ref/zielne/liscie/
+    - assets/ref/drzewo/pokroj/

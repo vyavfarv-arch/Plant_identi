@@ -62,33 +62,28 @@ class PlantCardView {
               _buildPhotoGallery(obs),
               const SizedBox(height: 20),
 
-              _sectionHeader("1. Pozycja systematyczna"),
+              _sectionHeader("Pozycja systematyczna"),
               _infoItem(Icons.account_tree, "Rodzina", species?.family ?? "-"),
               _infoItem(Icons.subtitles, "Podgatunek/Odmiana", obs.subspecies ?? "-"),
 
-              _sectionHeader("2. Ocena okazu i kondycja"),
+              _sectionHeader(" Ocena okazu i kondycja"),
               _infoItem(Icons.category, "Typ biologiczny", biologicalType),
               _infoItem(Icons.filter_vintage, "Etap fenologiczny", obs.phenologicalStage ?? "-"),
               _infoItem(Icons.analytics, "Ilościowość", obs.abundance ?? "-"),
               _infoItem(Icons.favorite, "Witalność", obs.vitality ?? "-"),
 
-              _sectionHeader("3. Zaobserwowane cechy"),
+              _sectionHeader("Zaobserwowane cechy"),
               _buildGroupedCharacteristics(obs, schema),
 
-              _sectionHeader("4. Terminy zbioru surowców"),
+              _sectionHeader("Terminy zbioru surowców"),
               if (harvestData.isEmpty)
                 const Padding(padding: EdgeInsets.only(left: 35), child: Text("Brak zdefiniowanych terminów.", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)))
               else
                 ...harvestData.map((h) => _harvestItem(h)),
 
-              // FIX: Nowa, zintegrowana sekcja prezentacji optymalnych liczb wskaźnikowych Ellenberga
-              _sectionHeader("5. Amplituda ekologiczna (Liczby Ellenberga)"),
-              _infoItem(Icons.science, "Wskaźnik odczynu gleby (R)", _getMapOptimum(species?.ellenbergR)),
-              _infoItem(Icons.wb_sunny, "Wskaźnik Światła (L)", _getMapOptimum(species?.ellenbergL)),
-              _infoItem(Icons.water_drop, "Wskaźnik Wilgotności (F)", _getMapOptimum(species?.ellenbergF)),
-              _infoItem(Icons.grass, "Wskaźnik Żyzności / Azotu (N)", _getMapOptimum(species?.ellenbergN)),
 
-              _sectionHeader("6. Lokalizacja w płatach"),
+
+              _sectionHeader("Lokalizacja w płatach"),
               _buildReleveLinks(context, obs),
               const SizedBox(height: 30),
             ],

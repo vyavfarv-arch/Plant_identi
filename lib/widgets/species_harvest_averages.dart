@@ -61,17 +61,28 @@ class SpeciesHarvestAverages extends StatelessWidget {
               icon: const Icon(Icons.notification_add, color: Colors.orange),
               tooltip: "Aktywuj asystenta poszukiwań i powiadomienie",
               onPressed: () async {
-                await remVm.addHarvestReminder(
+                final DateTime nearestStart =
+                    await remVm.addHarvestReminder(
                   plantName: commonName,
                   material: mat,
                   startDate: start,
                   endDate: end,
                   relatedId: speciesId ?? "",
                 );
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  backgroundColor: Colors.amber.shade900,
-                  content: Text("Asystent czasowy aktywny. Przypomnę o zbiorze surowca ($mat) dnia ${df.format(start)}!"),
-                ));
+
+                if (!context.mounted) return;
+
+                final fullDateFormat = DateFormat('dd.MM.yyyy');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: Colors.amber.shade900,
+                    content: Text(
+                      "Asystent czasowy aktywny. Najbliższy sezon "
+                      "zbioru surowca ($mat) rozpoczyna się "
+                      "${fullDateFormat.format(nearestStart)}.",
+                    ),
+                  ),
+                );
               },
             ),
           ),

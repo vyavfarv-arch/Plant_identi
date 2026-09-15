@@ -53,19 +53,118 @@ class ReminderViewModel extends ChangeNotifier {
     await loadFromDisk();
   }
 
-  Future<void> addHarvestReminder({required String plantName, required String material, required DateTime startDate, required DateTime endDate, required String relatedId}) async {
-    final reminder = AppReminder(
-      id: const Uuid().v4(), title: "Zbiory: $plantName", body: "Surowiec: $material",
-      scheduledTime: startDate, endDate: endDate, relatedId: relatedId, type: 'HARVEST',
+  /// Wyznacza najbliższe wystąpienie corocznego sezonu zbioru.
+  /// Rok zapisany w HarvestSeason jest wyłącznie rokiem referencyjnym.
+  ({DateTime start, DateTime end}) getNearestHarvestSeason({
+    required DateTime startDate,
+    required DateTime endDate,
+    DateTime? now,
+  }) {
+    final current = now ?? DateTime.now();
+
+    final crossesYear =
+        endDate.month < startDate.month ||
+        (endDate.month == startDate.month && endDate.day < startDate.day);
+
+    DateTime seasonStart =
+        DateTime(current.year, startDate.month, startDate.day);
+    DateTime seasonEnd = DateTime(
+      crossesYear ? current.year + 1 : current.year,
+      endDate.month,
+      endDate.day,
+      23,
+      59,
+      59,
     );
+
+    // Np. sezon 15.11-15.02, a dziś jest styczeń:
+    // aktywny sezon rozpoczął się w poprzednim roku.
+    if (crossesYear) {
+      final previousStart =
+          DateTime(current.year - 1, startDate.month, startDate.day);
+      final previousEnd = DateTime(
+        current.year,
+        endDate.month,
+        endDate.day,
+        23,
+        59,
+        59,
+      );
+
+      if (!current.isBefore(previousStart) && !current.isAfter(previousEnd)) {
+        return (start: previousStart, end: previousEnd);
+      }
+    }
+
+    // Jeżeli sezon w tym roku już minął, wybieramy kolejny.
+    if (current.isAfter(seasonEnd)) {
+      seasonStart =
+          DateTime(current.year + 1, startDate.month, startDate.day);
+      seasonEnd = DateTime(
+        crossesYear ? current.year + 2 : current.year + 1,
+        endDate.month,
+        endDate.day,
+        23,
+        59,
+        59,
+      );
+    }
+
+    return (start: seasonStart, end: seasonEnd);
+  }
+
+  Future<DateTime> addHarvestReminder({
+    required String plantName,
+    required String material,
+    required DateTime startDate,
+    required DateTime endDate,
+    required String relatedId,
+  }) async {
+    final nearestSeason = getNearestHarvestSeason(
+      startDate: startDate,
+      endDate: endDate,
+    );
+
+    final reminder = AppReminder(
+      id: const Uuid().v4(),
+      title: "Zbiory: $plantName",
+      body: "Surowiec: $material",
+      scheduledTime: nearestSeason.start,
+      endDate: nearestSeason.end,
+      relatedId: relatedId,
+      type: 'HARVEST',
+    );
+
     await _db.insertReminder(reminder);
 
     if (!reminder.isMuted) {
-      final alarmTime = DateTime(startDate.year, startDate.month, startDate.day, 9, 0);
-      // POPRAWKA: .abs()
-      await _notifService.scheduleNotification(id: reminder.id.hashCode.abs(), title: reminder.title, body: reminder.body, scheduledTime: alarmTime);
+      final now = DateTime.now();
+
+      // Powiadomienie systemowe ustawiamy na 09:00 pierwszego dnia
+      // przyszłego sezonu. Jeśli sezon już trwa, wpis pozostaje aktywny
+      // w Asystencie Czasowym, ale nie planujemy alarmu w przeszłości.
+      if (nearestSeason.start.isAfter(now)) {
+        final alarmTime = DateTime(
+          nearestSeason.start.year,
+          nearestSeason.start.month,
+          nearestSeason.start.day,
+          9,
+          0,
+        );
+
+        if (alarmTime.isAfter(now)) {
+          await _notifService.scheduleNotification(
+            id: reminder.id.hashCode.abs(),
+            title: reminder.title,
+            body: reminder.body,
+            scheduledTime: alarmTime,
+          );
+        }
+      }
     }
+
     await loadFromDisk();
+    return nearestSeason.start;
   }
 
   Future<void> toggleMute(String id, bool currentMute) async {

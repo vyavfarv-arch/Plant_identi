@@ -13,7 +13,7 @@ import '../models/app_reminder.dart';
  * ============================================================================
  * Rola pliku:
  * Centralny zarządca trwałego składowania danych (Wzorzec Singleton). Inicjalizuje
- * lokalny silnik SQLite (`planticator.db` wersja v23), wymusza kaskadowe powiązania
+ * lokalny silnik SQLite (`planticator.db` wersja v24), wymusza kaskadowe powiązania
  * relacyjne kluczy obcych (foreign keys) oraz udostępnia metody CRUD dla całego projektu,
  * zabezpieczając integralność unikalnego klucza budowanego przez użytkownika.
  *
@@ -41,7 +41,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'planticator.db');
     return await openDatabase(
       path,
-      version: 23, // Wersja v23 z obsługą grupowania przepisów za pomocą etykiet
+      version: 24, // Wersja v24: tagi gatunków w plant_species
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
@@ -63,7 +63,7 @@ class DatabaseHelper {
         prefPhMin REAL, prefPhMax REAL, prefAreaTypesJson TEXT, prefWaterDynamicsJson TEXT, 
         prefLightLevelsJson TEXT, prefSoilTypesJson TEXT, prefNitrogenJson TEXT,
         plantUsage TEXT, cultivation TEXT, properties TEXT, associatedSyntaxaJson TEXT, harvestSeasonsJson TEXT,
-        patternTraitsJson TEXT
+        tagsJson TEXT, patternTraitsJson TEXT
       )
     ''');
 
@@ -114,6 +114,11 @@ class DatabaseHelper {
     if (oldVersion < 23) {
       try {
         await db.execute('ALTER TABLE recipes ADD COLUMN labelsJson TEXT');
+      } catch (_) {}
+    }
+    if (oldVersion < 24) {
+      try {
+        await db.execute('ALTER TABLE plant_species ADD COLUMN tagsJson TEXT');
       } catch (_) {}
     }
   }

@@ -159,13 +159,43 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
                 final item = filteredItems[index];
                 return GestureDetector(
                   onLongPress: () => _handleLongPress(context, item),
-                  child: RadioListTile<String>(
-                    activeColor: Colors.deepOrange,
-                    title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text(item.subtitle, style: TextStyle(color: item.isSought ? Colors.deepOrange : Colors.green)),
-                    value: item.id,
-                    groupValue: _selectedPlantId,
-                    onChanged: (v) => setState(() => _selectedPlantId = v),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: RadioListTile<String>(
+                          activeColor: Colors.deepOrange,
+                          title: Text(
+                            item.name,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            item.subtitle,
+                            style: TextStyle(
+                              color: item.isSought
+                                  ? Colors.deepOrange
+                                  : Colors.green,
+                            ),
+                          ),
+                          value: item.id,
+                          groupValue: _selectedPlantId,
+                          onChanged: (v) =>
+                              setState(() => _selectedPlantId = v),
+                        ),
+                      ),
+                      if (item.isSought)
+                        IconButton(
+                          tooltip: "Usuń z poszukiwanych",
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: Colors.redAccent,
+                          ),
+                          onPressed: () => _confirmDeleteSoughtPlant(
+                            context,
+                            item,
+                          ),
+                        ),
+                      const SizedBox(width: 4),
+                    ],
                   ),
                 );
               },
@@ -174,6 +204,59 @@ class _SearchPlantsScreenState extends State<SearchPlantsScreen> {
           if (activeItem != null) _buildActionFooter(activeItem, releveVm),
         ],
       ),),
+    );
+  }
+
+  Future<void> _confirmDeleteSoughtPlant(
+    BuildContext context,
+    _SearchListItem item,
+  ) async {
+    // Element znajdujący się już w Magazynie nigdy nie może być usunięty
+    // przez przycisk przeznaczony dla listy poszukiwanych.
+    if (!item.isSought) return;
+
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text("Usuń z poszukiwanych?"),
+        content: Text(
+          'Roślina "${item.name}" zostanie usunięta z listy poszukiwanych.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text("ANULUJ"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text(
+              "USUŃ",
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true || !mounted) return;
+
+    final filterVm = context.read<SearchFilterViewModel>();
+    await filterVm.deleteSoughtPlant(item.id);
+
+    if (!mounted) return;
+
+    setState(() {
+      if (_selectedPlantId == item.id) {
+        _selectedPlantId = null;
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Usunięto "${item.name}" z listy poszukiwanych.',
+        ),
+      ),
     );
   }
 

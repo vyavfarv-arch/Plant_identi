@@ -27,6 +27,7 @@ class SearchFilterViewModel extends ChangeNotifier {
   DateTimeRange? _filterDateRange;
   final List<String> _selectedFamilies = [];
   final List<String> _selectedPlantNames = [];
+  final List<String> _selectedTags = [];
   Releve? _filterArea;
 
   // --- FILTRY OBSZARÓW (RELEVES) ---
@@ -40,6 +41,7 @@ class SearchFilterViewModel extends ChangeNotifier {
   DateTimeRange? get filterDateRange => _filterDateRange;
   List<String> get selectedFamilies => _selectedFamilies;
   List<String> get selectedPlantNames => _selectedPlantNames;
+  List<String> get selectedTags => _selectedTags;
   Releve? get filterArea => _filterArea;
   String get areaSearchQuery => _areaSearchQuery;
   List<String> get selectedReleveTypes => _selectedReleveTypes;
@@ -132,6 +134,20 @@ class SearchFilterViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void toggleTagFilter(String tag) {
+    if (_selectedTags.contains(tag)) {
+      _selectedTags.remove(tag);
+    } else {
+      _selectedTags.add(tag);
+    }
+    notifyListeners();
+  }
+
+  void clearTagFilters() {
+    _selectedTags.clear();
+    notifyListeners();
+  }
+
   void setFilterArea(Releve? area) {
     _filterArea = area;
     notifyListeners();
@@ -178,6 +194,7 @@ class SearchFilterViewModel extends ChangeNotifier {
     _filterDateRange = null;
     _selectedFamilies.clear();
     _selectedPlantNames.clear();
+    _selectedTags.clear();
     _filterArea = null;
     _areaSearchQuery = "";
     _selectedSpecificNames.clear();
