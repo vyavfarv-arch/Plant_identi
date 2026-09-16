@@ -42,15 +42,12 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
 
     final actualPlants = SpatialService.getPlantsInArea(obsVm.completeObservations, currentReleve);
 
-    final knownNames = <String>{};
-    for (var s in obsVm.speciesDictionary) {
-      if (s.polishName.isNotEmpty) knownNames.add(s.polishName.toLowerCase());
-    }
-
-    final potentialPlants = currentReleve.mlPredictions.entries.where((e) {
-      if (e.value < 0.6) return false;
-      return knownNames.contains(e.key.toLowerCase());
-    }).toList();
+    // Ranking potencjalnych gatunków pochodzi bezpośrednio ze wspólnego
+    // silnika plantScore. UI nie filtruje już zapisanej mapy mlPredictions.
+    final potentialPlants = EcologicalMatchingService.findPotentialPlantsForArea(
+      currentReleve,
+      obsVm.speciesDictionary,
+    );
 
     final childrenAreas = releveVm.getChildren(currentReleve.id);
 
@@ -85,14 +82,15 @@ class _ReleveDetailsScreenState extends State<ReleveDetailsScreen> {
           if (potentialPlants.isNotEmpty) ...[
             _buildSectionHeader("Przewidywane gatunki (Potencjalne):", Colors.purple.shade50),
             ...potentialPlants.map((entry) {
-              final plantSpecies = obsVm.speciesDictionary.firstWhere((s) => s.polishName.toLowerCase() == entry.key.toLowerCase());
-              final match = EcologicalMatchingService.calculateCompatibility(currentReleve, plantSpecies);
-
-              final diagStr = match.diagnostics.entries.map((e) => "${e.key}:${e.value}").join("  ");
+              final plantSpecies = entry.key;
+              final match = entry.value;
+              final diagStr = match.diagnostics.entries
+                  .map((e) => "${e.key}:${e.value}")
+                  .join("  ");
 
               return ListTile(
                 leading: const Icon(Icons.auto_awesome, color: Colors.purple),
-                title: Text(entry.key),
+                title: Text(plantSpecies.polishName),
                 subtitle: Text("Siedlisko: [$diagStr]"),
               );
             }).toList(),

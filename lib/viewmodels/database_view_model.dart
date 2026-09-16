@@ -8,8 +8,8 @@ import '../services/data_export_service.dart';
  * ============================================================================
  * Rola pliku:
  * Kontroler logiki biznesowej zarządzający stanem operacji bazodanowych (MVVM).
- * Odpowiada za obsługę asynchronicznych akcji eksportu danych ML, tworzenia kopii
- * zapasowej oraz przywracania bazy danych, udostępniając flagi stanu ładowania i błędów.
+ * Odpowiada za obsługę asynchronicznego tworzenia kopii zapasowej oraz
+ * przywracania bazy danych, udostępniając flagi stanu ładowania i błędów.
  *
  * Zależności wewnętrzne (pliki z /lib):
  * * Z katalogu '../services/':
@@ -34,18 +34,6 @@ class DatabaseViewModel extends ChangeNotifier {
   void _setError(String? msg) {
     _errorMessage = msg;
     notifyListeners();
-  }
-
-  Future<void> exportML() async {
-    _setLoading(true);
-    _setError(null);
-    try {
-      await _exportService.exportDataForML();
-    } catch (e) {
-      _setError(e.toString());
-    } finally {
-      _setLoading(false);
-    }
   }
 
   Future<void> performBackup() async {

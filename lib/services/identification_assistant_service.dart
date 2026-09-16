@@ -91,7 +91,7 @@ class IdentificationAssistantService {
       double ecoScore = 0.0;
 
       if (activeArea != null && activeArea.habitat != null) {
-        final match = EcologicalMatchingService.calculateCompatibility(activeArea, species);
+        final match = EcologicalMatchingService.scorePlantInArea(activeArea, species);
         ecoScore = match.score;
       }
 

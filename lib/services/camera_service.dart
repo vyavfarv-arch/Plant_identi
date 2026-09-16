@@ -31,7 +31,7 @@ class CameraService {
     if (_cameras != null && _cameras!.isNotEmpty) {
       _controller = CameraController(
         _cameras![0],
-        ResolutionPreset.medium,
+        ResolutionPreset.max,
         enableAudio: false,
         imageFormatGroup: ImageFormatGroup.jpeg, // Wymuszenie formatu pomaga na niektórych urządzeniach
       );

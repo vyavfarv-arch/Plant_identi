@@ -37,7 +37,7 @@ class HabitatFormScreen extends StatefulWidget {
 class _HabitatFormScreenState extends State<HabitatFormScreen> {
   final List<String> _selectedSubstrates = [];
   final TextEditingController _phController = TextEditingController();
-  int _canopyDensity = 1;
+  int? _canopyDensity;
 
   String? _areaType;
   String? _exposure;
@@ -79,7 +79,8 @@ class _HabitatFormScreenState extends State<HabitatFormScreen> {
           DropdownButtonFormField<int>(
             value: _canopyDensity, isExpanded: true, decoration: const InputDecoration(border: OutlineInputBorder()),
             items: List.generate(9, (index) => DropdownMenuItem(value: index + 1, child: Text(HabitatInfo.canopyDensityLabels[index], style: const TextStyle(fontSize: 12)))),
-            onChanged: (v) => setState(() => _canopyDensity = v ?? 1),
+            hint: const Text("Nie określono", style: TextStyle(fontSize: 12)),
+            onChanged: (v) => setState(() => _canopyDensity = v),
           ),
           const SizedBox(height: 12),
           _buildDropdown("Ruch i natlenienie wody", HabitatInfo.waterMovementOptions, _waterMovement, (v) => setState(() => _waterMovement = v)),

@@ -50,6 +50,17 @@ class _ResultsMapScreenState extends State<ResultsMapScreen> {
 
     LatLng initialTarget = const LatLng(52.23, 21.01);
     final allAreas = releveVm.allReleves;
+
+    // Ranking ekologiczny jest liczony wyłącznie w serwisie. Ekran tylko
+    // mapuje wynik na konkretny obszar i odpowiada za prezentację.
+    final rankedAreas = EcologicalMatchingService.findPotentialAreasForPlant(
+      widget.targetPlant,
+      allAreas,
+      onlyPotentialMatches: false,
+    );
+    final ecologicalMatchesByAreaId = <String, ContinuousEcologicalMatchingResult>{
+      for (final entry in rankedAreas) entry.key.id: entry.value,
+    };
     if (allAreas.isNotEmpty && allAreas.first.points.isNotEmpty) {
       initialTarget = allAreas.first.points.first;
     }
@@ -77,7 +88,8 @@ class _ResultsMapScreenState extends State<ResultsMapScreen> {
         fillColor = Colors.grey.withOpacity(0.4); strokeColor = Colors.grey.shade700;
         statusText = "Zweryfikowana nieobecność gatunku (Brak występowania)";
       } else {
-        final matchResult = EcologicalMatchingService.calculateCompatibility(area, widget.targetPlant);
+        final matchResult = ecologicalMatchesByAreaId[area.id] ??
+            EcologicalMatchingService.scorePlantInArea(area, widget.targetPlant);
 
         if (matchResult.isPotentialMatch) {
           fillColor = Colors.amber.withOpacity(0.5); strokeColor = Colors.orange.shade800;

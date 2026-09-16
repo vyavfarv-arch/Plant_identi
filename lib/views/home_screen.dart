@@ -40,7 +40,7 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Plantifikator'),
+        title: const Text(''),
         elevation: 0,
       ),
       body: SafeArea(
@@ -50,9 +50,16 @@ class HomeScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
+                  const SizedBox(height: 1),
+
+                  Image.asset(
+                    'assets/nazwa.png',
+                    width: 260,
+                    height: 160,
+                    fit: BoxFit.contain,
+                  ),
+
                   const SizedBox(height: 20),
-                  const Icon(Icons.eco, size: 60, color: Colors.green),
-                  const SizedBox(height: 30),
                   Expanded(
                     child: GridView.count(
                       crossAxisCount: 3,
@@ -148,16 +155,8 @@ class HomeScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("Zarządzanie bazą danych"),
-        content: const Text("Wybierz czynność dla bazy danych i zestawów Machine Learning:"),
+        content: const Text("Utwórz pełną kopię bazy danych lub przywróć ją z prawidłowego pliku .db:"),
         actions: [
-          TextButton.icon(
-            icon: const Icon(Icons.share, color: Colors.brown),
-            label: const Text("EKSPORT ML (CSV)", style: TextStyle(color: Colors.brown)),
-            onPressed: () {
-              Navigator.pop(ctx);
-              context.read<DatabaseViewModel>().exportML();
-            },
-          ),
           TextButton.icon(
             icon: const Icon(Icons.cloud_upload, color: Colors.green),
             label: const Text("UTWÓRZ KOPIĘ (.DB)", style: TextStyle(color: Colors.green)),
@@ -173,15 +172,29 @@ class HomeScreen extends StatelessWidget {
               Navigator.pop(ctx);
               final success = await context.read<DatabaseViewModel>().performRestore();
               if (success && context.mounted) {
-                // Po udanym wgraniu pliku .db, odświeżamy pozostałe kontrolery z poziomu widoku:
+                // Po udanym wgraniu pliku .db odświeżamy kontrolery korzystające z bazy.
                 await context.read<ObservationViewModel>().loadFromDisk();
                 await context.read<ReleveViewModel>().loadFromDisk();
                 await context.read<RecipeViewModel>().loadFromDisk();
                 await context.read<ReminderViewModel>().loadFromDisk();
 
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Kopia bazy danych została pomyślnie przywrócona!"), backgroundColor: Colors.green),
+                  const SnackBar(
+                    content: Text("Kopia bazy danych została pomyślnie przywrócona!"),
+                    backgroundColor: Colors.green,
+                  ),
                 );
+              } else if (context.mounted) {
+                final error = context.read<DatabaseViewModel>().errorMessage;
+                if (error != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(error),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               }
             },
           ),

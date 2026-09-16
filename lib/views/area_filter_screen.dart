@@ -176,7 +176,16 @@ class _AreaFilterScreenState extends State<AreaFilterScreen> {
       if (_tmpCover != null && h.soilSurfaceCover != _tmpCover) return false;
       if (_tmpImpact != null && h.humanImpact != _tmpImpact) return false;
 
-      if (h.canopyDensity < _tmpCanopy.start || h.canopyDensity > _tmpCanopy.end) return false;
+      final canopy = h.canopyDensity;
+      final canopyFilterActive =
+          _tmpCanopy.start > 1.1 || _tmpCanopy.end < 8.9;
+
+      if (canopyFilterActive) {
+        // Jeżeli użytkownik aktywnie filtruje po zwarciu, obszary bez
+        // określonego canopyDensity nie spełniają tego kryterium.
+        if (canopy == null) return false;
+        if (canopy < _tmpCanopy.start || canopy > _tmpCanopy.end) return false;
+      }
 
       if (_tmpSubstrates.isNotEmpty) {
         if (!_tmpSubstrates.every((s) => h.substrateType.contains(s))) return false;

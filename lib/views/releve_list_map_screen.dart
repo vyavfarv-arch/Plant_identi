@@ -38,7 +38,17 @@ class _ReleveListMapScreenState extends State<ReleveListMapScreen> {
       if (filterVm.areaFilterSoilSurfaceCover != null && h.soilSurfaceCover != filterVm.areaFilterSoilSurfaceCover) return false;
       if (filterVm.areaFilterHumanImpact != null && h.humanImpact != filterVm.areaFilterHumanImpact) return false;
 
-      if (h.canopyDensity < filterVm.areaFilterCanopyRange.start || h.canopyDensity > filterVm.areaFilterCanopyRange.end) return false;
+      final canopy = h.canopyDensity;
+      final canopyRange = filterVm.areaFilterCanopyRange;
+      final canopyFilterActive =
+          canopyRange.start > 1.1 || canopyRange.end < 8.9;
+
+      if (canopyFilterActive) {
+        // Brak canopyDensity oznacza "nie określono". Taki obszar nie może
+        // spełnić aktywnego filtra zakresu zwarcia.
+        if (canopy == null) return false;
+        if (canopy < canopyRange.start || canopy > canopyRange.end) return false;
+      }
 
       if (filterVm.areaFilterSubstrates.isNotEmpty) {
         if (!filterVm.areaFilterSubstrates.every((s) => h.substrateType.contains(s))) return false;

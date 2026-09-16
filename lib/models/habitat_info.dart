@@ -1,21 +1,5 @@
 // lib/models/habitat_info.dart
 import 'dart:convert';
-/**
- * ============================================================================
- * DOKUMENTACJA REPOZYTORIUM - ROLA PLIKU I ZALEŻNOŚCI (Standard dla LLM)
- * ============================================================================
- * Rola pliku:
- * Model danych przechowujący szczegółowe, fizjograficzne parametry siedliskowe
- * płatu roślinności. Zawiera listy predefiniowanych słowników (opcje podłoża,
- * kąty nachylenia, stopnie ocienienia, antropopresja). Służy jako źródło danych
- * wejściowych dla algorytmu tłumaczącego warunki opisowe na wektor numeryczny Ellenberga.
- *
- * Zależności wewnętrzne (pliki z /lib):
- * - Brak bezpośrednich importów innych plików z /lib. Stanowi niezależny moduł
- * słownikowo-strukturalny wykorzystywany przez model [Releve].
- * ============================================================================
- */
-
 
 class HabitatInfo {
   static const List<String> areaTypeOptions = ["Las", "Łąka", "Mokradło", "Zarośla", "Pole", "Pobocze drogi", "Nadrzecze / Brzeg", "Skraj lasu"];
@@ -29,7 +13,7 @@ class HabitatInfo {
   static const List<String> humanImpactOptions = ["Brak / Naturalne sukcesje", "Wypas zwierząt / Koszenie", "Intensywne deptanie / Ścieżka", "Orka / Nawożenie rolnicze", "Składowisko odpadów / Śmietnisko", "Zimowe solenie / Droga"];
 
   final String? areaType;
-  final int canopyDensity;
+  final int? canopyDensity;
   final String? waterMovement;
   final List<String> substrateType;
   final String? exposure;
@@ -39,13 +23,24 @@ class HabitatInfo {
   final String? humanImpact;
   final double? ph;
 
-  HabitatInfo({this.areaType, this.canopyDensity = 1, this.waterMovement, this.substrateType = const [], this.exposure, this.slopeAngle, this.hydrologicalContext, this.soilSurfaceCover, this.humanImpact, this.ph});
+  HabitatInfo({
+    this.areaType,
+    this.canopyDensity,
+    this.waterMovement,
+    this.substrateType = const [],
+    this.exposure,
+    this.slopeAngle,
+    this.hydrologicalContext,
+    this.soilSurfaceCover,
+    this.humanImpact,
+    this.ph,
+  });
 
   Map<String, dynamic> toMap() => {
     'areaType': areaType,
     'canopyDensity': canopyDensity,
     'waterMovement': waterMovement,
-    'substrateType': jsonEncode(substrateType), // FIX: Serializacja listy do JSON
+    'substrateType': jsonEncode(substrateType),
     'exposure': exposure,
     'slopeAngle': slopeAngle,
     'hydrologicalContext': hydrologicalContext,
@@ -57,14 +52,26 @@ class HabitatInfo {
   factory HabitatInfo.fromMap(Map<String, dynamic> map) {
     List<String> parsedSubstrates = [];
     if (map['substrateType'] != null) {
-      try { parsedSubstrates = List<String>.from(jsonDecode(map['substrateType'])); } catch (_) { parsedSubstrates = []; }
+      try {
+        parsedSubstrates = List<String>.from(jsonDecode(map['substrateType']));
+      } catch (_) {
+        parsedSubstrates = [];
+      }
     }
+
     return HabitatInfo(
       areaType: map['areaType'],
-      canopyDensity: map['canopyDensity'] != null ? (map['canopyDensity'] as num).toInt() : 1,
+      canopyDensity: map['canopyDensity'] != null
+          ? (map['canopyDensity'] as num).toInt()
+          : null,
       waterMovement: map['waterMovement'],
       substrateType: parsedSubstrates,
-      exposure: map['exposure'], slopeAngle: map['slopeAngle'], hydrologicalContext: map['hydrologicalContext'], soilSurfaceCover: map['soilSurfaceCover'], humanImpact: map['humanImpact'], ph: map['ph']?.toDouble(),
+      exposure: map['exposure'],
+      slopeAngle: map['slopeAngle'],
+      hydrologicalContext: map['hydrologicalContext'],
+      soilSurfaceCover: map['soilSurfaceCover'],
+      humanImpact: map['humanImpact'],
+      ph: map['ph']?.toDouble(),
     );
   }
 }

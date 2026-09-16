@@ -1,10 +1,10 @@
-name: planticator
+name: Planticator
 description: "Półprofesjonalna aplikacja do identyfikacji roślin, analizy siedlisk i fitosocjologii."
-# Linia poniżej zapobiega przypadkowej publikacji w pub.dev
+
 publish_to: 'none'
 
 version: 1.0.0+1
-share_plus: ^7.2.1
+
 environment:
   sdk: '>=3.10.4 <4.0.0'
 
@@ -17,7 +17,7 @@ dependencies:
   sqflite: ^2.3.0
   path: ^1.9.1
   path_provider: ^2.1.0
-  file_picker: ^8.0.0      # NOWOŚĆ: Dodane do obsługi przywracania bazy z pliku
+  file_picker: ^8.0.0
 
   camera: ^0.11.0+1
   geolocator: ^12.0.0
@@ -29,11 +29,23 @@ dependencies:
   cupertino_icons: ^1.0.8
   share_plus: ^10.1.0
 
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_native_splash: ^2.4.6
+
 flutter:
   uses-material-design: true
+
   assets:
     - assets/grass.png
+    - assets/logo.png
+    - assets/nazwa.png
     - assets/ref/
+    - assets/ref/krzak/kwiaty/
+    - assets/ref/krzak/owoce/
+    - assets/ref/krzak/pokroj/
     - assets/ref/zielne/liscie/
     - assets/ref/zielne/owoce/
     - assets/ref/zielne/kwiat/
@@ -41,3 +53,16 @@ flutter:
     - assets/ref/zielne/lodyga/
     - assets/ref/drzewo/kora/
     - assets/ref/drzewo/pokroj/
+    - assets/ref/drzewo/organy/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo.png"
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: assets/logo.png
+
+  android_12:
+    color: "#FFFFFF"
+    image: assets/logo.png
